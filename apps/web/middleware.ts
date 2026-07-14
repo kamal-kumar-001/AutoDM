@@ -15,6 +15,6 @@ export const config = {
      * - favicon
      * - login, register, forgot-password, reset-password, verify-email paths
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|login|register|forgot-password|reset-password|verify-email).*)',
+    '/((?!api|_next|favicon.ico|login|register|forgot-password|reset-password|verify-email).*)',
   ],
 };

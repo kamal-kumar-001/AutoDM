@@ -7,34 +7,272 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// --- ENUMS ---
+
 enum UserRole {
   ADMIN
   CREATOR
 }
 
+enum CampaignStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum CampaignType {
+  COMMENT_TO_DM
+  KEYWORD_TO_DM
+  WELCOME_DM
+}
+
+enum MatchingRule {
+  EXACT
+  CONTAINS
+  STARTS_WITH
+}
+
+enum WebhookStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+enum MessageDirection {
+  INCOMING
+  OUTGOING
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum JobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+}
+
+// --- MODELS ---
+
 model User {
-  id                 String         @id @default(uuid())
-  email              String         @unique
+  id                 String             @id @default(uuid())
+  email              String             @unique
   name               String?
   password           String
-  role               UserRole       @default(CREATOR)
-  isVerified         Boolean        @default(false)
+  role               UserRole           @default(CREATOR)
+  isVerified         Boolean            @default(false)
   verificationToken  String?
   resetToken         String?
   resetTokenExpires  DateTime?
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-  refreshTokens      RefreshToken[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  settings           Settings?
+  instagramAccounts  InstagramAccount[]
+  campaigns          Campaign[]
+  notifications      Notification[]
   auditLogs          AuditLog[]
+  apiLogs            ApiLog[]
+  refreshTokens      RefreshToken[]
 }
 
-model RefreshToken {
-  id        String   @id @default(uuid())
-  token     String   @unique
+model Settings {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme             String   @default("dark")
+  timezone          String   @default("UTC")
+  emailNotify       Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model InstagramAccount {
+  id              String     @id @default(uuid())
+  userId          String
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instagramId     String     @unique
+  username        String
+  displayName     String?
+  profilePicture  String?
+  accessToken     String     // Will be encrypted transparently
+  instagramPageId String?
+  isConnected     Boolean    @default(true)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  deletedAt       DateTime?  // Soft delete support
+  campaigns       Campaign[]
+  comments        Comment[]
+  messages        Message[]
+
+  @@index([userId])
+  @@index([deletedAt])
+}
+
+model Campaign {
+  id                 String           @id @default(uuid())
+  userId             String
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instagramAccountId String
+  instagramAccount   InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+  name               String
+  description        String?
+  status             CampaignStatus   @default(ACTIVE)
+  type               CampaignType
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  deletedAt          DateTime?        // Soft delete support
+  posts              Post[]
+  keywords           Keyword[]
+
+  @@index([userId])
+  @@index([instagramAccountId])
+  @@index([deletedAt])
+}
+
+model Post {
+  id         String   @id @default(uuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  mediaId    String   @unique
+  mediaUrl   String?
+  permalink  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([campaignId])
+}
+
+model Keyword {
+  id           String       @id @default(uuid())
+  campaignId   String
+  campaign     Campaign     @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  keyword      String
+  matchingRule MatchingRule @default(EXACT)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([campaignId])
+  @@index([keyword])
+}
+
+model WebhookEvent {
+  id           String        @id @default(uuid())
+  provider     String        @default("META")
+  eventId      String?       @unique
+  payload      Json
+  status       WebhookStatus @default(PENDING)
+  errorMessage String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Comment {
+  id                 String           @id @default(uuid())
+  instagramAccountId String
+  instagramAccount   InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+  mediaId            String
+  commentId          String           @unique
+  text               String
+  username           String
+  userId             String           // Native Instagram User ID of commenters
+  isReplied          Boolean          @default(false)
+  replyText          String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([instagramAccountId])
+  @@index([mediaId])
+  @@index([isReplied])
+  @@index([createdAt])
+}
+
+model Message {
+  id                 String           @id @default(uuid())
+  instagramAccountId String
+  instagramAccount   InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+  recipientId        String
+  senderId           String
+  text               String?
+  mediaUrl           String?
+  messageId          String           @unique
+  direction          MessageDirection
+  status             MessageStatus    @default(SENT)
+  errorMessage       String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([instagramAccountId])
+  @@index([recipientId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model QueueJob {
+  id          String    @id @default(uuid())
+  name        String
+  payload     Json
+  status      JobStatus @default(PENDING)
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3)
+  error       String?
+  runAt       DateTime
+  processedAt DateTime?
+  finishedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@index([runAt])
+}
+
+model ApiLog {
+  id              String   @id @default(uuid())
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  method          String
+  url             String
+  statusCode      Int
+  requestHeaders  Json?
+  requestBody     Json?
+  responseHeaders Json?
+  responseBody    Json?
+  duration        Int      // in milliseconds
+  ipAddress       String?
+  createdAt       DateTime @default(now())
+
+  @@index([userId])
+  @@index([statusCode])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([isRead])
 }
 
 model AuditLog {
@@ -45,5 +283,17 @@ model AuditLog {
   details   String?
   ipAddress String?
   userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
   createdAt DateTime @default(now())
 }
