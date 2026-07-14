@@ -130,6 +130,8 @@ model Campaign {
   description        String?
   status             CampaignStatus   @default(ACTIVE)
   type               CampaignType
+  replyMessage       String
+  replyMediaUrl      String?
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
   deletedAt          DateTime?        // Soft delete support

@@ -19,6 +19,12 @@ export const envSchema = z.object({
 
   // Encryption Configuration
   ENCRYPTION_KEY: z.string().min(16).default('supersecret_encryption_key_change_me_in_production'),
+
+  // Meta Instagram Configuration
+  META_APP_ID: z.string().optional(),
+  META_APP_SECRET: z.string().optional(),
+  META_REDIRECT_URI: z.string().default('http://localhost:4000/instagram/callback'),
+  META_WEBHOOK_VERIFY_TOKEN: z.string().default('autodm_verify_token_12345'),
 });
 
 export type Env = z.infer<typeof envSchema>;
