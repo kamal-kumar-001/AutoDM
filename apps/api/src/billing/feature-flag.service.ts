@@ -36,6 +36,11 @@ const DEFAULT_FLAGS: Array<{ key: string; description: string; enabledForPlans: 
     enabledForPlans: 'ENTERPRISE',
   },
   { key: 'API_ACCESS', description: 'Direct REST API access', enabledForPlans: 'ENTERPRISE' },
+  {
+    key: 'audit_logging',
+    description: 'System-wide audit logging tracker',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
+  },
 ];
 
 @Injectable()

@@ -3,13 +3,16 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Query,
   Body,
   UseGuards,
   HttpCode,
   HttpStatus,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -86,6 +89,32 @@ export class AdminController {
       userId,
       action,
     });
+  }
+
+  @Delete('logs')
+  deleteAuditLogs(@Query('olderThan') olderThan: string) {
+    return this.adminService.deleteAuditLogs(olderThan);
+  }
+
+  @Get('logs/download')
+  async downloadAuditLogs(
+    @Res() res: Response,
+    @Query('userId') userId?: string,
+    @Query('action') action?: string,
+  ) {
+    const logs = await this.adminService.getAllAuditLogs({ userId, action });
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=audit-logs.csv');
+
+    const csvHeader = 'ID,User Email,Action,Details,IP Address,Created At\n';
+    const csvRows = logs.map((log) => {
+      const email = log.user?.email || 'system';
+      const details = (log.details || '').replace(/"/g, '""');
+      return `"${log.id}","${email}","${log.action}","${details}","${log.ipAddress || ''}","${log.createdAt.toISOString()}"`;
+    });
+
+    return res.status(HttpStatus.OK).send(csvHeader + csvRows.join('\n'));
   }
 
   // ─── Feature Flags ───────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FeatureFlagService } from '../billing/feature-flag.service';
 import { MonitoringService } from '../monitoring/monitoring.service';
@@ -143,6 +143,36 @@ export class AdminService {
     ]);
 
     return { data: logs, total, page, limit };
+  }
+
+  async deleteAuditLogs(olderThan: string) {
+    const date = new Date(olderThan);
+    if (isNaN(date.getTime())) {
+      throw new BadRequestException('Invalid date format');
+    }
+
+    const result = await this.prisma.auditLog.deleteMany({
+      where: {
+        createdAt: {
+          lt: date,
+        },
+      },
+    });
+
+    return { count: result.count };
+  }
+
+  async getAllAuditLogs(opts: { userId?: string; action?: string }) {
+    const { userId, action } = opts;
+    const where: any = {};
+    if (userId) where.userId = userId;
+    if (action) where.action = { contains: action, mode: 'insensitive' };
+
+    return this.prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      include: { user: { select: { email: true, name: true } } },
+    });
   }
 
   // ─── Feature Flags ───────────────────────────────────────────────

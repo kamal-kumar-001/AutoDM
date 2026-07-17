@@ -13,6 +13,13 @@ export class AuditLogService {
     userAgent?: string;
   }) {
     try {
+      const flag = await this.prisma.featureFlag.findUnique({
+        where: { key: 'audit_logging' },
+      });
+      if (flag && !flag.isEnabled) {
+        return;
+      }
+
       await this.prisma.auditLog.create({
         data: {
           userId: params.userId || null,

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { BillingController } from './billing.controller';
 import { SubscriptionService } from './subscription.service';
 import { FeatureFlagService } from './feature-flag.service';
@@ -10,4 +10,10 @@ import { PlanGuard } from './plan.guard';
   providers: [SubscriptionService, FeatureFlagService, UsageLimitGuard, PlanGuard],
   exports: [SubscriptionService, FeatureFlagService, UsageLimitGuard, PlanGuard],
 })
-export class BillingModule {}
+export class BillingModule implements OnModuleInit {
+  constructor(private readonly featureFlag: FeatureFlagService) {}
+
+  async onModuleInit() {
+    await this.featureFlag.seedDefaults();
+  }
+}
