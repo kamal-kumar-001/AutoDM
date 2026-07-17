@@ -2,28 +2,74 @@
 
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Layers, Play, Pause, AlertCircle, Sparkles } from 'lucide-react';
-import { mockCampaigns, MockCampaign } from '@/lib/mock-data';
+import { Search, Layers, Play, Pause, AlertCircle, Loader2, Edit, Trash } from 'lucide-react';
 import { Input, toast } from '@autodm/ui';
+import { apiRequest } from '@/lib/api-client';
 
-export function CampaignsList() {
+interface Campaign {
+  id: string;
+  name: string;
+  type: 'COMMENT_TO_DM' | 'KEYWORD_TO_DM' | 'WELCOME_DM';
+  status: 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
+  createdAt: string;
+  instagramAccount?: {
+    username: string;
+    displayName: string | null;
+  };
+}
+
+export function CampaignsList({ onEditCampaign }: { onEditCampaign?: (id: string) => void }) {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<'ALL' | 'ACTIVE' | 'PAUSED'>('ALL');
-  const [campaigns, setCampaigns] = React.useState<MockCampaign[]>(mockCampaigns);
+  const [campaigns, setCampaigns] = React.useState<Campaign[]>([]);
+  const [loading, setLoading] = React.useState(true);
 
-  const toggleCampaignStatus = (id: string) => {
-    setCampaigns((prev) =>
-      prev.map((c) => {
-        if (c.id === id) {
-          const nextStatus = c.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
-          toast.success(
-            `Campaign ${nextStatus === 'ACTIVE' ? 'activated' : 'paused'} successfully`,
-          );
-          return { ...c, status: nextStatus };
-        }
-        return c;
-      }),
-    );
+  const fetchCampaigns = async () => {
+    try {
+      const data = await apiRequest<Campaign[]>('/campaigns');
+      setCampaigns(data || []);
+    } catch (error) {
+      console.error('Failed to load campaigns', error);
+      toast.error('Failed to load active campaigns');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchCampaigns();
+  }, []);
+
+  const toggleCampaignStatus = async (id: string, currentStatus: string, name: string) => {
+    const toastId = toast.loading(`Updating status for ${name}...`);
+    try {
+      await apiRequest(`/campaigns/${id}/status`, {
+        method: 'PATCH',
+      });
+
+      const nextStatus = currentStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+      setCampaigns((prev) => prev.map((c) => (c.id === id ? { ...c, status: nextStatus } : c)));
+      toast.success(`Campaign ${nextStatus === 'ACTIVE' ? 'activated' : 'paused'} successfully`, {
+        id: toastId,
+      });
+    } catch (error) {
+      toast.error(`Failed to update campaign status`, { id: toastId });
+    }
+  };
+
+  const handleArchive = async (id: string, name: string) => {
+    const toastId = toast.loading(`Archiving campaign '${name}'...`);
+    try {
+      await apiRequest(`/campaigns/${id}/archive`, {
+        method: 'POST',
+      });
+      setCampaigns((prev) => prev.filter((c) => c.id !== id));
+      toast.success(`Archived campaign '${name}'`, {
+        id: toastId,
+      });
+    } catch (error) {
+      toast.error('Failed to archive campaign', { id: toastId });
+    }
   };
 
   const filteredCampaigns = campaigns.filter((c) => {
@@ -60,7 +106,7 @@ export function CampaignsList() {
             <button
               key={f}
               onClick={() => setStatusFilter(f)}
-              className={`px-2.5 py-1 text-[10px] font-semibold rounded-md transition-all ${
+              className={`px-2.5 py-1 text-[10px] font-semibold rounded-md transition-all cursor-pointer ${
                 statusFilter === f
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-gray-400 hover:text-white'
@@ -84,81 +130,104 @@ export function CampaignsList() {
       </div>
 
       {/* Campaign List */}
-      <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[300px] custom-scrollbar">
-        <AnimatePresence mode="popLayout">
-          {filteredCampaigns.length > 0 ? (
-            filteredCampaigns.map((campaign) => (
-              <motion.div
-                key={campaign.id}
-                layout
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="p-3 rounded-lg bg-white/5 border border-white/5 hover:border-white/10 transition-colors flex items-center justify-between gap-4"
-              >
-                {/* Info block */}
-                <div className="flex-1 min-w-0 space-y-1.5">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs font-bold text-white truncate max-w-[150px]">
-                      {campaign.name}
-                    </span>
-                    <span
-                      className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[8px] font-semibold ${getCampaignBadgeColor(campaign.type)}`}
-                    >
-                      {campaign.type.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-
-                  {/* Reply progress indicators */}
-                  <div className="flex justify-between items-center text-[10px] text-gray-400">
-                    <span>
-                      Replies: <strong className="text-white">{campaign.repliesSent}</strong>
-                      <span className="text-gray-500"> / {campaign.triggersCount} triggers</span>
-                    </span>
-                    <span className="flex items-center space-x-0.5">
-                      <Sparkles className="h-3 w-3 text-primary" />
-                      <span>{campaign.conversionRate} conv.</span>
-                    </span>
-                  </div>
-
-                  {/* Simple indicator bar */}
-                  <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-primary to-accent-cyan rounded-full"
-                      style={{
-                        width: `${Math.min(100, (campaign.repliesSent / Math.max(1, campaign.triggersCount)) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Actions toggles */}
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => toggleCampaignStatus(campaign.id)}
-                    className={`p-1.5 rounded-lg border transition-all ${
-                      campaign.status === 'ACTIVE'
-                        ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/20'
-                        : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
-                    }`}
-                    title={campaign.status === 'ACTIVE' ? 'Pause Campaign' : 'Activate Campaign'}
+      <div className="flex-1 overflow-y-auto space-y-3 pr-1 max-h-[300px] custom-scrollbar flex flex-col justify-start pt-1 font-sans">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-10 space-y-2">
+            <Loader2 className="h-6 w-6 text-primary animate-spin" />
+            <p className="text-[10px] text-gray-500">Loading campaigns...</p>
+          </div>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {filteredCampaigns.length > 0 ? (
+              <div className="space-y-3 w-full self-start">
+                {filteredCampaigns.map((campaign) => (
+                  <motion.div
+                    key={campaign.id}
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="p-3 rounded-lg bg-white/5 border border-white/5 hover:border-white/10 transition-colors flex items-center justify-between gap-4"
                   >
-                    {campaign.status === 'ACTIVE' ? (
-                      <Pause className="h-3.5 w-3.5 fill-current" />
-                    ) : (
-                      <Play className="h-3.5 w-3.5 fill-current" />
-                    )}
-                  </button>
-                </div>
-              </motion.div>
-            ))
-          ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-center space-y-2">
-              <AlertCircle className="h-8 w-8 text-gray-500" />
-              <p className="text-xs text-gray-400">No campaigns found matching criteria.</p>
-            </div>
-          )}
-        </AnimatePresence>
+                    {/* Info block */}
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div className="flex items-center space-x-2">
+                        <span
+                          className="text-xs font-bold text-white truncate max-w-[150px]"
+                          title={campaign.name}
+                        >
+                          {campaign.name}
+                        </span>
+                        <span
+                          className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[8px] font-semibold ${getCampaignBadgeColor(campaign.type)}`}
+                        >
+                          {campaign.type.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+
+                      {/* Info sub-metrics */}
+                      <div className="flex justify-between items-center text-[10px] text-gray-400">
+                        <span className="truncate">
+                          Channel:{' '}
+                          <strong className="text-white">
+                            @{campaign.instagramAccount?.username || 'linked'}
+                          </strong>
+                        </span>
+                        <span className="flex items-center space-x-0.5 text-[9px] text-gray-500">
+                          {new Date(campaign.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Actions toggles */}
+                    <div className="flex items-center space-x-1.5">
+                      <button
+                        onClick={() =>
+                          toggleCampaignStatus(campaign.id, campaign.status, campaign.name)
+                        }
+                        className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                          campaign.status === 'ACTIVE'
+                            ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/20'
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:text-white'
+                        }`}
+                        title={
+                          campaign.status === 'ACTIVE' ? 'Pause Campaign' : 'Activate Campaign'
+                        }
+                      >
+                        {campaign.status === 'ACTIVE' ? (
+                          <Pause className="h-3.5 w-3.5 fill-current" />
+                        ) : (
+                          <Play className="h-3.5 w-3.5 fill-current" />
+                        )}
+                      </button>
+
+                      <button
+                        onClick={() => onEditCampaign?.(campaign.id)}
+                        className="p-1.5 rounded-lg border border-white/5 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                        title="Edit Campaign"
+                      >
+                        <Edit className="h-3.5 w-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => handleArchive(campaign.id, campaign.name)}
+                        className="p-1.5 rounded-lg border border-white/5 bg-white/5 text-gray-500 hover:text-red-400 hover:bg-white/10 transition-all cursor-pointer"
+                        title="Archive Campaign"
+                      >
+                        <Trash className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center space-y-2 w-full">
+                <AlertCircle className="h-8 w-8 text-gray-500" />
+                <p className="text-xs text-gray-400">No campaigns found matching criteria.</p>
+              </div>
+            )}
+          </AnimatePresence>
+        )}
       </div>
     </div>
   );

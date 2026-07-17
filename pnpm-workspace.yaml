@@ -9,6 +9,7 @@ allowBuilds:
   "prisma": true
   "unrs-resolver": true
   "bcrypt": true
+  msgpackr-extract: true
 
 minimumReleaseAgeExclude:
   - "pnpm@11.13.0"

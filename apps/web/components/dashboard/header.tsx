@@ -5,7 +5,11 @@ import { Breadcrumbs, CommandPalette } from '@autodm/ui';
 import { Bell } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 
-export function Header() {
+export interface HeaderProps {
+  onOpenNotifications?: () => void;
+}
+
+export function Header({ onOpenNotifications }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -66,7 +70,11 @@ export function Header() {
         <CommandPalette items={commandItems} />
 
         {/* Notifications Icon Button */}
-        <button className="p-2 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/5 text-gray-400 hover:text-white transition-colors relative">
+        <button
+          onClick={onOpenNotifications}
+          className="p-2 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/5 text-gray-400 hover:text-white transition-colors relative"
+          aria-label="Open Notifications"
+        >
           <Bell className="h-4.5 w-4.5" />
           <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary text-glow" />
         </button>

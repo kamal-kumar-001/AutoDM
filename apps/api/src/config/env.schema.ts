@@ -9,6 +9,7 @@ export const envSchema = z.object({
     .default('postgresql://postgres:postgres@localhost:5432/autodm?schema=public'),
   REDIS_URL: z.string().url().optional(),
   JWT_SECRET: z.string().min(8).default('supersecret_change_me_in_production_12345678'),
+  FRONTEND_URL: z.string().url().default('http://localhost:3000'),
 
   // SMTP Configuration
   SMTP_HOST: z.string().optional(),

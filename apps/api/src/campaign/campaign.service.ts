@@ -129,15 +129,51 @@ export class CampaignService {
       throw new NotFoundException('Campaign not found');
     }
 
+    // Update core fields
     const updatedCampaign = await this.prisma.campaign.update({
       where: { id },
       data: {
         name: dto.name || undefined,
         description: dto.description || undefined,
+        type: dto.type || undefined,
+        instagramAccountId: dto.instagramAccountId || undefined,
         replyMessage: dto.replyMessage || undefined,
         replyMediaUrl: dto.replyMediaUrl || null,
       },
     });
+
+    // Update keywords if provided
+    if (dto.keywords) {
+      await this.prisma.keyword.deleteMany({
+        where: { campaignId: id },
+      });
+      if (dto.keywords.length > 0) {
+        await this.prisma.keyword.createMany({
+          data: dto.keywords.map((kw) => ({
+            campaignId: id,
+            keyword: kw.keyword,
+            matchingRule: kw.matchingRule,
+          })),
+        });
+      }
+    }
+
+    // Update posts if provided
+    if (dto.posts) {
+      await this.prisma.post.deleteMany({
+        where: { campaignId: id },
+      });
+      if (dto.posts.length > 0) {
+        await this.prisma.post.createMany({
+          data: dto.posts.map((p) => ({
+            campaignId: id,
+            mediaId: p.mediaId,
+            mediaUrl: p.mediaUrl,
+            permalink: p.permalink,
+          })),
+        });
+      }
+    }
 
     await this.auditLogService.log({
       userId,

@@ -4,17 +4,21 @@ import * as React from 'react';
 import { Sidebar } from './sidebar';
 import { Header } from './header';
 import { useShortcuts, toast } from '@autodm/ui';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { NotificationCenter } from './notification-center';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
 
   // Register global hotkeys
   useShortcuts([
     {
       keyConfig: { key: 'd', alt: true },
       callback: () => {
-        router.push('/');
+        router.push('/dashboard');
         toast.success('Navigated to Dashboard', { id: 'nav-toast' });
       },
     },
@@ -56,7 +60,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header Bar */}
-        <Header />
+        <Header onOpenNotifications={() => setIsNotificationsOpen(true)} />
 
         {/* Scrollable Dashboard Viewport */}
         <main className="flex-1 overflow-y-auto px-8 py-8 relative">
@@ -64,9 +68,26 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-glow-gradient pointer-events-none opacity-40 z-0" />
           <div className="absolute bottom-10 left-10 w-[400px] h-[400px] bg-mesh-gradient pointer-events-none opacity-30 z-0" />
 
-          <div className="relative z-10 max-w-7xl mx-auto space-y-6">{children}</div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={pathname}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="relative z-10 max-w-7xl mx-auto space-y-6"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
+
+      {/* Notifications Drawer */}
+      <NotificationCenter
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+      />
     </div>
   );
 }

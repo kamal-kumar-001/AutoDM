@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { motion } from 'framer-motion';
 import {
   LayoutDashboard,
   MessageSquareCode,
@@ -12,6 +11,7 @@ import {
   ChevronRight,
   Zap,
   LogOut,
+  Shield,
 } from 'lucide-react';
 import { cn } from '@autodm/ui';
 import { usePathname, useRouter } from 'next/navigation';
@@ -25,54 +25,76 @@ interface SidebarItem {
 }
 
 const navItems: SidebarItem[] = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard, shortcut: '⌥D' },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, shortcut: '⌥D' },
   { name: 'Automations', href: '/automations', icon: MessageSquareCode, shortcut: '⌥A' },
   { name: 'Inbox', href: '/inbox', icon: Inbox, shortcut: '⌥I' },
   { name: 'Analytics', href: '/analytics', icon: BarChart3, shortcut: '⌥L' },
   { name: 'Settings', href: '/settings', icon: Settings, shortcut: '⌥S' },
 ];
 
+const adminNavItem: SidebarItem = { name: 'Admin', href: '/admin', icon: Shield };
+
 export function Sidebar() {
   const [collapsed, setCollapsed] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
+
   const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Creator';
   const userRole = session?.user?.role || 'Creator';
+  const isAdmin = (session?.user as any)?.role === 'ADMIN';
+  const allNavItems = isAdmin ? [...navItems, adminNavItem] : navItems;
+
+  React.useEffect(() => {
+    const val = localStorage.getItem('sidebar-collapsed') === 'true';
+    setCollapsed(val);
+    setMounted(true);
+  }, []);
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem('sidebar-collapsed', String(next));
+      return next;
+    });
+  };
 
   return (
-    <motion.aside
-      animate={{ width: collapsed ? 72 : 240 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className="hidden md:flex flex-col h-screen border-r border-white/5 bg-black/40 backdrop-blur-md sticky top-0 left-0 overflow-hidden select-none"
+    <aside
+      className={cn(
+        'hidden md:flex flex-col h-screen border-r border-white/5 bg-black/40 backdrop-blur-md sticky top-0 left-0 overflow-hidden select-none transition-[width] duration-200 ease-in-out z-40',
+        mounted && collapsed ? 'w-[72px]' : 'w-[240px]',
+      )}
     >
       {/* Sidebar Header */}
-      <div className="flex items-center justify-between h-16 px-4 border-b border-white/5">
+      <div className="flex items-center justify-between h-16 px-4 border-b border-white/5 flex-shrink-0">
         <div className="flex items-center space-x-2.5 overflow-hidden">
-          <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-gradient-to-tr from-primary to-accent-cyan shadow-[0_0_15px_rgba(0,187,136,0.3)]">
+          <div className="flex items-center justify-center h-9 w-9 rounded-lg bg-gradient-to-tr from-primary to-accent-cyan shadow-[0_0_15px_rgba(0,187,136,0.3)] flex-shrink-0">
             <Zap className="h-5 w-5 text-primary-foreground" />
           </div>
-          {!collapsed && (
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-base font-bold bg-gradient-to-r from-white via-white to-primary bg-clip-text text-transparent truncate"
-            >
+          {(!mounted || !collapsed) && (
+            <span className="text-base font-bold bg-gradient-to-r from-white via-white to-primary bg-clip-text text-transparent truncate transition-opacity duration-200">
               AutoDM
-            </motion.span>
+            </span>
           )}
         </div>
         <button
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={toggleCollapsed}
           className="p-1.5 rounded-md hover:bg-white/5 border border-transparent hover:border-white/5 text-gray-400 hover:text-white transition-colors"
+          aria-label="Toggle Sidebar"
         >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          {mounted && collapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
         </button>
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map((item) => {
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto overflow-x-hidden">
+        {allNavItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <button
@@ -85,13 +107,9 @@ export function Sidebar() {
                   : 'text-gray-400 hover:text-white hover:bg-white/5',
               )}
             >
-              {/* Glow Highlight background for active route */}
+              {/* Glow Highlight bar for active route */}
               {isActive && (
-                <motion.div
-                  layoutId="active-nav-glow"
-                  className="absolute left-0 w-1 h-5 rounded-r bg-primary text-glow"
-                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                />
+                <div className="absolute left-0 w-1 h-5 rounded-r bg-primary shadow-[0_0_8px_#00bb88]" />
               )}
 
               <item.icon
@@ -101,17 +119,13 @@ export function Sidebar() {
                 )}
               />
 
-              {!collapsed && (
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="ml-3 flex-1 text-left truncate"
-                >
+              {(!mounted || !collapsed) && (
+                <span className="ml-3 flex-1 text-left truncate transition-opacity duration-200">
                   {item.name}
-                </motion.span>
+                </span>
               )}
 
-              {!collapsed && item.shortcut && (
+              {(!mounted || !collapsed) && item.shortcut && (
                 <kbd className="hidden group-hover:inline-flex items-center text-[9px] font-mono border border-white/10 bg-black/40 px-1 rounded text-gray-500">
                   {item.shortcut}
                 </kbd>
@@ -122,25 +136,21 @@ export function Sidebar() {
       </nav>
 
       {/* Footer Profile */}
-      <div className="p-4 border-t border-white/5 flex items-center justify-between overflow-hidden">
+      <div className="p-4 border-t border-white/5 flex items-center justify-between overflow-hidden flex-shrink-0">
         <div className="flex items-center space-x-3 truncate">
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-accent-emerald flex-shrink-0 shadow-sm flex items-center justify-center text-primary-foreground font-bold text-xs">
             {userName.charAt(0).toUpperCase()}
           </div>
-          {!collapsed && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col truncate"
-            >
+          {(!mounted || !collapsed) && (
+            <div className="flex flex-col truncate transition-opacity duration-200">
               <span className="text-sm font-medium text-white truncate">{userName}</span>
               <span className="text-[10px] text-gray-500 truncate capitalize">
                 {userRole.toLowerCase()}
               </span>
-            </motion.div>
+            </div>
           )}
         </div>
-        {!collapsed && (
+        {(!mounted || !collapsed) && (
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
             className="p-1.5 rounded-md text-gray-500 hover:text-red-400 hover:bg-white/5 transition-colors"
@@ -150,6 +160,6 @@ export function Sidebar() {
           </button>
         )}
       </div>
-    </motion.aside>
+    </aside>
   );
 }

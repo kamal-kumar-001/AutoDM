@@ -3,6 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
@@ -84,7 +85,7 @@ export class AuthService {
 
     // Save refresh token hash in DB
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    expiresAt.setDate(expiresAt.getDate() + 30); // 30 days
 
     await this.prisma.refreshToken.create({
       data: {
@@ -136,7 +137,7 @@ export class AuthService {
     const tokens = await this.generateTokens(user.id, user.email, user.role);
 
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    expiresAt.setDate(expiresAt.getDate() + 30); // 30 days
 
     await this.prisma.refreshToken.create({
       data: {
@@ -255,6 +256,59 @@ export class AuthService {
       // Ignore if token is already gone
     }
     return { message: 'Logged out successfully' };
+  }
+
+  async updateProfile(userId: string, dto: { name?: string }) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: dto.name || undefined,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        isVerified: true,
+      },
+    });
+
+    await this.auditLogService.log({
+      userId,
+      action: 'PROFILE_UPDATE',
+      details: JSON.stringify({ name: user.name }),
+    });
+
+    return user;
+  }
+
+  async changePassword(userId: string, currentPassword?: string, newPassword?: string) {
+    if (!currentPassword || !newPassword) {
+      throw new BadRequestException('Current password and new password are required');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      throw new BadRequestException('Incorrect current password');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    await this.auditLogService.log({
+      userId,
+      action: 'PASSWORD_CHANGE',
+    });
+
+    return { message: 'Password updated successfully' };
   }
 
   private async generateTokens(userId: string, email: string, role: string) {

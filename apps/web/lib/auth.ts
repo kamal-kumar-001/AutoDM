@@ -23,7 +23,7 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET || 'fallback_nextauth_secret_must_change_in_prod',
   session: {
     strategy: 'jwt',
-    maxAge: 7 * 24 * 60 * 60, // 7 days (matching refresh token)
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   providers: [
     CredentialsProvider({
@@ -80,8 +80,8 @@ export const authOptions: NextAuthOptions = {
         };
       }
 
-      // Return previous token if the access token has not expired yet
-      if (Date.now() < token.accessTokenExpires) {
+      // Return previous token if the access token has not expired yet or already failed to refresh
+      if (Date.now() < token.accessTokenExpires || token.error === 'RefreshAccessTokenError') {
         return token;
       }
 

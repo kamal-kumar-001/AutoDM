@@ -14,6 +14,7 @@ import { Request, Response } from 'express';
 import { ConfigService } from '../config/config.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppLogger } from '../common/logger/logger.service';
+import { WebhookRouterService } from './webhook-router.service';
 import * as crypto from 'crypto';
 
 @Controller('instagram/webhook')
@@ -22,6 +23,7 @@ export class WebhookController {
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly logger: AppLogger,
+    private readonly webhookRouter: WebhookRouterService,
   ) {
     this.logger.setContext('WebhookController');
   }
@@ -84,14 +86,16 @@ export class WebhookController {
     const body = req.body;
     const entryId = body?.entry?.[0]?.id;
 
+    let savedEventId: string | null = null;
     try {
-      await this.prisma.webhookEvent.create({
+      const saved = await this.prisma.webhookEvent.create({
         data: {
           eventId: entryId ? `${entryId}_${Date.now()}` : undefined,
           payload: body,
           status: 'PENDING',
         },
       });
+      savedEventId = saved.id;
       this.logger.log(`Logged webhook event from Meta Entry ID: ${entryId || 'unknown'}`);
     } catch (error) {
       this.logger.error(
@@ -100,7 +104,14 @@ export class WebhookController {
       );
     }
 
-    // 3. Immediately return 200 OK to keep Meta connection open
+    // 3. Fire-and-forget routing (returns 200 immediately)
+    if (savedEventId) {
+      this.webhookRouter
+        .route(savedEventId, body)
+        .catch((err) => this.logger.error('WebhookRouter unhandled error', err?.stack));
+    }
+
+    // 4. Immediately return 200 OK to keep Meta connection open
     return { received: true };
   }
 }

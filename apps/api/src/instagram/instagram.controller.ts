@@ -5,17 +5,46 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Post,
   Query,
-  Redirect,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
+import { ConfigService } from '../config/config.service';
 import { InstagramService } from './instagram.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
+import { MediaFetchProducer } from './media-fetch.producer';
+import { InstagramCacheService } from './instagram-cache.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('instagram')
 export class InstagramController {
-  constructor(private readonly instagramService: InstagramService) {}
+  constructor(
+    private readonly instagramService: InstagramService,
+    private readonly mediaFetchProducer: MediaFetchProducer,
+    private readonly cacheService: InstagramCacheService,
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  async getAccounts(@GetUser() user: { id: string }) {
+    return this.prisma.instagramAccount.findMany({
+      where: { userId: user.id, deletedAt: null },
+      select: {
+        id: true,
+        instagramId: true,
+        username: true,
+        displayName: true,
+        profilePicture: true,
+        isConnected: true,
+        createdAt: true,
+      },
+    });
+  }
 
   @Get('connect')
   @UseGuards(JwtAuthGuard)
@@ -25,20 +54,19 @@ export class InstagramController {
   }
 
   @Get('callback')
-  @Redirect()
-  async callback(@Query('code') code: string, @Query('state') state: string) {
+  async callback(@Query('code') code: string, @Query('state') state: string, @Res() res: Response) {
+    const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
     if (!code || !state) {
-      // If code/state is missing, redirect to frontend with error state
-      return { url: 'http://localhost:3000/settings?error=oauth_missing_parameters' };
+      return res.redirect(`${frontendUrl}/dashboard?error=oauth_missing_parameters`);
     }
 
     try {
       await this.instagramService.exchangeCodeForTokens(code, state);
-      return { url: 'http://localhost:3000/settings?success=instagram_connected' };
+      return res.redirect(`${frontendUrl}/dashboard?success=instagram_connected`);
     } catch (error) {
       const errMsg =
         error instanceof Error ? encodeURIComponent(error.message) : 'oauth_exchange_failed';
-      return { url: `http://localhost:3000/settings?error=${errMsg}` };
+      return res.redirect(`${frontendUrl}/dashboard?error=${errMsg}`);
     }
   }
 
@@ -47,5 +75,47 @@ export class InstagramController {
   @HttpCode(HttpStatus.OK)
   async disconnect(@Param('id') id: string, @GetUser() user: { id: string }) {
     return this.instagramService.disconnectAccount(id, user.id);
+  }
+
+  /**
+   * GET /instagram/:accountId/posts
+   * Returns cached posts for the account (fetches on first call).
+   */
+  @Get(':accountId/posts')
+  @UseGuards(JwtAuthGuard)
+  async getPosts(@Param('accountId') accountId: string, @GetUser() user: { id: string }) {
+    // Verify ownership
+    const account = await this.prisma.instagramAccount.findFirst({
+      where: { id: accountId, userId: user.id, deletedAt: null },
+    });
+    if (!account) {
+      return { posts: [], status: 'account_not_found' };
+    }
+
+    const cached = this.cacheService.get(account.instagramId);
+    if (cached) {
+      return { posts: cached, status: 'cached' };
+    }
+
+    // Enqueue fetch job and return empty posts (UI polls until populated)
+    await this.mediaFetchProducer.enqueueFetch(accountId);
+    return { posts: [], status: 'fetching' };
+  }
+
+  /**
+   * POST /instagram/:accountId/posts/refresh
+   * Force a new media fetch from Instagram.
+   */
+  @Post(':accountId/posts/refresh')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.ACCEPTED)
+  async refreshPosts(@Param('accountId') accountId: string, @GetUser() user: { id: string }) {
+    const account = await this.prisma.instagramAccount.findFirst({
+      where: { id: accountId, userId: user.id, deletedAt: null },
+    });
+    if (account) {
+      this.cacheService.clear(account.instagramId);
+    }
+    return this.mediaFetchProducer.enqueueFetch(accountId);
   }
 }

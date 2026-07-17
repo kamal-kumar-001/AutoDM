@@ -79,6 +79,14 @@ export class UpdateCampaignDto {
   @IsOptional()
   description?: string;
 
+  @IsEnum(CampaignType)
+  @IsOptional()
+  type?: CampaignType;
+
+  @IsUUID('4')
+  @IsOptional()
+  instagramAccountId?: string;
+
   @IsString()
   @IsOptional()
   replyMessage?: string;
@@ -86,4 +94,16 @@ export class UpdateCampaignDto {
   @IsString()
   @IsOptional()
   replyMediaUrl?: string;
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CampaignKeywordDto)
+  keywords?: CampaignKeywordDto[];
+
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => CampaignPostDto)
+  posts?: CampaignPostDto[];
 }

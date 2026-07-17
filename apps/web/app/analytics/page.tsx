@@ -1,21 +1,44 @@
 'use client';
 
 import { DashboardLayout } from '@/components/dashboard/layout';
+import { AnalyticsChart } from '@/components/dashboard/analytics-chart';
+import { StatsGrid } from '@/components/dashboard/stats-grid';
+import { TopPostsCard } from '@/components/analytics/top-posts-card';
+import { TopKeywordsCard } from '@/components/analytics/top-keywords-card';
+import { DailyUsageChart } from '@/components/analytics/daily-usage-chart';
+import { RatesCard } from '@/components/analytics/rates-card';
 
 export default function AnalyticsPage() {
   return (
     <DashboardLayout>
-      <div className="space-y-4">
-        <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-white to-primary bg-clip-text text-transparent">
-          Analytics
-        </h1>
-        <p className="text-gray-400">
-          Track conversion rates, user engagement, and trigger frequency metrics.
-        </p>
-        <div className="glass-card p-6 rounded-xl border border-white/5">
-          <p className="text-sm text-gray-500">
-            Analytics reports will generate automatically upon tracking live triggers.
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-white to-primary bg-clip-text text-transparent">
+            Analytics
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">
+            Real-time performance across all campaigns and accounts.
           </p>
+        </div>
+
+        {/* KPI Row */}
+        <StatsGrid />
+
+        {/* Rates + 7-day traffic */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <RatesCard />
+          <div className="lg:col-span-2">
+            <AnalyticsChart />
+          </div>
+        </div>
+
+        {/* 30-day daily usage */}
+        <DailyUsageChart />
+
+        {/* Top Posts + Top Keywords */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TopPostsCard />
+          <TopKeywordsCard />
         </div>
       </div>
     </DashboardLayout>

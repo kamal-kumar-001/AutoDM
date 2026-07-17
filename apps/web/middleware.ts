@@ -8,13 +8,11 @@ export default withAuth({
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - api routes
-     * - _next static directories
-     * - favicon
-     * - login, register, forgot-password, reset-password, verify-email paths
-     */
-    '/((?!api|_next|favicon.ico|login|register|forgot-password|reset-password|verify-email).*)',
+    '/dashboard/:path*',
+    '/automations/:path*',
+    '/inbox/:path*',
+    '/analytics/:path*',
+    '/settings/:path*',
+    '/admin/:path*',
   ],
 };

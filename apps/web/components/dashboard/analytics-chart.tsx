@@ -2,9 +2,10 @@
 
 import * as React from 'react';
 import { motion } from 'framer-motion';
-import { mockChartData } from '@/lib/mock-data';
+import { useAnalyticsChart } from '@/lib/use-analytics';
 
 export function AnalyticsChart() {
+  const { data: chartData, loading } = useAnalyticsChart();
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
 
   const width = 600;
@@ -18,15 +19,33 @@ export function AnalyticsChart() {
   const chartHeight = height - paddingTop - paddingBottom;
 
   // Find max value in dataset to scale chart
-  const maxVal = Math.max(...mockChartData.map((d) => Math.max(d.comments, d.messages))) * 1.1;
+  const maxVal = chartData.length
+    ? Math.max(...chartData.map((d) => Math.max(d.comments, d.messages))) * 1.1 || 10
+    : 100;
 
   // Compute coordinate points
-  const points = mockChartData.map((d, i) => {
-    const x = paddingLeft + (i / (mockChartData.length - 1)) * chartWidth;
+  const points = chartData.map((d, i) => {
+    const x =
+      paddingLeft +
+      (chartData.length > 1 ? (i / (chartData.length - 1)) * chartWidth : chartWidth / 2);
     const yComments = height - paddingBottom - (d.comments / maxVal) * chartHeight;
     const yMessages = height - paddingBottom - (d.messages / maxVal) * chartHeight;
     return { x, yComments, yMessages, ...d };
   });
+
+  if (loading) {
+    return (
+      <div className="glass-card border-gradient p-5 rounded-xl shadow-glass flex flex-col space-y-4">
+        <div className="flex justify-between items-center">
+          <div className="space-y-1">
+            <div className="h-4 w-32 bg-white/10 rounded animate-pulse" />
+            <div className="h-3 w-48 bg-white/5 rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="h-[220px] bg-white/5 rounded-lg animate-pulse" />
+      </div>
+    );
+  }
 
   // Generate SVG Path definitions
   const generatePath = (valKey: 'yComments' | 'yMessages') => {

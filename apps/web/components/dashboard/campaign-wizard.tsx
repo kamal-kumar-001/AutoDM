@@ -11,53 +11,49 @@ import {
   CheckCircle,
   X,
   HelpCircle,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { Button, Input, Label, toast } from '@autodm/ui';
-import { mockAccounts } from '@/lib/mock-data';
+import { apiRequest, ApiError } from '@/lib/api-client';
 
 interface CampaignWizardProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  editCampaignId?: string | null;
 }
 
-interface MockPost {
+interface LivePost {
   id: string;
   caption: string;
   mediaUrl: string;
+  permalink: string;
+  timestamp: string;
   likes: number;
+  comments: number;
 }
 
-const mockPosts: MockPost[] = [
-  {
-    id: 'p1',
-    caption: 'Building a SaaS from scratch in 24h. Leave a comment below! 🚀',
-    mediaUrl: '💻',
-    likes: 342,
-  },
-  {
-    id: 'p2',
-    caption: 'Instagram Graph Webhooks and direct message integration guide.',
-    mediaUrl: '📨',
-    likes: 198,
-  },
-  {
-    id: 'p3',
-    caption: 'AutoDM Framework Release Promo: how it works under the hood.',
-    mediaUrl: '⚙️',
-    likes: 512,
-  },
-  {
-    id: 'p4',
-    caption: 'Modern web layout design grids and glassmorphic HSL components.',
-    mediaUrl: '🎨',
-    likes: 277,
-  },
-];
+interface ConnectedAccount {
+  id: string;
+  instagramId: string;
+  username: string;
+  displayName: string | null;
+  profilePicture: string | null;
+  isConnected: boolean;
+}
 
-export function CampaignWizard({ isOpen, onClose, onSuccess }: CampaignWizardProps) {
+export function CampaignWizard({
+  isOpen,
+  onClose,
+  onSuccess,
+  editCampaignId,
+}: CampaignWizardProps) {
   const [step, setStep] = React.useState(1);
   const [loading, setLoading] = React.useState(false);
+
+  // Accounts State
+  const [accounts, setAccounts] = React.useState<ConnectedAccount[]>([]);
 
   // Form State
   const [name, setName] = React.useState('');
@@ -65,13 +61,128 @@ export function CampaignWizard({ isOpen, onClose, onSuccess }: CampaignWizardPro
   const [type, setType] = React.useState<'COMMENT_TO_DM' | 'KEYWORD_TO_DM' | 'WELCOME_DM'>(
     'COMMENT_TO_DM',
   );
-  const [accountId, setAccountId] = React.useState(mockAccounts[0]?.id || '');
+  const [accountId, setAccountId] = React.useState('');
   const [keywords, setKeywords] = React.useState('');
   const [matchingRule, setMatchingRule] = React.useState<'EXACT' | 'CONTAINS'>('EXACT');
   const [selectedPostId, setSelectedPostId] = React.useState<string | null>(null);
   const [replyMessage, setReplyMessage] = React.useState('');
 
-  const activeAccount = mockAccounts.find((a) => a.id === accountId) || mockAccounts[0];
+  // Live posts state
+  const [posts, setPosts] = React.useState<LivePost[]>([]);
+  const [postsStatus, setPostsStatus] = React.useState<'idle' | 'fetching' | 'cached' | 'error'>(
+    'idle',
+  );
+  const pollRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  interface EditingCampaign {
+    name: string;
+    description?: string | null;
+    type: 'COMMENT_TO_DM' | 'KEYWORD_TO_DM' | 'WELCOME_DM';
+    instagramAccountId: string;
+    replyMessage: string;
+    keywords?: { keyword: string; matchingRule: 'EXACT' | 'CONTAINS' }[];
+    posts?: { mediaId: string }[];
+  }
+
+  // Load campaign for editing
+  React.useEffect(() => {
+    if (isOpen && editCampaignId) {
+      setLoading(true);
+      apiRequest<EditingCampaign>(`/campaigns/${editCampaignId}`)
+        .then((camp) => {
+          setName(camp.name);
+          setDescription(camp.description || '');
+          setType(camp.type);
+          setAccountId(camp.instagramAccountId);
+          setReplyMessage(camp.replyMessage);
+
+          if (camp.keywords && camp.keywords.length > 0) {
+            setKeywords(camp.keywords.map((k) => k.keyword).join(', '));
+            setMatchingRule(camp.keywords[0].matchingRule);
+          } else {
+            setKeywords('');
+          }
+
+          if (camp.posts && camp.posts.length > 0) {
+            setSelectedPostId(camp.posts[0].mediaId);
+          } else {
+            setSelectedPostId(null);
+          }
+        })
+        .catch(() => toast.error('Failed to load campaign details'))
+        .finally(() => setLoading(false));
+    } else if (isOpen) {
+      setName('');
+      setDescription('');
+      setType('COMMENT_TO_DM');
+      setKeywords('');
+      setReplyMessage('');
+      setSelectedPostId(null);
+      setStep(1);
+    }
+  }, [isOpen, editCampaignId]);
+
+  // Fetch accounts on open
+  React.useEffect(() => {
+    if (isOpen) {
+      apiRequest<ConnectedAccount[]>('/instagram')
+        .then((res) => {
+          setAccounts(res || []);
+          if (res && res.length > 0) {
+            setAccountId(res[0].id);
+          }
+        })
+        .catch(() => setAccounts([]));
+    }
+  }, [isOpen]);
+
+  const activeAccount = accounts.find((a) => a.id === accountId) || accounts[0];
+
+  // Fetch posts when account changes and type is COMMENT_TO_DM
+  const fetchPosts = React.useCallback(async (accId: string, silent = false) => {
+    if (!silent) setPostsStatus('fetching');
+    try {
+      const data = await apiRequest<{ posts: LivePost[]; status: string }>(
+        `/instagram/${accId}/posts`,
+      );
+      setPosts(data.posts || []);
+      setPostsStatus(data.status === 'fetching' ? 'fetching' : 'cached');
+      return data.status;
+    } catch (error) {
+      setPosts((sub) => sub || []); // preserve previous posts or default to empty
+      setPostsStatus('error');
+      return 'error';
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (type !== 'COMMENT_TO_DM' || !accountId) return;
+    setSelectedPostId(null);
+    setPosts([]);
+    fetchPosts(accountId);
+  }, [type, accountId, fetchPosts]);
+
+  // Poll until posts are populated
+  React.useEffect(() => {
+    if (postsStatus !== 'fetching') {
+      if (pollRef.current) clearInterval(pollRef.current);
+      return;
+    }
+    pollRef.current = setInterval(async () => {
+      const status = await fetchPosts(accountId, true);
+      if (status !== 'fetching') clearInterval(pollRef.current!);
+    }, 2000);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [postsStatus, accountId, fetchPosts]);
+
+  // Cleanup on close
+  React.useEffect(() => {
+    if (!isOpen) {
+      if (pollRef.current) clearInterval(pollRef.current);
+    }
+  }, [isOpen]);
 
   const handleNext = () => {
     if (step === 1) {
@@ -106,15 +217,74 @@ export function CampaignWizard({ isOpen, onClose, onSuccess }: CampaignWizardPro
   const handleLaunch = async () => {
     setLoading(true);
 
-    // Simulate API Create Call
-    setTimeout(() => {
-      setLoading(false);
-      toast.success('Campaign launched successfully!', {
-        description: `Automations for '${name}' are now active.`,
-      });
+    try {
+      interface CampaignPayload {
+        name: string;
+        description: string;
+        type: string;
+        instagramAccountId: string;
+        replyMessage: string;
+        keywords?: { keyword: string; matchingRule: string }[];
+        posts?: { mediaId: string; mediaUrl: string; permalink: string }[];
+      }
+
+      const payload: CampaignPayload = {
+        name,
+        description,
+        type,
+        instagramAccountId: accountId,
+        replyMessage,
+      };
+
+      if ((type === 'KEYWORD_TO_DM' || type === 'COMMENT_TO_DM') && keywords.trim()) {
+        payload.keywords = keywords
+          .split(',')
+          .map((k) => k.trim())
+          .filter(Boolean)
+          .map((k) => ({
+            keyword: k,
+            matchingRule,
+          }));
+      }
+
+      if (type === 'COMMENT_TO_DM' && selectedPostId) {
+        const post = posts.find((p) => p.id === selectedPostId);
+        payload.posts = [
+          {
+            mediaId: selectedPostId,
+            mediaUrl: post?.mediaUrl || '',
+            permalink: post?.permalink || '',
+          },
+        ];
+      }
+
+      if (editCampaignId) {
+        await apiRequest(`/campaigns/${editCampaignId}`, {
+          method: 'PATCH',
+          body: JSON.stringify(payload),
+        });
+        toast.success('Campaign updated successfully!', {
+          description: `Changes for '${name}' are now active.`,
+        });
+      } else {
+        await apiRequest('/campaigns', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        toast.success('Campaign launched successfully!', {
+          description: `Automations for '${name}' are now active.`,
+        });
+      }
+
       onSuccess();
       onClose();
-    }, 1200);
+    } catch (error) {
+      console.error('Failed to launch campaign', error);
+      const errMsg = error instanceof ApiError ? error.message : 'Please check your inputs.';
+      toast.error(`Failed to launch campaign: ${errMsg}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -297,7 +467,7 @@ export function CampaignWizard({ isOpen, onClose, onSuccess }: CampaignWizardPro
                           onChange={(e) => setAccountId(e.target.value)}
                           className="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary"
                         >
-                          {mockAccounts.map((acc) => (
+                          {accounts.map((acc) => (
                             <option
                               key={acc.id}
                               value={acc.id}
@@ -310,13 +480,20 @@ export function CampaignWizard({ isOpen, onClose, onSuccess }: CampaignWizardPro
                       </div>
 
                       {/* Keyword to DM trigger inputs */}
-                      {type === 'KEYWORD_TO_DM' && (
+                      {(type === 'KEYWORD_TO_DM' || type === 'COMMENT_TO_DM') && (
                         <div className="space-y-3">
                           <div className="space-y-1.5">
-                            <Label htmlFor="keywords-in">Trigger Keywords (comma separated)</Label>
+                            <Label htmlFor="keywords-in">
+                              Trigger Keywords (comma separated){' '}
+                              {type === 'COMMENT_TO_DM' && '(Optional)'}
+                            </Label>
                             <Input
                               id="keywords-in"
-                              placeholder="e.g. GROW, START, EBOOK"
+                              placeholder={
+                                type === 'COMMENT_TO_DM'
+                                  ? 'e.g. shoes, promo (leave empty for any comment)'
+                                  : 'e.g. GROW, START, EBOOK'
+                              }
                               value={keywords}
                               onChange={(e) => setKeywords(e.target.value)}
                             />
@@ -349,33 +526,74 @@ export function CampaignWizard({ isOpen, onClose, onSuccess }: CampaignWizardPro
                       {/* Comment to DM triggers */}
                       {type === 'COMMENT_TO_DM' && (
                         <div className="space-y-2">
-                          <Label>Select Target Post</Label>
-                          <div className="grid grid-cols-2 gap-3">
-                            {mockPosts.map((post) => (
+                          <div className="flex items-center justify-between">
+                            <Label>Select Target Post</Label>
+                            {postsStatus === 'fetching' && (
+                              <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                                <Loader2 className="h-3 w-3 animate-spin" /> Fetching live posts…
+                              </span>
+                            )}
+                            {postsStatus === 'cached' && posts && posts.length > 0 && (
                               <button
-                                key={post.id}
-                                onClick={() => setSelectedPostId(post.id)}
                                 type="button"
-                                className={`p-3 rounded-xl border text-left flex items-start space-x-2.5 transition-all ${
-                                  selectedPostId === post.id
-                                    ? 'bg-primary/10 border-primary text-white'
-                                    : 'bg-white/5 border-white/5 text-gray-400 hover:border-white/10 hover:text-white'
-                                }`}
+                                onClick={() => fetchPosts(accountId)}
+                                className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-white transition-colors"
                               >
-                                <div className="h-8 w-8 rounded-lg bg-white/5 flex items-center justify-center text-lg flex-shrink-0">
-                                  {post.mediaUrl}
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="text-[10px] text-gray-400 line-clamp-2 leading-tight">
-                                    {post.caption}
-                                  </p>
-                                  <span className="text-[8px] text-gray-500 block mt-1">
-                                    ❤️ {post.likes} Likes
-                                  </span>
-                                </div>
+                                <RefreshCw className="h-3 w-3" /> Refresh
                               </button>
-                            ))}
+                            )}
                           </div>
+
+                          {postsStatus === 'fetching' && (!posts || posts.length === 0) ? (
+                            <div className="grid grid-cols-2 gap-3">
+                              {[1, 2, 3, 4].map((n) => (
+                                <div
+                                  key={n}
+                                  className="h-20 rounded-xl bg-white/5 border border-white/5 animate-pulse"
+                                />
+                              ))}
+                            </div>
+                          ) : posts && posts.length > 0 ? (
+                            <div className="grid grid-cols-2 gap-3">
+                              {posts.map((post) => (
+                                <button
+                                  key={post.id}
+                                  onClick={() => setSelectedPostId(post.id)}
+                                  type="button"
+                                  className={`p-3 rounded-xl border text-left flex items-start space-x-2.5 transition-all ${
+                                    selectedPostId === post.id
+                                      ? 'bg-primary/10 border-primary text-white'
+                                      : 'bg-white/5 border-white/5 text-gray-400 hover:border-white/10 hover:text-white'
+                                  }`}
+                                >
+                                  <div className="h-8 w-8 rounded-lg bg-white/5 flex-shrink-0 overflow-hidden">
+                                    {post.mediaUrl ? (
+                                      <img
+                                        src={post.mediaUrl}
+                                        alt=""
+                                        className="h-full w-full object-cover"
+                                      />
+                                    ) : (
+                                      <Instagram className="h-4 w-4 m-2 text-gray-500" />
+                                    )}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-[10px] text-gray-400 line-clamp-2 leading-tight">
+                                      {post.caption || 'No caption'}
+                                    </p>
+                                    <span className="text-[8px] text-gray-500 block mt-1">
+                                      ❤️ {post.likes} · 💬 {post.comments}
+                                    </span>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="p-4 rounded-xl border border-dashed border-white/10 bg-white/5 text-center text-xs text-gray-400 space-y-2">
+                              <Instagram className="h-6 w-6 text-gray-500 mx-auto" />
+                              <p>No posts found. Make sure your account is connected.</p>
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -535,7 +753,11 @@ export function CampaignWizard({ isOpen, onClose, onSuccess }: CampaignWizardPro
               {/* Navigation Actions Footer */}
               <div className="border-t border-white/5 pt-4 flex justify-between items-center">
                 {step > 1 ? (
-                  <Button variant="secondary" onClick={handleBack} className="text-xs h-9">
+                  <Button
+                    variant="secondary"
+                    onClick={handleBack}
+                    className="text-xs h-9 cursor-pointer"
+                  >
                     <ArrowLeft className="h-3.5 w-3.5 mr-1" />
                     <span>Back</span>
                   </Button>
@@ -544,7 +766,10 @@ export function CampaignWizard({ isOpen, onClose, onSuccess }: CampaignWizardPro
                 )}
 
                 {step < 4 ? (
-                  <Button onClick={handleNext} className="text-xs h-9">
+                  <Button
+                    onClick={handleNext}
+                    className="text-xs h-9 bg-gradient-to-r from-primary to-accent-cyan hover:opacity-90 transition-all text-primary-foreground border-0 shadow-[0_0_12px_rgba(0,187,136,0.2)] cursor-pointer font-bold"
+                  >
                     <span>Continue</span>
                     <ArrowRight className="h-3.5 w-3.5 ml-1" />
                   </Button>
@@ -552,9 +777,13 @@ export function CampaignWizard({ isOpen, onClose, onSuccess }: CampaignWizardPro
                   <Button
                     onClick={handleLaunch}
                     disabled={loading}
-                    className="text-xs h-9 shadow-lg"
+                    className="text-xs h-9 bg-gradient-to-r from-primary to-accent-cyan hover:opacity-90 transition-all text-primary-foreground border-0 shadow-[0_0_12px_rgba(0,187,136,0.2)] cursor-pointer font-bold"
                   >
-                    {loading ? 'Launching Campaign...' : 'Launch Campaign'}
+                    {loading
+                      ? 'Launching Campaign...'
+                      : editCampaignId
+                        ? 'Save Changes'
+                        : 'Launch Campaign'}
                   </Button>
                 )}
               </div>

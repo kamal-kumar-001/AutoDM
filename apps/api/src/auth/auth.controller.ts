@@ -69,4 +69,21 @@ export class AuthController {
   ) {
     return user;
   }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async changePassword(
+    @GetUser() user: { id: string },
+    @Body() dto: { currentPassword?: string; newPassword?: string },
+  ) {
+    return this.authService.changePassword(user.id, dto.currentPassword, dto.newPassword);
+  }
+
+  @Post('me')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async updateProfile(@GetUser() user: { id: string }, @Body() dto: { name?: string }) {
+    return this.authService.updateProfile(user.id, dto);
+  }
 }

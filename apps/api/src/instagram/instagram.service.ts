@@ -55,22 +55,12 @@ export class InstagramService {
 
     const state = Buffer.from(JSON.stringify({ userId })).toString('base64url');
 
-    // Dev Mode Sandbox Mock Bypass
-    if (!appId || appId === 'change_me') {
-      this.logger.warn(
-        'META_APP_ID is not configured. Redirecting to dev sandbox OAuth simulation.',
-      );
-      const localRedirect = redirectUri || 'http://localhost:4000/instagram/callback';
-      return `${localRedirect}?code=mock_meta_auth_code_123456&state=${state}`;
-    }
-
     const scopes = [
       'pages_show_list',
       'instagram_basic',
       'instagram_manage_comments',
       'instagram_manage_messages',
       'pages_read_engagement',
-      'pages_manage_metadata',
     ].join(',');
 
     return `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(
@@ -90,46 +80,6 @@ export class InstagramService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('User associated with OAuth session not found');
-    }
-
-    // Dev Mode Sandbox Mock Bypass
-    if (code.startsWith('mock_')) {
-      this.logger.log(
-        `Mock OAuth callback triggered for user ${userId}. Creating developer sandbox account.`,
-      );
-      const mockIgId = `ig_mock_${Math.floor(100000 + Math.random() * 900000)}`;
-      const mockUsername = `sandbox.creator.${Math.floor(10 + Math.random() * 90)}`;
-      const encryptedToken = this.encryptionService.encrypt(
-        'mock_meta_page_access_token_super_secret',
-      );
-
-      await this.prisma.instagramAccount.upsert({
-        where: { instagramId: mockIgId },
-        create: {
-          userId,
-          instagramId: mockIgId,
-          username: mockUsername,
-          displayName: `Sandbox | ${mockUsername}`,
-          profilePicture: null,
-          accessToken: encryptedToken,
-          instagramPageId: `page_mock_${mockIgId}`,
-          isConnected: true,
-        },
-        update: {
-          username: mockUsername,
-          accessToken: encryptedToken,
-          isConnected: true,
-          deletedAt: null,
-        },
-      });
-
-      await this.auditLogService.log({
-        userId,
-        action: 'INSTAGRAM_ACCOUNT_LINKED_SANDBOX',
-        details: JSON.stringify({ instagramId: mockIgId, username: mockUsername }),
-      });
-
-      return userId;
     }
 
     const appId = this.configService.get('META_APP_ID')!;
@@ -177,10 +127,14 @@ export class InstagramService {
         },
       );
 
-      const pages = pagesResponse.data.data;
+      const pages = pagesResponse.data.data || [];
+      this.logger.log(
+        `Retrieved Facebook Pages count: ${pages.length}. Pages: ${JSON.stringify(pages.map((p) => ({ id: p.id, name: p.name })))}`,
+      );
       let linkedAccountsCount = 0;
 
       for (const page of pages) {
+        this.logger.log(`Fetching details for Facebook Page: ${page.name} (${page.id})`);
         // 4. Fetch Instagram business account connected to page
         const pageDetailsResponse = await axios.get<MetaIgAccountDetails>(
           `https://graph.facebook.com/v20.0/${page.id}`,
@@ -190,6 +144,10 @@ export class InstagramService {
               access_token: page.access_token,
             },
           },
+        );
+
+        this.logger.log(
+          `Page Details Response for ${page.name}: ${JSON.stringify(pageDetailsResponse.data)}`,
         );
 
         const igAccount = pageDetailsResponse.data.instagram_business_account;
