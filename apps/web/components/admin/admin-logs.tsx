@@ -24,7 +24,7 @@ export function AdminLogs() {
   // Advanced Operations State
   const [loggingEnabled, setLoggingEnabled] = React.useState(true);
   const [togglingLog, setTogglingLog] = React.useState(false);
-  const [purgeDate, setPurgeDate] = React.useState('');
+  const [purgeTimeframe, setPurgeTimeframe] = React.useState('30');
   const [purging, setPurging] = React.useState(false);
   const [downloading, setDownloading] = React.useState(false);
 
@@ -81,23 +81,36 @@ export function AdminLogs() {
   };
 
   const handlePurge = async () => {
-    if (!purgeDate) {
-      toast.error('Please select a target cutoff date');
+    let cutoff: Date;
+    let label = '';
+    if (purgeTimeframe === '30') {
+      cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 30);
+      label = 'older than 30 days';
+    } else if (purgeTimeframe === '90') {
+      cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 90);
+      label = 'older than 90 days';
+    } else if (purgeTimeframe === 'all') {
+      cutoff = new Date();
+      label = 'all time (entire history)';
+    } else {
+      toast.error('Invalid timeframe selection');
       return;
     }
+
     const confirm = window.confirm(
-      `Are you sure you want to permanently delete all logs older than ${purgeDate}?`,
+      `Are you sure you want to permanently delete ${label} audit logs?`,
     );
     if (!confirm) return;
 
     setPurging(true);
     try {
-      const formattedDate = `${purgeDate}T00:00:00.000Z`;
+      const formattedDate = cutoff.toISOString();
       const result = await apiRequest<{ count: number }>(`/admin/logs?olderThan=${formattedDate}`, {
         method: 'DELETE',
       });
       toast.success(`Successfully deleted ${result.count} audit log entries.`);
-      setPurgeDate('');
       setPage(1);
       load();
     } catch (e) {
@@ -174,20 +187,29 @@ export function AdminLogs() {
 
         {/* Purge & Download */}
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          {/* Purge picker */}
+          {/* Purge timeframe select */}
           <div className="flex items-center space-x-2 bg-white/5 border border-white/10 rounded-lg p-1.5">
-            <span className="text-[10px] text-gray-400 pl-1">Delete before:</span>
-            <input
-              type="date"
-              value={purgeDate}
-              onChange={(e) => setPurgeDate(e.target.value)}
-              className="bg-transparent text-white text-xs border-0 focus:ring-0 focus:outline-none p-0 cursor-pointer w-28"
-            />
+            <span className="text-[10px] text-gray-400 pl-1">Purge:</span>
+            <select
+              value={purgeTimeframe}
+              onChange={(e) => setPurgeTimeframe(e.target.value)}
+              className="custom-select !h-8 !py-0 !pl-2 pr-8"
+            >
+              <option value="30" className="bg-zinc-900 text-white">
+                Older than 30 days
+              </option>
+              <option value="90" className="bg-zinc-900 text-white">
+                Older than 90 days
+              </option>
+              <option value="all" className="bg-zinc-900 text-white">
+                All time
+              </option>
+            </select>
             <button
               onClick={handlePurge}
               disabled={purging}
               className="p-1 rounded bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 hover:text-red-300 transition-all cursor-pointer disabled:opacity-50"
-              title="Purge logs older than date"
+              title="Purge logs matching timeframe"
             >
               {purging ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />

@@ -8,6 +8,7 @@ import { MediaFetchProcessor } from './media-fetch.processor';
 import { InstagramCacheService } from './instagram-cache.service';
 import { WebhookRouterService } from './webhook-router.service';
 import { CommentAutomationService } from './comment-automation.service';
+import { MessageAutomationService } from './message-automation.service';
 import { SendDmProducer } from './send-dm.producer';
 import { SendDmProcessor } from './send-dm.processor';
 import { BullModule } from '@nestjs/bullmq';
@@ -29,6 +30,7 @@ import { QUEUE_NAMES } from '../queue/constants';
     InstagramCacheService,
     WebhookRouterService,
     CommentAutomationService,
+    MessageAutomationService,
     SendDmProducer,
     SendDmProcessor,
   ],

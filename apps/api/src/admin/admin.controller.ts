@@ -152,6 +152,28 @@ export class AdminController {
     return this.adminService.retryJob(queue, jobId);
   }
 
+  // ─── Delete Requests ─────────────────────────────────────────────
+
+  @Get('delete-requests')
+  getDeleteRequests(@Query('page') page?: string, @Query('limit') limit?: string) {
+    return this.adminService.getDeleteRequests({
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 20,
+    });
+  }
+
+  @Post('delete-requests/approve')
+  @HttpCode(HttpStatus.OK)
+  approveDeleteRequests(@Body('ids') ids: string[]) {
+    return this.adminService.approveDeleteRequests(ids);
+  }
+
+  @Post('delete-requests/reject')
+  @HttpCode(HttpStatus.OK)
+  rejectDeleteRequests(@Body('ids') ids: string[]) {
+    return this.adminService.rejectDeleteRequests(ids);
+  }
+
   // ─── System Health ───────────────────────────────────────────────
 
   @Get('health')

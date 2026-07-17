@@ -10,6 +10,7 @@ import { EncryptionService } from '../common/encryption/encryption.service';
 import { AppLogger } from '../common/logger/logger.service';
 import { AuditLogService } from '../auth/audit-log.service';
 import axios from 'axios';
+import { SendDmProducer } from './send-dm.producer';
 
 interface MetaTokenResponse {
   access_token: string;
@@ -45,6 +46,7 @@ export class InstagramService {
     private readonly encryptionService: EncryptionService,
     private readonly auditLogService: AuditLogService,
     private readonly logger: AppLogger,
+    private readonly sendDmProducer: SendDmProducer,
   ) {
     this.logger.setContext('InstagramService');
   }
@@ -153,6 +155,28 @@ export class InstagramService {
         const igAccount = pageDetailsResponse.data.instagram_business_account;
 
         if (igAccount) {
+          // Automatically subscribe the Facebook Page to this app's webhooks
+          try {
+            await axios.post(
+              `https://graph.facebook.com/v20.0/${page.id}/subscribed_apps`,
+              {
+                subscribed_fields: ['feed', 'messages', 'mention'],
+              },
+              {
+                params: { access_token: page.access_token },
+              },
+            );
+            this.logger.log(`Successfully subscribed Page ${page.name} (${page.id}) to webhooks.`);
+          } catch (subError) {
+            const msg = subError instanceof Error ? subError.message : String(subError);
+            const detail = axios.isAxiosError(subError)
+              ? JSON.stringify(subError.response?.data)
+              : '';
+            this.logger.warn(
+              `Failed to automatically subscribe Page ${page.name} to app webhooks: ${msg}. Details: ${detail}`,
+            );
+          }
+
           // Encrypt the page access token (long-lived / non-expiring)
           const encryptedPageToken = this.encryptionService.encrypt(page.access_token);
 
@@ -231,5 +255,95 @@ export class InstagramService {
     });
 
     return { message: 'Instagram connection removed successfully' };
+  }
+
+  async getConversations(userId: string) {
+    const accounts = await this.prisma.instagramAccount.findMany({
+      where: { userId, isConnected: true, deletedAt: null },
+      select: { id: true, username: true },
+    });
+
+    const accountIds = accounts.map((a) => a.id);
+    if (accountIds.length === 0) return [];
+
+    // Retrieve all messages for these accounts to determine threads
+    const messages = await this.prisma.message.findMany({
+      where: { instagramAccountId: { in: accountIds } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Grouping manually in JS for thread representation
+    const threadsMap = new Map<string, any>();
+    for (const msg of messages) {
+      if (!threadsMap.has(msg.recipientId)) {
+        const account = accounts.find((a) => a.id === msg.instagramAccountId);
+        threadsMap.set(msg.recipientId, {
+          recipientId: msg.recipientId,
+          lastMessage: msg.text || (msg.mediaUrl ? 'Attachment' : ''),
+          updatedAt: msg.createdAt,
+          instagramAccountId: msg.instagramAccountId,
+          instagramAccountUsername: account?.username || 'unknown',
+          unreadCount: 0,
+        });
+      }
+    }
+
+    return Array.from(threadsMap.values());
+  }
+
+  async getMessages(userId: string, recipientId: string) {
+    const accounts = await this.prisma.instagramAccount.findMany({
+      where: { userId, isConnected: true, deletedAt: null },
+      select: { id: true },
+    });
+    const accountIds = accounts.map((a) => a.id);
+
+    return this.prisma.message.findMany({
+      where: {
+        instagramAccountId: { in: accountIds },
+        recipientId,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async sendManualMessage(
+    userId: string,
+    recipientId: string,
+    instagramAccountId: string,
+    text: string,
+  ) {
+    // 1. Verify ownership of account
+    const account = await this.prisma.instagramAccount.findFirst({
+      where: { id: instagramAccountId, userId, isConnected: true, deletedAt: null },
+    });
+
+    if (!account) {
+      throw new NotFoundException('Instagram account not found or access denied');
+    }
+
+    // 2. Save outgoing message to DB
+    const outgoingMsg = await this.prisma.message.create({
+      data: {
+        instagramAccountId,
+        recipientId,
+        senderId: account.instagramId,
+        text,
+        messageId: `manual_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        direction: 'OUTGOING',
+        status: 'SENT',
+      },
+    });
+
+    // 3. Enqueue sending the actual message to Meta using SendDmProducer
+    await this.sendDmProducer.enqueueSendDm({
+      campaignId: 'manual', // Demarcates manual response
+      instagramAccountId,
+      recipientId,
+      recipientUsername: 'user',
+      replyMessage: text,
+    });
+
+    return outgoingMsg;
   }
 }

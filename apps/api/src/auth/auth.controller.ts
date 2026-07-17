@@ -1,4 +1,14 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  UseGuards,
+  Delete,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -85,5 +95,28 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async updateProfile(@GetUser() user: { id: string }, @Body() dto: { name?: string }) {
     return this.authService.updateProfile(user.id, dto);
+  }
+
+  @Post('delete-request')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
+  async createDeleteRequest(
+    @GetUser() user: { id: string },
+    @Body() dto: { reason: string; feedback?: string },
+  ) {
+    return this.authService.createDeleteRequest(user.id, dto.reason, dto.feedback);
+  }
+
+  @Delete('delete-request')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async cancelDeleteRequest(@GetUser() user: { id: string }) {
+    return this.authService.cancelDeleteRequest(user.id);
+  }
+
+  @Get('delete-request')
+  @UseGuards(JwtAuthGuard)
+  async getDeleteRequest(@GetUser() user: { id: string }) {
+    return this.authService.getDeleteRequest(user.id);
   }
 }

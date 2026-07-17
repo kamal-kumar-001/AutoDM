@@ -465,7 +465,7 @@ export function CampaignWizard({
                           id="acc-select"
                           value={accountId}
                           onChange={(e) => setAccountId(e.target.value)}
-                          className="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                          className="custom-select w-full"
                         >
                           {accounts.map((acc) => (
                             <option
@@ -510,7 +510,7 @@ export function CampaignWizard({
                               onChange={(e) =>
                                 setMatchingRule(e.target.value as 'EXACT' | 'CONTAINS')
                               }
-                              className="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                              className="custom-select w-full"
                             >
                               <option value="EXACT" className="bg-background text-white">
                                 Exact Match

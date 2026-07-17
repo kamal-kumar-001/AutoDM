@@ -43,11 +43,77 @@ export default function SettingsPage() {
   const [emailNotify, setEmailNotify] = React.useState(true);
   const [savingPrefs, setSavingPrefs] = React.useState(false);
 
+  // Account Deletion State
+  const [deleteRequest, setDeleteRequest] = React.useState<any | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = React.useState(false);
+  const [deleteReason, setDeleteReason] = React.useState('');
+  const [deleteFeedback, setDeleteFeedback] = React.useState('');
+  const [confirmDeleteCheck, setConfirmDeleteCheck] = React.useState(false);
+  const [submittingDelete, setSubmittingDelete] = React.useState(false);
+  const [cancellingDelete, setCancellingDelete] = React.useState(false);
+
+  const fetchDeleteRequest = React.useCallback(async () => {
+    try {
+      const data = await apiRequest<any>('/auth/delete-request');
+      setDeleteRequest(data);
+    } catch (e) {
+      setDeleteRequest(null);
+    }
+  }, []);
+
   React.useEffect(() => {
     if (session?.user?.name) {
       setName(session.user.name);
     }
-  }, [session]);
+    fetchDeleteRequest();
+  }, [session, fetchDeleteRequest]);
+
+  const handleSubmitDeleteRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!deleteReason) {
+      toast.error('Please select a reason for deletion.');
+      return;
+    }
+    if (!confirmDeleteCheck) {
+      toast.error('Please check the confirmation box.');
+      return;
+    }
+
+    setSubmittingDelete(true);
+    try {
+      const data = await apiRequest<any>('/auth/delete-request', {
+        method: 'POST',
+        body: JSON.stringify({ reason: deleteReason, feedback: deleteFeedback }),
+      });
+      setDeleteRequest(data);
+      setShowDeleteModal(false);
+      toast.success('Account deletion request submitted for administrative approval.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to submit request');
+    } finally {
+      setSubmittingDelete(false);
+    }
+  };
+
+  const handleCancelDeleteRequest = async () => {
+    const confirm = window.confirm(
+      'Are you sure you want to cancel your account deletion request?',
+    );
+    if (!confirm) return;
+
+    setCancellingDelete(true);
+    try {
+      await apiRequest('/auth/delete-request', {
+        method: 'DELETE',
+      });
+      setDeleteRequest(null);
+      toast.success('Account deletion request cancelled.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to cancel request');
+    } finally {
+      setCancellingDelete(false);
+    }
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -220,6 +286,56 @@ export default function SettingsPage() {
                     )}
                   </Button>
                 </form>
+
+                {/* Danger Zone */}
+                <div className="pt-6 border-t border-red-500/10 space-y-4">
+                  <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="space-y-1">
+                      <h5 className="text-xs font-semibold text-white">
+                        Permanently Delete Account
+                      </h5>
+                      <p className="text-[10px] text-gray-500 max-w-md">
+                        Once submitted, your profile deletion request will be routed to the
+                        administrator. If approved, all your channels, campaigns, and data will be
+                        permanently wiped.
+                      </p>
+                    </div>
+
+                    {deleteRequest ? (
+                      <div className="flex flex-col sm:items-end gap-2">
+                        <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[9px] font-bold">
+                          Pending Approval
+                        </span>
+                        <Button
+                          onClick={handleCancelDeleteRequest}
+                          disabled={cancellingDelete}
+                          variant="secondary"
+                          size="sm"
+                          className="text-[10px] h-8 text-red-400 hover:text-red-300 border-red-500/10 hover:border-red-500/20 bg-red-500/5 hover:bg-red-500/10 cursor-pointer"
+                        >
+                          {cancellingDelete ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            'Cancel Request'
+                          )}
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => {
+                          setDeleteReason('');
+                          setDeleteFeedback('');
+                          setConfirmDeleteCheck(false);
+                          setShowDeleteModal(true);
+                        }}
+                        size="sm"
+                        className="text-xs h-9 bg-red-500 hover:bg-red-600 border-0 text-white cursor-pointer font-bold"
+                      >
+                        Delete Account
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -369,7 +485,7 @@ export default function SettingsPage() {
                       id="pref-tz"
                       value={timezone}
                       onChange={(e) => setTimezone(e.target.value)}
-                      className="w-full h-10 px-3 rounded-lg bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                      className="custom-select w-full"
                     >
                       <option value="UTC" className="bg-background">
                         Coordinated Universal Time (UTC)
@@ -419,6 +535,116 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm cursor-pointer"
+            onClick={() => setShowDeleteModal(false)}
+          />
+
+          {/* Dialog content */}
+          <div className="w-full max-w-md bg-zinc-950 border border-white/10 p-6 rounded-2xl shadow-2xl z-10 space-y-4">
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+              Request Account Deletion
+            </h3>
+            <p className="text-[10px] text-gray-500 leading-relaxed">
+              We are sorry to see you go. Please let us know why you would like to delete your
+              creator account. Your request will be reviewed by an administrator.
+            </p>
+
+            <form onSubmit={handleSubmitDeleteRequest} className="space-y-4">
+              {/* Reason Dropdown */}
+              <div className="space-y-1.5">
+                <Label htmlFor="del-reason">Reason for leaving</Label>
+                <select
+                  id="del-reason"
+                  value={deleteReason}
+                  onChange={(e) => setDeleteReason(e.target.value)}
+                  className="custom-select w-full"
+                  required
+                >
+                  <option value="" disabled className="bg-zinc-900 text-gray-500">
+                    Select a reason...
+                  </option>
+                  <option value="Alternative Found" className="bg-zinc-900">
+                    Found a better alternative
+                  </option>
+                  <option value="Too Difficult" className="bg-zinc-900">
+                    Too complex / difficult to set up
+                  </option>
+                  <option value="No Longer Needed" className="bg-zinc-900">
+                    No longer need Instagram automation
+                  </option>
+                  <option value="Privacy / Security" className="bg-zinc-900">
+                    Privacy or security concerns
+                  </option>
+                  <option value="Other" className="bg-zinc-900">
+                    Other reason
+                  </option>
+                </select>
+              </div>
+
+              {/* Feedback text area */}
+              <div className="space-y-1.5">
+                <Label htmlFor="del-feedback">Additional Comments</Label>
+                <textarea
+                  id="del-feedback"
+                  value={deleteFeedback}
+                  onChange={(e) => setDeleteFeedback(e.target.value)}
+                  placeholder="Share any thoughts or suggestions..."
+                  className="w-full h-20 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-xs placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                />
+              </div>
+
+              {/* Confirmation checkbox */}
+              <div className="flex items-start space-x-2.5 p-3 bg-red-500/5 rounded-xl border border-red-500/10">
+                <input
+                  id="del-confirm"
+                  type="checkbox"
+                  checked={confirmDeleteCheck}
+                  onChange={(e) => setConfirmDeleteCheck(e.target.checked)}
+                  className="h-4 w-4 mt-0.5 rounded border-white/10 bg-white/5 text-red-500 focus:ring-red-500 cursor-pointer"
+                />
+                <label
+                  htmlFor="del-confirm"
+                  className="text-[10px] text-gray-400 cursor-pointer leading-normal select-none"
+                >
+                  I understand that once the admin approves, all my campaigns, connected accounts,
+                  and history will be permanently deleted.
+                </label>
+              </div>
+
+              {/* Form buttons */}
+              <div className="flex justify-end space-x-2 pt-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setShowDeleteModal(false)}
+                  className="text-xs h-9 cursor-pointer"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={submittingDelete || !deleteReason || !confirmDeleteCheck}
+                  className="text-xs h-9 bg-red-500 hover:bg-red-600 border-0 text-white cursor-pointer font-bold"
+                >
+                  {submittingDelete ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Submit Request'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

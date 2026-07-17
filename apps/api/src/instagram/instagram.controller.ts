@@ -9,6 +9,7 @@ import {
   Query,
   Res,
   UseGuards,
+  Body,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ConfigService } from '../config/config.service';
@@ -117,5 +118,33 @@ export class InstagramController {
       this.cacheService.clear(account.instagramId);
     }
     return this.mediaFetchProducer.enqueueFetch(accountId);
+  }
+
+  @Get('conversations')
+  @UseGuards(JwtAuthGuard)
+  async getConversations(@GetUser() user: { id: string }) {
+    return this.instagramService.getConversations(user.id);
+  }
+
+  @Get('conversations/:recipientId/messages')
+  @UseGuards(JwtAuthGuard)
+  async getMessages(@Param('recipientId') recipientId: string, @GetUser() user: { id: string }) {
+    return this.instagramService.getMessages(user.id, recipientId);
+  }
+
+  @Post('conversations/:recipientId/messages')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
+  async sendManualMessage(
+    @Param('recipientId') recipientId: string,
+    @Body() body: { instagramAccountId: string; text: string },
+    @GetUser() user: { id: string },
+  ) {
+    return this.instagramService.sendManualMessage(
+      user.id,
+      recipientId,
+      body.instagramAccountId,
+      body.text,
+    );
   }
 }

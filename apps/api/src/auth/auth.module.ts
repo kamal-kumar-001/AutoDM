@@ -20,6 +20,6 @@ import { ConfigService } from '../config/config.service';
   ],
   controllers: [AuthController],
   providers: [AuthService, AuditLogService, JwtStrategy],
-  exports: [AuthService, JwtStrategy, PassportModule],
+  exports: [AuthService, JwtStrategy, PassportModule, AuditLogService],
 })
 export class AuthModule {}

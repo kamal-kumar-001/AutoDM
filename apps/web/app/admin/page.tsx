@@ -6,16 +6,18 @@ import { useRouter } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/layout';
 import { AdminCreators } from '@/components/admin/admin-creators';
 import { AdminCampaigns } from '@/components/admin/admin-campaigns';
+import { AdminDeleteRequests } from '@/components/admin/admin-delete-requests';
 import { AdminLogs } from '@/components/admin/admin-logs';
 import { AdminQueue } from '@/components/admin/admin-queue';
 import { AdminFeatureFlags } from '@/components/admin/admin-feature-flags';
 import { AdminMonitoring } from '@/components/admin/admin-monitoring';
-import { Shield, Users, Layers, FileText, Server, Flag, Activity } from 'lucide-react';
+import { Shield, Users, Layers, FileText, Server, Flag, Activity, Trash2 } from 'lucide-react';
 import { cn } from '@autodm/ui';
 
 const TABS = [
   { id: 'creators', label: 'Creators', icon: Users },
   { id: 'campaigns', label: 'Campaigns', icon: Layers },
+  { id: 'delete-requests', label: 'Delete Requests', icon: Trash2 },
   { id: 'logs', label: 'Audit Logs', icon: FileText },
   { id: 'queue', label: 'Queue', icon: Server },
   { id: 'flags', label: 'Feature Flags', icon: Flag },
@@ -89,6 +91,7 @@ export default function AdminPage() {
         <div>
           {tab === 'creators' && <AdminCreators />}
           {tab === 'campaigns' && <AdminCampaigns />}
+          {tab === 'delete-requests' && <AdminDeleteRequests />}
           {tab === 'logs' && <AdminLogs />}
           {tab === 'queue' && <AdminQueue />}
           {tab === 'flags' && <AdminFeatureFlags />}

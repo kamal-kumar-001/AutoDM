@@ -311,6 +311,75 @@ export class AuthService {
     return { message: 'Password updated successfully' };
   }
 
+  async createDeleteRequest(userId: string, reason: string, feedback?: string) {
+    const existing = await this.prisma.deleteRequest.findUnique({
+      where: { userId },
+    });
+
+    if (existing) {
+      if (existing.status === 'PENDING') {
+        throw new BadRequestException('You already have a pending deletion request.');
+      }
+      if (existing.status === 'APPROVED') {
+        throw new BadRequestException('Your account deletion request has already been approved.');
+      }
+    }
+
+    const request = await this.prisma.deleteRequest.upsert({
+      where: { userId },
+      create: {
+        userId,
+        reason,
+        feedback: feedback || null,
+        status: 'PENDING',
+      },
+      update: {
+        reason,
+        feedback: feedback || null,
+        status: 'PENDING',
+      },
+    });
+
+    await this.auditLogService.log({
+      userId,
+      action: 'USER_DELETE_REQUEST_CREATE',
+      details: JSON.stringify({ reason }),
+    });
+
+    return request;
+  }
+
+  async cancelDeleteRequest(userId: string) {
+    const existing = await this.prisma.deleteRequest.findUnique({
+      where: { userId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('No delete request found for your account.');
+    }
+
+    if (existing.status === 'APPROVED') {
+      throw new BadRequestException('Cannot cancel request once approved.');
+    }
+
+    await this.prisma.deleteRequest.delete({
+      where: { userId },
+    });
+
+    await this.auditLogService.log({
+      userId,
+      action: 'USER_DELETE_REQUEST_CANCEL',
+    });
+
+    return { success: true };
+  }
+
+  async getDeleteRequest(userId: string) {
+    return this.prisma.deleteRequest.findUnique({
+      where: { userId },
+    });
+  }
+
   private async generateTokens(userId: string, email: string, role: string) {
     const payload = { sub: userId, email, role };
 

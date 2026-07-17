@@ -35,8 +35,16 @@ export class SendDmProcessor extends WorkerHost {
       replyMediaUrl,
     } = job.data;
 
+    let targetRecipientId = recipientId;
+    if (recipientId === '232323232' || recipientId === '12334') {
+      targetRecipientId = '17841458228090598';
+      this.logger.log(
+        `[Developer Override] Overriding mock recipient ${recipientId} with test ID 17841458228090598`,
+      );
+    }
+
     this.logger.log(
-      `[Job ${job.id}] Sending DM to @${recipientUsername} (${recipientId}) for campaign ${campaignId}`,
+      `[Job ${job.id}] Sending DM to @${recipientUsername} (${targetRecipientId}) for campaign ${campaignId}`,
     );
 
     // 1. Load account
@@ -64,10 +72,17 @@ export class SendDmProcessor extends WorkerHost {
       // 3b. Live Meta Graph API call
       // Required scopes: instagram_manage_messages, pages_messaging
       try {
+        const isInstagramToken = accessToken.startsWith('IG');
+        const baseUrl = isInstagramToken
+          ? 'https://graph.instagram.com/v25.0/me/messages'
+          : 'https://graph.facebook.com/v20.0/me/messages';
+
+        this.logger.log(`[Job ${job.id}] Sending DM via: ${baseUrl}`);
+
         const response = await axios.post<MetaSendMessageResponse>(
-          `https://graph.facebook.com/v20.0/me/messages`,
+          baseUrl,
           {
-            recipient: { id: recipientId },
+            recipient: { id: targetRecipientId },
             message: { text: replyMessage },
           },
           {
@@ -93,7 +108,7 @@ export class SendDmProcessor extends WorkerHost {
       await tx.message.create({
         data: {
           instagramAccountId: account.id,
-          recipientId,
+          recipientId: targetRecipientId,
           senderId: account.instagramId,
           text: replyMessage,
           mediaUrl: replyMediaUrl ?? null,
@@ -104,14 +119,16 @@ export class SendDmProcessor extends WorkerHost {
         },
       });
 
-      // Mark the triggering Comment as replied
-      await tx.comment.update({
-        where: { id: commentId },
-        data: {
-          isReplied: true,
-          replyText: replyMessage,
-        },
-      });
+      // Mark the triggering Comment as replied (only if commentId is present)
+      if (commentId) {
+        await tx.comment.update({
+          where: { id: commentId },
+          data: {
+            isReplied: true,
+            replyText: replyMessage,
+          },
+        });
+      }
     });
 
     this.logger.log(

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppLogger } from '../common/logger/logger.service';
 import { CommentAutomationService } from './comment-automation.service';
+import { MessageAutomationService } from './message-automation.service';
 
 /**
  * Routes incoming Meta webhook payloads to the appropriate automation handler.
@@ -14,6 +15,7 @@ export class WebhookRouterService {
     private readonly prisma: PrismaService,
     private readonly logger: AppLogger,
     private readonly commentAutomation: CommentAutomationService,
+    private readonly messageAutomation: MessageAutomationService,
   ) {
     this.logger.setContext('WebhookRouterService');
   }
@@ -25,16 +27,23 @@ export class WebhookRouterService {
       for (const entry of entries) {
         const instagramId: string = entry?.id;
 
-        // --- Comment changes ---
+        // --- Comment & Message changes ---
         const changes: any[] = entry?.changes ?? [];
         for (const change of changes) {
           if (change?.field === 'comments') {
             await this.handleCommentChange(instagramId, change.value, webhookEventId);
+          } else if (change?.field === 'messages') {
+            await this.handleMessageChange(instagramId, change.value, webhookEventId);
           }
         }
 
-        // --- Messaging (future) ---
-        // const messaging: any[] = entry?.messaging ?? [];
+        // --- Messaging ---
+        const messaging: any[] = entry?.messaging ?? [];
+        for (const message of messaging) {
+          if (message?.message) {
+            await this.handleMessageEvent(instagramId, message, webhookEventId);
+          }
+        }
       }
 
       await this.prisma.webhookEvent.update({
@@ -82,6 +91,60 @@ export class WebhookRouterService {
       text,
       fromId,
       fromUsername,
+      webhookEventId,
+    });
+  }
+
+  private async handleMessageEvent(
+    instagramId: string,
+    messagingEvent: Record<string, any>,
+    webhookEventId: string,
+  ) {
+    const messageId: string = messagingEvent?.message?.mid;
+    const text: string = messagingEvent?.message?.text ?? '';
+    const fromId: string = messagingEvent?.sender?.id;
+
+    if (!messageId || !fromId) {
+      this.logger.warn(`Skipping messaging event — missing messageId or fromId.`);
+      return;
+    }
+
+    this.logger.log(
+      `Routing messaging event: messageId=${messageId} from=${fromId} text="${text}"`,
+    );
+
+    await this.messageAutomation.handle({
+      instagramId,
+      messageId,
+      text,
+      fromId,
+      webhookEventId,
+    });
+  }
+
+  private async handleMessageChange(
+    instagramId: string,
+    value: Record<string, any>,
+    webhookEventId: string,
+  ) {
+    const messageId: string = value?.message?.mid;
+    const text: string = value?.message?.text ?? '';
+    const fromId: string = value?.sender?.id;
+
+    if (!messageId || !fromId) {
+      this.logger.warn(`Skipping messaging event changes — missing messageId or fromId.`);
+      return;
+    }
+
+    this.logger.log(
+      `Routing messaging change event: messageId=${messageId} from=${fromId} text="${text}"`,
+    );
+
+    await this.messageAutomation.handle({
+      instagramId,
+      messageId,
+      text,
+      fromId,
       webhookEventId,
     });
   }

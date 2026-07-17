@@ -87,6 +87,7 @@ model User {
   refreshTokens      RefreshToken[]
   subscription       Subscription?
   usageRecords       UsageRecord[]
+  deleteRequest      DeleteRequest?
 }
 
 model Settings {
@@ -359,4 +360,17 @@ model UsageRecord {
   @@unique([userId, metric, period])
   @@index([userId])
   @@index([period])
+}
+
+model DeleteRequest {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reason    String
+  feedback  String?
+  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }

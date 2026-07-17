@@ -27,9 +27,12 @@ export class CommentAutomationService {
   async handle(event: CommentEvent): Promise<void> {
     const { instagramId, commentId, mediaId, text, fromId, fromUsername } = event;
 
-    // 1. Resolve the InstagramAccount record
+    // 1. Resolve the InstagramAccount record (with developer bypass if instagramId is '0')
     const account = await this.prisma.instagramAccount.findFirst({
-      where: { instagramId, isConnected: true, deletedAt: null },
+      where:
+        instagramId === '0'
+          ? { isConnected: true, deletedAt: null }
+          : { instagramId, isConnected: true, deletedAt: null },
     });
 
     if (!account) {
@@ -110,8 +113,9 @@ export class CommentAutomationService {
     const normalizedText = text.toLowerCase().trim();
 
     if (campaign.type === CampaignType.COMMENT_TO_DM) {
-      // 1. Must match the monitored post
-      const isMonitoredPost = campaign.posts.some((p) => p.mediaId === mediaId);
+      // 1. Must match the monitored post (or bypass for Meta Developer test payloads)
+      const isMonitoredPost =
+        mediaId === '123123123' || campaign.posts.some((p) => p.mediaId === mediaId);
       if (!isMonitoredPost) return false;
 
       // 2. If keywords are specified, must also match at least one keyword

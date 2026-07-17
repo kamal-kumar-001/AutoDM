@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FeatureFlagService } from '../billing/feature-flag.service';
 import { MonitoringService } from '../monitoring/monitoring.service';
+import { AuditLogService } from '../auth/audit-log.service';
 import { UserRole, CampaignStatus, Plan } from '@prisma/client';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class AdminService {
     private readonly prisma: PrismaService,
     private readonly featureFlagService: FeatureFlagService,
     private readonly monitoringService: MonitoringService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   // ─── Creators ────────────────────────────────────────────────────
@@ -173,6 +175,60 @@ export class AdminService {
       orderBy: { createdAt: 'desc' },
       include: { user: { select: { email: true, name: true } } },
     });
+  }
+
+  async getDeleteRequests(opts: { page: number; limit: number }) {
+    const { page, limit } = opts;
+    const skip = (page - 1) * limit;
+
+    const [requests, total] = await Promise.all([
+      this.prisma.deleteRequest.findMany({
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              email: true,
+              name: true,
+              role: true,
+              createdAt: true,
+            },
+          },
+        },
+      }),
+      this.prisma.deleteRequest.count(),
+    ]);
+
+    return { data: requests, total, page, limit };
+  }
+
+  async approveDeleteRequests(ids: string[]) {
+    const requests = await this.prisma.deleteRequest.findMany({
+      where: { id: { in: ids } },
+      select: { userId: true },
+    });
+
+    const userIds = requests.map((r) => r.userId);
+
+    const deleteResult = await this.prisma.user.deleteMany({
+      where: { id: { in: userIds } },
+    });
+
+    await this.auditLogService.log({
+      action: 'ADMIN_USER_BULK_DELETE_APPROVE',
+      details: JSON.stringify({ count: deleteResult.count, userIds }),
+    });
+
+    return { count: deleteResult.count };
+  }
+
+  async rejectDeleteRequests(ids: string[]) {
+    const result = await this.prisma.deleteRequest.deleteMany({
+      where: { id: { in: ids } },
+    });
+
+    return { count: result.count };
   }
 
   // ─── Feature Flags ───────────────────────────────────────────────
