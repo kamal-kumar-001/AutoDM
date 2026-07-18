@@ -9,6 +9,7 @@ export interface SendDmPayload {
   recipientId: string; // Native Instagram user ID
   recipientUsername: string;
   commentId?: string; // Internal DB Comment.id (optional)
+  igCommentId?: string; // Native Meta Instagram comment ID (optional)
   replyMessage: string;
   replyMediaUrl?: string;
 }

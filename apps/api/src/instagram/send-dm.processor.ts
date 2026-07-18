@@ -31,6 +31,7 @@ export class SendDmProcessor extends WorkerHost {
       recipientId,
       recipientUsername,
       commentId,
+      igCommentId,
       replyMessage,
       replyMediaUrl,
     } = job.data;
@@ -59,6 +60,9 @@ export class SendDmProcessor extends WorkerHost {
 
     // 2. Decrypt access token
     const accessToken = this.encryptionService.decrypt(account.accessToken);
+    this.logger.log(
+      `[Job ${job.id}] Decrypted token starts with: "${accessToken.substring(0, 10)}..." length=${accessToken.length}`,
+    );
 
     let messageId: string;
     let sendStatus: MessageStatus = MessageStatus.SENT;
@@ -69,20 +73,25 @@ export class SendDmProcessor extends WorkerHost {
       this.logger.log(`[Job ${job.id}] Sandbox mode — mocking Meta API send DM.`);
       messageId = `mock_msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     } else {
-      // 3b. Live Meta Graph API call
-      // Required scopes: instagram_manage_messages, pages_messaging
+      // 3b. Live Meta Graph API call — Instagram Messaging API
+      // Docs: https://developers.facebook.com/docs/instagram-messaging/send-messages
       try {
-        const isInstagramToken = accessToken.startsWith('IG');
-        const baseUrl = isInstagramToken
-          ? 'https://graph.instagram.com/v25.0/me/messages'
-          : 'https://graph.facebook.com/v20.0/me/messages';
+        // Facebook Page Access Tokens (starting with EAA) must send DMs via the Facebook Graph API messages endpoint
+        const baseUrl = `https://graph.facebook.com/v20.0/me/messages`;
 
-        this.logger.log(`[Job ${job.id}] Sending DM via: ${baseUrl}`);
+        // Determine recipient payload: Comment-to-DM (Private Reply) uses comment_id, standard DM uses recipient id
+        const recipientPayload = igCommentId
+          ? { comment_id: igCommentId }
+          : { id: targetRecipientId };
+
+        this.logger.log(
+          `[Job ${job.id}] Sending DM via: ${baseUrl}. Recipient config: ${JSON.stringify(recipientPayload)}`,
+        );
 
         const response = await axios.post<MetaSendMessageResponse>(
           baseUrl,
           {
-            recipient: { id: targetRecipientId },
+            recipient: recipientPayload,
             message: { text: replyMessage },
           },
           {
@@ -92,8 +101,15 @@ export class SendDmProcessor extends WorkerHost {
         );
         messageId = response.data.message_id;
         this.logger.log(`[Job ${job.id}] Meta API success — message_id=${messageId}`);
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
+      } catch (error: any) {
+        // Log the full Meta API error response for debugging
+        const metaError = error?.response?.data?.error;
+        if (metaError) {
+          this.logger.error(
+            `[Job ${job.id}] Meta API Error: code=${metaError.code} subcode=${metaError.error_subcode} type=${metaError.type} message="${metaError.message}"`,
+          );
+        }
+        const msg = metaError?.message || (error instanceof Error ? error.message : String(error));
         this.logger.error(`[Job ${job.id}] Meta API failed: ${msg}`);
         sendStatus = MessageStatus.FAILED;
         errorMsg = msg;

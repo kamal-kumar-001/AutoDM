@@ -92,6 +92,7 @@ export class CommentAutomationService {
         recipientId: fromId,
         recipientUsername: fromUsername,
         commentId: commentRecord.id,
+        igCommentId: commentId,
         replyMessage: campaign.replyMessage,
         replyMediaUrl: campaign.replyMediaUrl ?? undefined,
       });
