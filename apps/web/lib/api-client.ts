@@ -44,6 +44,7 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
   const url = `${API_BASE_URL}${path}`;
 
   const headers = new Headers(options?.headers);
+  headers.set('ngrok-skip-browser-warning', 'true');
   if (!headers.has('Content-Type') && !(options?.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }

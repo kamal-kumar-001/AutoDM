@@ -1,52 +1,53 @@
 import { Injectable } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { ConfigService } from '../config/config.service';
 import { AppLogger } from '../common/logger/logger.service';
 
 @Injectable()
 export class MailService {
-  private transporter: nodemailer.Transporter | null = null;
+  private resend: Resend | null = null;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly logger: AppLogger,
   ) {
     this.logger.setContext('MailService');
-    this.initializeTransporter();
+    this.initializeResend();
   }
 
-  private initializeTransporter() {
-    const host = this.configService.get('SMTP_HOST');
-    const port = this.configService.get('SMTP_PORT');
-    const user = this.configService.get('SMTP_USER');
-    const pass = this.configService.get('SMTP_PASSWORD');
+  private initializeResend() {
+    // If SMTP_PASSWORD is a Resend API key (starts with "re_"), or if they provide a dedicated env variable, use it!
+    const apiKey = this.configService.get('SMTP_PASSWORD') || process.env.RESEND_API_KEY;
 
-    if (host && port) {
-      this.transporter = nodemailer.createTransport({
-        host,
-        port,
-        secure: port === 465,
-        auth: user && pass ? { user, pass } : undefined,
-      });
-      this.logger.log(`SMTP Mail Transporter configured: ${host}:${port}`);
+    if (apiKey && (apiKey.startsWith('re_') || process.env.RESEND_API_KEY)) {
+      this.resend = new Resend(apiKey);
+      this.logger.log('Resend Mail client configured successfully.');
     } else {
-      this.logger.warn('No SMTP configuration found. Emails will be logged to the console.');
+      this.logger.warn(
+        'No Resend API Key / SMTP configuration found. Emails will be logged to the console.',
+      );
     }
   }
 
   async sendEmail(to: string, subject: string, html: string, text?: string) {
-    const from = this.configService.get('SMTP_FROM');
+    const from = this.configService.get('SMTP_FROM') || 'onboarding@resend.dev';
 
-    if (this.transporter) {
+    if (this.resend) {
       try {
-        await this.transporter.sendMail({
+        const { data, error } = await this.resend.emails.send({
           from,
-          to,
+          to: [to],
           subject,
-          text,
           html,
+          text,
         });
-        this.logger.log(`Email sent successfully to ${to}`);
+
+        if (error) {
+          this.logger.error(`Resend API error: ${JSON.stringify(error)}`);
+          throw new Error(error.message);
+        }
+
+        this.logger.log(`Email sent successfully to ${to} (id: ${data?.id})`);
       } catch (error) {
         this.logger.error(
           `Failed to send email to ${to}`,
