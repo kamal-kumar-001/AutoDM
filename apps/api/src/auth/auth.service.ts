@@ -182,6 +182,29 @@ export class AuthService {
     return { message: 'Email address verified successfully' };
   }
 
+  async resendVerificationEmail(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User account not found');
+    }
+
+    if (user.isVerified) {
+      return { message: 'Your email address is already verified.' };
+    }
+
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { verificationToken },
+    });
+
+    await this.mailService.sendVerificationEmail(user.email, verificationToken);
+    return { message: 'Verification link sent to your email.' };
+  }
+
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     const user = await this.prisma.user.findUnique({
       where: { email: forgotPasswordDto.email.toLowerCase() },

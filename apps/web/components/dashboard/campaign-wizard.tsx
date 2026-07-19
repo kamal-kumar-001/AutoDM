@@ -427,8 +427,8 @@ export function CampaignWizard({
                             },
                             {
                               id: 'KEYWORD_TO_DM',
-                              title: 'Keyword DM',
-                              desc: 'Reply to inbox keywords',
+                              title: 'DM Auto Reply',
+                              desc: 'Auto-reply to trigger keywords',
                             },
                             {
                               id: 'WELCOME_DM',
@@ -663,11 +663,13 @@ export function CampaignWizard({
                         />
                       </div>
 
-                      {type === 'COMMENT_TO_DM' && (
+                      {(type === 'COMMENT_TO_DM' || type === 'KEYWORD_TO_DM') && (
                         <div className="space-y-3 pt-3 border-t border-white/5">
                           <div className="flex items-center justify-between">
                             <div className="flex flex-col">
-                              <Label className="font-bold text-white">Public Comment Reply</Label>
+                              <Label className="font-bold text-white">
+                                Public Comment Reply (Optional)
+                              </Label>
                               <span className="text-[10px] text-gray-500">
                                 Reply publicly to commenter on successful DM delivery
                               </span>

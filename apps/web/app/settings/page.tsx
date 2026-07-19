@@ -255,7 +255,42 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="prof-email">Email Address</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="prof-email">Email Address</Label>
+                      {(session?.user as any)?.isVerified !== false ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                          Verified ✓
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                            Unverified
+                          </span>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const toastId = toast.loading('Sending verification email...');
+                              try {
+                                await fetch('/api/auth/resend-verification', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ email: userEmail }),
+                                });
+                                toast.success('Verification link sent! Check your inbox.', {
+                                  id: toastId,
+                                });
+                              } catch {
+                                toast.error('Failed to send verification link', { id: toastId });
+                              }
+                            }}
+                            className="text-[10px] text-primary hover:underline font-semibold cursor-pointer"
+                          >
+                            Resend Link
+                          </button>
+                        </span>
+                      )}
+                    </div>
                     <Input
                       id="prof-email"
                       value={userEmail}

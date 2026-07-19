@@ -114,6 +114,39 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               transition={{ duration: 0.25, ease: 'easeInOut' }}
               className="relative z-10 max-w-7xl mx-auto space-y-6"
             >
+              {/* Email Verification Banner */}
+              {session?.user && (session.user as any).isVerified === false && (
+                <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-sm">
+                  <div className="flex items-center space-x-2.5 text-amber-300">
+                    <span className="flex-shrink-0 text-base">⚠️</span>
+                    <div>
+                      <strong className="font-bold text-amber-200">Email Not Verified:</strong>{' '}
+                      Please verify your email address to ensure full account access and
+                      deliverability.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const toastId = toast.loading('Sending verification email...');
+                      try {
+                        await fetch('/api/auth/resend-verification', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ email: session.user?.email }),
+                        });
+                        toast.success('Verification link sent! Check your inbox.', { id: toastId });
+                      } catch {
+                        toast.error('Failed to send verification email', { id: toastId });
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-bold border border-amber-500/30 transition-all text-[11px] whitespace-nowrap cursor-pointer"
+                  >
+                    Resend Verification Link
+                  </button>
+                </div>
+              )}
+
               {children}
             </motion.div>
           </AnimatePresence>

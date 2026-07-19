@@ -232,7 +232,7 @@ export default function AutomationsPage() {
               {[
                 { id: 'ALL', label: 'All Formats' },
                 { id: 'COMMENT_TO_DM', label: 'Comment to DM' },
-                { id: 'KEYWORD_TO_DM', label: 'Keyword DM' },
+                { id: 'KEYWORD_TO_DM', label: 'DM Auto Reply' },
                 { id: 'WELCOME_DM', label: 'Welcome DM' },
               ].map((f) => (
                 <button
