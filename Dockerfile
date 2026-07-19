@@ -45,4 +45,4 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 
 EXPOSE 4000
-CMD ["sh", "-c", "npx prisma db push --schema=apps/api/prisma/schema.prisma && node apps/api/dist/main.js"]
+CMD ["sh", "-c", "pnpm --filter @autodm/api exec prisma db push --schema=apps/api/prisma/schema.prisma && node apps/api/dist/main.js"]
