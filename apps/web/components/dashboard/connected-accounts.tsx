@@ -13,7 +13,21 @@ interface ConnectedAccount {
   displayName: string | null;
   profilePicture: string | null;
   isConnected: boolean;
+  followersCount: number;
+  followingCount: number;
+  mediaCount: number;
   createdAt: string;
+}
+
+function formatNumber(num: number): string {
+  if (!num) return '0';
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+  }
+  return num.toString();
 }
 
 export function ConnectedAccounts() {
@@ -104,8 +118,9 @@ export function ConnectedAccounts() {
                         <span className="text-xs font-bold text-white truncate">
                           @{account.username}
                         </span>
-                        <span className="text-[9px] text-gray-500 truncate">
-                          {account.displayName || 'Instagram Creator'}
+                        <span className="text-[9px] text-gray-400 font-semibold mt-0.5 truncate">
+                          {formatNumber(account.followersCount)} followers •{' '}
+                          {formatNumber(account.mediaCount)} posts
                         </span>
                       </div>
                     </div>

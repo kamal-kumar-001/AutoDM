@@ -58,11 +58,45 @@ export class SendDmProcessor extends WorkerHost {
       return;
     }
 
+    // 1b. Load campaign details (if not manual)
+    const campaign =
+      campaignId !== 'manual'
+        ? await this.prisma.campaign.findUnique({ where: { id: campaignId } })
+        : null;
+
     // 2. Decrypt access token
     const accessToken = this.encryptionService.decrypt(account.accessToken);
     this.logger.log(
       `[Job ${job.id}] Decrypted token starts with: "${accessToken.substring(0, 10)}..." length=${accessToken.length}`,
     );
+
+    // Resolve name from Meta Profile API to handle personalized templates ({name}, {username})
+    let recipientName = recipientUsername;
+    if (!accessToken.startsWith('mock_')) {
+      try {
+        const profileRes = await axios.get(
+          `https://graph.facebook.com/v20.0/${targetRecipientId}`,
+          {
+            params: {
+              fields: 'name',
+              access_token: accessToken,
+            },
+            timeout: 5000,
+          },
+        );
+        if (profileRes.data?.name) {
+          recipientName = profileRes.data.name;
+        }
+      } catch (e: any) {
+        this.logger.warn(
+          `[Job ${job.id}] Failed to fetch profile name for recipient ${targetRecipientId}: ${e.message}`,
+        );
+      }
+    }
+
+    const personalizedMessage = replyMessage
+      .replace(/{username}/g, recipientUsername)
+      .replace(/{name}/g, recipientName);
 
     let messageId: string;
     let sendStatus: MessageStatus = MessageStatus.SENT;
@@ -92,7 +126,7 @@ export class SendDmProcessor extends WorkerHost {
           baseUrl,
           {
             recipient: recipientPayload,
-            message: { text: replyMessage },
+            message: { text: personalizedMessage },
           },
           {
             params: { access_token: accessToken },
@@ -126,12 +160,13 @@ export class SendDmProcessor extends WorkerHost {
           instagramAccountId: account.id,
           recipientId: targetRecipientId,
           senderId: account.instagramId,
-          text: replyMessage,
+          text: personalizedMessage,
           mediaUrl: replyMediaUrl ?? null,
           messageId,
           direction: MessageDirection.OUTGOING,
           status: sendStatus,
           errorMessage: errorMsg,
+          campaignId: campaignId === 'manual' ? null : campaignId,
         },
       });
 
@@ -150,5 +185,43 @@ export class SendDmProcessor extends WorkerHost {
     this.logger.log(
       `[Job ${job.id}] DM delivered to @${recipientUsername} — messageId=${messageId}`,
     );
+
+    // 5. Post public comment reply (outside DB transaction)
+    if (
+      sendStatus === MessageStatus.SENT &&
+      commentId &&
+      campaign?.commentReplyEnabled &&
+      campaign.commentReplyText
+    ) {
+      try {
+        const triggeringComment = await this.prisma.comment.findUnique({
+          where: { id: commentId },
+        });
+
+        if (triggeringComment?.commentId) {
+          const commentReplyUrl = `https://graph.facebook.com/v20.0/${triggeringComment.commentId}/replies`;
+          this.logger.log(`[Job ${job.id}] Posting public comment reply via: ${commentReplyUrl}`);
+
+          const personalizedCommentReply = campaign.commentReplyText
+            .replace(/{username}/g, recipientUsername)
+            .replace(/{name}/g, recipientName);
+
+          await axios.post(
+            commentReplyUrl,
+            { message: personalizedCommentReply },
+            {
+              params: { access_token: accessToken },
+              timeout: 10000,
+            },
+          );
+          this.logger.log(`[Job ${job.id}] Successfully posted public comment reply.`);
+        }
+      } catch (replyError: any) {
+        const metaError = replyError?.response?.data?.error?.message;
+        this.logger.error(
+          `[Job ${job.id}] Failed to post public comment reply: ${metaError || replyError.message}`,
+        );
+      }
+    }
   }
 }

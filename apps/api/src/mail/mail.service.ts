@@ -16,10 +16,10 @@ export class MailService {
   }
 
   private initializeResend() {
-    // If SMTP_PASSWORD is a Resend API key (starts with "re_"), or if they provide a dedicated env variable, use it!
-    const apiKey = this.configService.get('SMTP_PASSWORD') || process.env.RESEND_API_KEY;
+    const apiKey =
+      this.configService.get('RESEND_API_KEY') || this.configService.get('SMTP_PASSWORD');
 
-    if (apiKey && (apiKey.startsWith('re_') || process.env.RESEND_API_KEY)) {
+    if (apiKey && (apiKey.startsWith('re_') || apiKey.length > 10)) {
       this.resend = new Resend(apiKey);
       this.logger.log('Resend Mail client configured successfully.');
     } else {

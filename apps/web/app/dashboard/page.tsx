@@ -118,8 +118,7 @@ export default function DashboardPage() {
             <Button
               onClick={handleConnectAccount}
               size="sm"
-              variant="secondary"
-              className="text-xs font-semibold gap-2 h-9 cursor-pointer"
+              className="text-xs font-bold gap-2 h-9 bg-gradient-to-r from-[#1D4ED8] to-[#1E3A8A] hover:opacity-90 transition-all text-white border-0 shadow-[0_0_15px_rgba(29,78,216,0.2)] cursor-pointer"
             >
               <UserPlus className="h-4 w-4" />
               <span>Connect IG</span>

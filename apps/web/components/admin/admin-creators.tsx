@@ -29,6 +29,8 @@ export function AdminCreators() {
   const [searchInput, setSearchInput] = React.useState('');
   const [loading, setLoading] = React.useState(true);
   const [acting, setActing] = React.useState<string | null>(null);
+  const [editingCreator, setEditingCreator] = React.useState<Creator | null>(null);
+  const [selectedPlan, setSelectedPlan] = React.useState<'FREE' | 'PRO' | 'ENTERPRISE'>('FREE');
 
   const load = React.useCallback(() => {
     setLoading(true);
@@ -74,6 +76,33 @@ export function AdminCreators() {
       load();
     } catch {
       toast.error('Failed to unsuspend user');
+    } finally {
+      setActing(null);
+    }
+  };
+
+  const handleStartEditPlan = (creator: Creator) => {
+    setEditingCreator(creator);
+    setSelectedPlan((creator.subscription?.plan as any) || 'FREE');
+  };
+
+  const savePlanOverride = async () => {
+    if (!editingCreator) return;
+    setActing(editingCreator.id);
+
+    const toastId = toast.loading(
+      `Overriding subscription for @${editingCreator.name || 'creator'}...`,
+    );
+    try {
+      await apiRequest(`/admin/creators/${editingCreator.id}/plan`, {
+        method: 'PATCH',
+        body: JSON.stringify({ plan: selectedPlan }),
+      });
+      toast.success('Subscription plan modified successfully', { id: toastId });
+      setEditingCreator(null);
+      load();
+    } catch (err) {
+      toast.error('Failed to override subscription plan', { id: toastId });
     } finally {
       setActing(null);
     }
@@ -180,6 +209,14 @@ export function AdminCreators() {
                         >
                           <UserCheck className="h-3 w-3" />
                         </button>
+                        <button
+                          onClick={() => handleStartEditPlan(u)}
+                          disabled={acting === u.id}
+                          title="Override Plan"
+                          className="p-1.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 disabled:opacity-50 transition-colors"
+                        >
+                          <Crown className="h-3 w-3" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -211,6 +248,54 @@ export function AdminCreators() {
           </div>
         )}
       </div>
+      {/* Plan Override Modal */}
+      {editingCreator && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            onClick={() => setEditingCreator(null)}
+            className="fixed inset-0 bg-black/75 backdrop-blur-sm cursor-pointer"
+          />
+          <div className="w-full max-w-sm glass-card border-gradient p-5 rounded-xl shadow-glass z-10 space-y-4 font-sans">
+            <h3 className="text-sm font-extrabold text-white">
+              Override Subscription: @{editingCreator.name || editingCreator.email.split('@')[0]}
+            </h3>
+            <div className="space-y-2">
+              <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                Select Billing Plan
+              </label>
+              <select
+                value={selectedPlan}
+                onChange={(e) => setSelectedPlan(e.target.value as 'FREE' | 'PRO' | 'ENTERPRISE')}
+                className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-primary/50"
+              >
+                <option value="FREE" className="bg-background text-white">
+                  FREE (1 Campaign, 100 DMs)
+                </option>
+                <option value="PRO" className="bg-background text-white">
+                  PRO (10 Campaigns, 5k DMs)
+                </option>
+                <option value="ENTERPRISE" className="bg-background text-white">
+                  ENTERPRISE (Unlimited)
+                </option>
+              </select>
+            </div>
+            <div className="flex justify-end space-x-2 pt-2 border-t border-white/5">
+              <button
+                onClick={() => setEditingCreator(null)}
+                className="px-3 py-1.5 rounded-md bg-white/5 border border-white/10 text-xs text-gray-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={savePlanOverride}
+                className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-xs font-bold hover:opacity-90"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

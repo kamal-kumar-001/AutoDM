@@ -159,12 +159,18 @@ export function EmptyState({ onConnect, onCreateCampaign }: EmptyStateProps) {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 pt-2 w-full max-w-xs sm:max-w-none justify-center">
-        <Button onClick={onConnect} className="text-xs font-bold gap-2">
+        <Button
+          onClick={onConnect}
+          className="text-xs font-bold gap-2 bg-gradient-to-r from-primary to-accent-cyan hover:opacity-90 transition-all text-primary-foreground border-0 shadow-[0_0_15px_rgba(0,187,136,0.3)] cursor-pointer"
+        >
           <Instagram className="h-4 w-4" />
           <span>Connect Instagram</span>
           <ArrowRight className="h-3 w-3" />
         </Button>
-        <Button onClick={onCreateCampaign} variant="secondary" className="text-xs font-bold gap-2">
+        <Button
+          onClick={onCreateCampaign}
+          className="text-xs font-bold gap-2 bg-gradient-to-r from-[#1D4ED8] to-[#1E3A8A] hover:opacity-90 transition-all text-white border-0 shadow-[0_0_15px_rgba(29,78,216,0.2)] cursor-pointer"
+        >
           <Layers className="h-4 w-4" />
           <span>Create Campaign</span>
         </Button>

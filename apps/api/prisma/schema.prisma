@@ -24,6 +24,7 @@ enum CampaignType {
   COMMENT_TO_DM
   KEYWORD_TO_DM
   WELCOME_DM
+  STORY_REPLY_TO_DM
 }
 
 enum MatchingRule {
@@ -88,6 +89,7 @@ model User {
   subscription       Subscription?
   usageRecords       UsageRecord[]
   deleteRequest      DeleteRequest?
+  invoices           Invoice[]
 }
 
 model Settings {
@@ -111,6 +113,9 @@ model InstagramAccount {
   profilePicture  String?
   accessToken     String     // Will be encrypted transparently
   instagramPageId String?
+  followersCount  Int        @default(0)
+  followingCount  Int        @default(0)
+  mediaCount      Int        @default(0)
   isConnected     Boolean    @default(true)
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
@@ -135,11 +140,15 @@ model Campaign {
   type               CampaignType
   replyMessage       String
   replyMediaUrl      String?
+  commentReplyEnabled Boolean        @default(false)
+  commentReplyText    String?
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
   deletedAt          DateTime?        // Soft delete support
   posts              Post[]
   keywords           Keyword[]
+  comments           Comment[]
+  messages           Message[]
 
   @@index([userId])
   @@index([instagramAccountId])
@@ -197,12 +206,15 @@ model Comment {
   userId             String           // Native Instagram User ID of commenters
   isReplied          Boolean          @default(false)
   replyText          String?
+  campaignId         String?
+  campaign           Campaign?        @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
   @@index([instagramAccountId])
   @@index([mediaId])
   @@index([isReplied])
+  @@index([campaignId])
   @@index([createdAt])
 }
 
@@ -218,12 +230,15 @@ model Message {
   direction          MessageDirection
   status             MessageStatus    @default(SENT)
   errorMessage       String?
+  campaignId         String?
+  campaign           Campaign?        @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
   @@index([instagramAccountId])
   @@index([recipientId])
   @@index([status])
+  @@index([campaignId])
   @@index([createdAt])
 }
 
@@ -318,21 +333,60 @@ enum SubscriptionStatus {
   EXPIRED
 }
 
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
 model Subscription {
-  id         String             @id @default(uuid())
-  userId     String             @unique
-  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan       Plan               @default(FREE)
-  status     SubscriptionStatus @default(TRIAL)
-  trialEnds  DateTime?
-  expiresAt  DateTime?
-  // Razorpay hooks in here — just store IDs when integrated
-  externalId String?            // e.g. razorpay subscription id
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
+  id                 String             @id @default(uuid())
+  userId             String             @unique
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan               Plan               @default(FREE)
+  status             SubscriptionStatus @default(TRIAL)
+  cycle              BillingCycle       @default(MONTHLY)
+  trialEnds          DateTime?
+  expiresAt          DateTime?
+  cancelAtPeriodEnd  Boolean            @default(false)
+  billingAddress     Json?
+  externalId         String?            // e.g. razorpay subscription / payment link id
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   @@index([userId])
   @@index([plan])
+}
+
+model Invoice {
+  id             String       @id @default(uuid())
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount         Float
+  currency       String       @default("INR")
+  plan           Plan
+  cycle          BillingCycle @default(MONTHLY)
+  status         String       @default("PAID")
+  paymentId      String?
+  paymentLinkId  String?
+  pdfUrl         String?
+  billingDetails Json?
+  createdAt      DateTime     @default(now())
+
+  @@index([userId])
+}
+
+model BillingPlan {
+  id             String    @id @default(uuid())
+  key            Plan      @unique
+  name           String
+  description    String?
+  priceMonthly   Float     @default(0.0)
+  priceYearly    Float     @default(0.0)
+  campaignLimit  Int       @default(1)
+  keywordLimit   Int       @default(3)
+  dmLimitMonthly Int       @default(100)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 model FeatureFlag {

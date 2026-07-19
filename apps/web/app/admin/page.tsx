@@ -3,21 +3,34 @@
 import * as React from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { DashboardLayout } from '@/components/dashboard/layout';
+import { AdminLayout } from '@/components/admin/admin-layout';
+import { AdminStatsDashboard } from '@/components/admin/admin-stats-dashboard';
 import { AdminCreators } from '@/components/admin/admin-creators';
 import { AdminCampaigns } from '@/components/admin/admin-campaigns';
 import { AdminDeleteRequests } from '@/components/admin/admin-delete-requests';
+import { AdminPlans } from '@/components/admin/admin-plans';
 import { AdminLogs } from '@/components/admin/admin-logs';
 import { AdminQueue } from '@/components/admin/admin-queue';
 import { AdminFeatureFlags } from '@/components/admin/admin-feature-flags';
 import { AdminMonitoring } from '@/components/admin/admin-monitoring';
-import { Shield, Users, Layers, FileText, Server, Flag, Activity, Trash2 } from 'lucide-react';
-import { cn } from '@autodm/ui';
+import {
+  Users,
+  Layers,
+  Trash2,
+  CreditCard,
+  FileText,
+  Server,
+  Flag,
+  Activity,
+  BarChart3,
+} from 'lucide-react';
 
 const TABS = [
+  { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
   { id: 'creators', label: 'Creators', icon: Users },
   { id: 'campaigns', label: 'Campaigns', icon: Layers },
   { id: 'delete-requests', label: 'Delete Requests', icon: Trash2 },
+  { id: 'plans', label: 'Billing Plans', icon: CreditCard },
   { id: 'logs', label: 'Audit Logs', icon: FileText },
   { id: 'queue', label: 'Queue', icon: Server },
   { id: 'flags', label: 'Feature Flags', icon: Flag },
@@ -29,7 +42,7 @@ type TabId = (typeof TABS)[number]['id'];
 export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [tab, setTab] = React.useState<TabId>('creators');
+  const [tab, setTab] = React.useState<TabId>('dashboard');
 
   // Client-side role guard
   React.useEffect(() => {
@@ -40,64 +53,42 @@ export default function AdminPage() {
 
   if (status === 'loading') {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="h-8 w-8 rounded-full border-2 border-red-500 border-t-transparent animate-spin" />
+      </div>
     );
   }
 
   if ((session?.user as any)?.role !== 'ADMIN') return null;
 
   return (
-    <DashboardLayout>
+    <AdminLayout activeTab={tab} setActiveTab={setTab}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-red-500/10 border border-red-500/20">
-            <Shield className="h-5 w-5 text-red-400" />
-          </div>
+        <div className="flex justify-between items-center pb-4 border-b border-white/5">
           <div>
-            <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-white to-red-400 bg-clip-text text-transparent">
-              Admin Panel
+            <h1 className="text-2xl font-extrabold text-white tracking-tight capitalize">
+              {tab.replace('-', ' ')}
             </h1>
-            <p className="text-gray-500 text-sm mt-0.5">
-              Full system access — restricted to admins.
+            <p className="text-xs text-gray-500">
+              Manage system-wide {tab.replace('-', ' ')} and parameters.
             </p>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 p-1 rounded-xl bg-white/5 border border-white/5 w-fit">
-          {TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => setTab(id)}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
-                tab === id
-                  ? 'bg-white/10 text-white'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5',
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </button>
-          ))}
-        </div>
-
         {/* Tab Content */}
-        <div>
+        <div className="animate-in fade-in duration-300">
+          {tab === 'dashboard' && <AdminStatsDashboard />}
           {tab === 'creators' && <AdminCreators />}
           {tab === 'campaigns' && <AdminCampaigns />}
           {tab === 'delete-requests' && <AdminDeleteRequests />}
+          {tab === 'plans' && <AdminPlans />}
           {tab === 'logs' && <AdminLogs />}
           {tab === 'queue' && <AdminQueue />}
           {tab === 'flags' && <AdminFeatureFlags />}
           {tab === 'monitoring' && <AdminMonitoring />}
         </div>
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 }

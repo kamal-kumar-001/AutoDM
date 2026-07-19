@@ -33,7 +33,7 @@ export class InstagramController {
   @Get()
   @UseGuards(JwtAuthGuard)
   async getAccounts(@GetUser() user: { id: string }) {
-    return this.prisma.instagramAccount.findMany({
+    const accounts = await this.prisma.instagramAccount.findMany({
       where: { userId: user.id, deletedAt: null },
       select: {
         id: true,
@@ -41,10 +41,20 @@ export class InstagramController {
         username: true,
         displayName: true,
         profilePicture: true,
+        followersCount: true,
+        followingCount: true,
+        mediaCount: true,
         isConnected: true,
         createdAt: true,
       },
     });
+
+    // Asynchronously trigger background stats sync for each account
+    accounts.forEach((acc) => {
+      this.instagramService.syncAccountStats(acc.id).catch(() => null);
+    });
+
+    return accounts;
   }
 
   @Get('connect')

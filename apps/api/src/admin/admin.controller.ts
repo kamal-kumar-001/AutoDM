@@ -185,4 +185,33 @@ export class AdminController {
   getMetrics() {
     return this.adminService.getSystemMetrics();
   }
+
+  @Get('stats')
+  getStats() {
+    return this.adminService.getSaaSStats();
+  }
+
+  // ─── Billing Plans ───────────────────────────────────────────────
+
+  @Get('plans')
+  getBillingPlans() {
+    return this.adminService.getBillingPlans();
+  }
+
+  @Patch('plans/:key')
+  updatePlan(
+    @Param('key') key: Plan,
+    @Body()
+    body: {
+      name?: string;
+      description?: string;
+      priceMonthly?: number;
+      priceYearly?: number;
+      campaignLimit?: number;
+      keywordLimit?: number;
+      dmLimitMonthly?: number;
+    },
+  ) {
+    return this.adminService.updateBillingPlan(key, body);
+  }
 }

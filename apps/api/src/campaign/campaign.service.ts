@@ -4,6 +4,7 @@ import { CreateCampaignDto, UpdateCampaignDto } from './dto/campaign.dto';
 import { CampaignStatus } from '@prisma/client';
 import { AuditLogService } from '../auth/audit-log.service';
 import { AppLogger } from '../common/logger/logger.service';
+import { SubscriptionService } from '../billing/subscription.service';
 
 @Injectable()
 export class CampaignService {
@@ -11,6 +12,7 @@ export class CampaignService {
     private readonly prisma: PrismaService,
     private readonly auditLogService: AuditLogService,
     private readonly logger: AppLogger,
+    private readonly subscriptionService: SubscriptionService,
   ) {
     this.logger.setContext('CampaignService');
   }
@@ -35,6 +37,8 @@ export class CampaignService {
         type: dto.type,
         replyMessage: dto.replyMessage,
         replyMediaUrl: dto.replyMediaUrl || null,
+        commentReplyEnabled: dto.commentReplyEnabled ?? false,
+        commentReplyText: dto.commentReplyText || null,
         status: CampaignStatus.ACTIVE,
         keywords: dto.keywords
           ? {
@@ -60,6 +64,8 @@ export class CampaignService {
       },
     });
 
+    await this.subscriptionService.incrementUsage(userId, 'max_campaigns', 1);
+
     await this.auditLogService.log({
       userId,
       action: 'CAMPAIGN_CREATE',
@@ -70,7 +76,7 @@ export class CampaignService {
   }
 
   async findAll(userId: string, search?: string, status?: CampaignStatus) {
-    return this.prisma.campaign.findMany({
+    const campaigns = await this.prisma.campaign.findMany({
       where: {
         userId,
         deletedAt: null,
@@ -91,11 +97,39 @@ export class CampaignService {
             displayName: true,
           },
         },
+        _count: {
+          select: {
+            comments: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
+
+    return Promise.all(
+      campaigns.map(async (c) => {
+        const sentCount = await this.prisma.message.count({
+          where: { campaignId: c.id, status: 'SENT' },
+        });
+        const failedCount = await this.prisma.message.count({
+          where: { campaignId: c.id, status: 'FAILED' },
+        });
+        const totalDms = sentCount + failedCount;
+        const successRate = totalDms > 0 ? Math.round((sentCount / totalDms) * 100) : 100;
+
+        return {
+          ...c,
+          metrics: {
+            totalComments: c._count.comments,
+            totalDmsSent: sentCount,
+            failedDms: failedCount,
+            successRate,
+          },
+        };
+      }),
+    );
   }
 
   async findOne(userId: string, id: string) {
@@ -110,6 +144,11 @@ export class CampaignService {
             displayName: true,
           },
         },
+        _count: {
+          select: {
+            comments: true,
+          },
+        },
       },
     });
 
@@ -117,7 +156,24 @@ export class CampaignService {
       throw new NotFoundException('Campaign not found');
     }
 
-    return campaign;
+    const sentCount = await this.prisma.message.count({
+      where: { campaignId: campaign.id, status: 'SENT' },
+    });
+    const failedCount = await this.prisma.message.count({
+      where: { campaignId: campaign.id, status: 'FAILED' },
+    });
+    const totalDms = sentCount + failedCount;
+    const successRate = totalDms > 0 ? Math.round((sentCount / totalDms) * 100) : 100;
+
+    return {
+      ...campaign,
+      metrics: {
+        totalComments: campaign._count.comments,
+        totalDmsSent: sentCount,
+        failedDms: failedCount,
+        successRate,
+      },
+    };
   }
 
   async update(userId: string, id: string, dto: UpdateCampaignDto) {
@@ -139,6 +195,9 @@ export class CampaignService {
         instagramAccountId: dto.instagramAccountId || undefined,
         replyMessage: dto.replyMessage || undefined,
         replyMediaUrl: dto.replyMediaUrl || null,
+        commentReplyEnabled:
+          dto.commentReplyEnabled !== undefined ? dto.commentReplyEnabled : undefined,
+        commentReplyText: dto.commentReplyText || null,
       },
     });
 
@@ -286,6 +345,8 @@ export class CampaignService {
         deletedAt: new Date(),
       },
     });
+
+    await this.subscriptionService.incrementUsage(userId, 'max_campaigns', -1);
 
     await this.auditLogService.log({
       userId,

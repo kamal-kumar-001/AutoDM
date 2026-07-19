@@ -113,11 +113,14 @@ export class WebhookRouterService {
       `Routing messaging event: messageId=${messageId} from=${fromId} text="${text}"`,
     );
 
+    const isStoryReply = !!messagingEvent?.message?.reply_to?.story;
+
     await this.messageAutomation.handle({
       instagramId,
       messageId,
       text,
       fromId,
+      isStoryReply,
       webhookEventId,
     });
   }
@@ -140,11 +143,14 @@ export class WebhookRouterService {
       `Routing messaging change event: messageId=${messageId} from=${fromId} text="${text}"`,
     );
 
+    const isStoryReply = !!value?.message?.reply_to?.story;
+
     await this.messageAutomation.handle({
       instagramId,
       messageId,
       text,
       fromId,
+      isStoryReply,
       webhookEventId,
     });
   }

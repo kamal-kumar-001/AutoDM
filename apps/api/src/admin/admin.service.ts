@@ -265,4 +265,119 @@ export class AdminService {
   getSystemMetrics() {
     return this.monitoringService.getSystemMetrics();
   }
+
+  // ─── Billing Plans ───────────────────────────────────────────────
+  getBillingPlans() {
+    return this.prisma.billingPlan.findMany({
+      orderBy: { key: 'asc' },
+    });
+  }
+
+  async updateBillingPlan(
+    key: Plan,
+    data: {
+      name?: string;
+      description?: string;
+      priceMonthly?: number;
+      priceYearly?: number;
+      campaignLimit?: number;
+      keywordLimit?: number;
+      dmLimitMonthly?: number;
+    },
+  ) {
+    const updated = await this.prisma.billingPlan.update({
+      where: { key },
+      data,
+    });
+
+    await this.auditLogService.log({
+      action: 'ADMIN_PLAN_UPDATE',
+      details: JSON.stringify({ key, data }),
+    });
+
+    return updated;
+  }
+
+  async getSaaSStats() {
+    const [
+      creatorsCount,
+      campaignsCount,
+      usageRecords,
+      subscriptions,
+      billingPlans,
+      recentInvoices,
+    ] = await Promise.all([
+      this.prisma.user.count({ where: { role: UserRole.CREATOR } }),
+      this.prisma.campaign.count({ where: { deletedAt: null } }),
+      this.prisma.usageRecord.findMany({
+        where: { metric: 'max_dms' },
+      }),
+      this.prisma.subscription.findMany({
+        where: { status: 'ACTIVE' },
+      }),
+      this.prisma.billingPlan.findMany(),
+      this.prisma.invoice.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: { user: { select: { name: true, email: true } } },
+      }),
+    ]);
+
+    const totalDMsSent = usageRecords.reduce((acc, curr) => acc + curr.value, 0);
+
+    const monthlyPriceMap = Object.fromEntries(billingPlans.map((p) => [p.key, p.priceMonthly]));
+    const yearlyPriceMap = Object.fromEntries(billingPlans.map((p) => [p.key, p.priceYearly]));
+
+    const tiersBreakdown = {
+      FREE: 0,
+      PRO: 0,
+      ENTERPRISE: 0,
+    };
+
+    let calculatedMRR = 0;
+
+    for (const sub of subscriptions) {
+      const plan = sub.plan;
+      const isYearly = sub.cycle === 'YEARLY';
+      if (plan === Plan.PRO) {
+        tiersBreakdown.PRO++;
+        calculatedMRR += isYearly
+          ? (yearlyPriceMap[Plan.PRO] ?? 9990) / 12
+          : (monthlyPriceMap[Plan.PRO] ?? 999);
+      } else if (plan === Plan.ENTERPRISE) {
+        tiersBreakdown.ENTERPRISE++;
+        calculatedMRR += isYearly
+          ? (yearlyPriceMap[Plan.ENTERPRISE] ?? 49990) / 12
+          : (monthlyPriceMap[Plan.ENTERPRISE] ?? 4999);
+      } else {
+        tiersBreakdown.FREE++;
+      }
+    }
+
+    const activeSubscribers = subscriptions.length;
+
+    const recentSignups = await this.prisma.user.findMany({
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        subscription: { select: { plan: true } },
+      },
+    });
+
+    return {
+      creatorsCount,
+      campaignsCount,
+      totalDMsSent,
+      activeSubscribers,
+      mrr: Math.round(calculatedMRR),
+      arr: Math.round(calculatedMRR * 12),
+      tiers: tiersBreakdown,
+      recentSignups,
+      recentInvoices,
+    };
+  }
 }

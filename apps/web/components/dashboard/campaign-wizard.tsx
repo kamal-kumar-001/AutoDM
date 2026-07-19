@@ -58,14 +58,16 @@ export function CampaignWizard({
   // Form State
   const [name, setName] = React.useState('');
   const [description, setDescription] = React.useState('');
-  const [type, setType] = React.useState<'COMMENT_TO_DM' | 'KEYWORD_TO_DM' | 'WELCOME_DM'>(
-    'COMMENT_TO_DM',
-  );
+  const [type, setType] = React.useState<
+    'COMMENT_TO_DM' | 'KEYWORD_TO_DM' | 'WELCOME_DM' | 'STORY_REPLY_TO_DM'
+  >('COMMENT_TO_DM');
   const [accountId, setAccountId] = React.useState('');
   const [keywords, setKeywords] = React.useState('');
   const [matchingRule, setMatchingRule] = React.useState<'EXACT' | 'CONTAINS'>('EXACT');
   const [selectedPostId, setSelectedPostId] = React.useState<string | null>(null);
   const [replyMessage, setReplyMessage] = React.useState('');
+  const [commentReplyEnabled, setCommentReplyEnabled] = React.useState(false);
+  const [commentReplyText, setCommentReplyText] = React.useState('');
 
   // Live posts state
   const [posts, setPosts] = React.useState<LivePost[]>([]);
@@ -77,9 +79,11 @@ export function CampaignWizard({
   interface EditingCampaign {
     name: string;
     description?: string | null;
-    type: 'COMMENT_TO_DM' | 'KEYWORD_TO_DM' | 'WELCOME_DM';
+    type: 'COMMENT_TO_DM' | 'KEYWORD_TO_DM' | 'WELCOME_DM' | 'STORY_REPLY_TO_DM';
     instagramAccountId: string;
     replyMessage: string;
+    commentReplyEnabled: boolean;
+    commentReplyText?: string | null;
     keywords?: { keyword: string; matchingRule: 'EXACT' | 'CONTAINS' }[];
     posts?: { mediaId: string }[];
   }
@@ -95,6 +99,8 @@ export function CampaignWizard({
           setType(camp.type);
           setAccountId(camp.instagramAccountId);
           setReplyMessage(camp.replyMessage);
+          setCommentReplyEnabled(camp.commentReplyEnabled || false);
+          setCommentReplyText(camp.commentReplyText || '');
 
           if (camp.keywords && camp.keywords.length > 0) {
             setKeywords(camp.keywords.map((k) => k.keyword).join(', '));
@@ -117,6 +123,8 @@ export function CampaignWizard({
       setType('COMMENT_TO_DM');
       setKeywords('');
       setReplyMessage('');
+      setCommentReplyEnabled(false);
+      setCommentReplyText('');
       setSelectedPostId(null);
       setStep(1);
     }
@@ -224,6 +232,8 @@ export function CampaignWizard({
         type: string;
         instagramAccountId: string;
         replyMessage: string;
+        commentReplyEnabled: boolean;
+        commentReplyText: string | null;
         keywords?: { keyword: string; matchingRule: string }[];
         posts?: { mediaId: string; mediaUrl: string; permalink: string }[];
       }
@@ -234,6 +244,8 @@ export function CampaignWizard({
         type,
         instagramAccountId: accountId,
         replyMessage,
+        commentReplyEnabled,
+        commentReplyText: commentReplyEnabled ? commentReplyText : null,
       };
 
       if ((type === 'KEYWORD_TO_DM' || type === 'COMMENT_TO_DM') && keywords.trim()) {
@@ -406,7 +418,7 @@ export function CampaignWizard({
 
                       <div className="space-y-2">
                         <Label>Automation Type</Label>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 gap-3">
                           {[
                             {
                               id: 'COMMENT_TO_DM',
@@ -423,11 +435,22 @@ export function CampaignWizard({
                               title: 'Welcome DM',
                               desc: 'Reply to new message threads',
                             },
+                            {
+                              id: 'STORY_REPLY_TO_DM',
+                              title: 'Story Auto-Reply',
+                              desc: 'Reply to story replies',
+                            },
                           ].map((t) => (
                             <button
                               key={t.id}
                               onClick={() =>
-                                setType(t.id as 'COMMENT_TO_DM' | 'KEYWORD_TO_DM' | 'WELCOME_DM')
+                                setType(
+                                  t.id as
+                                    | 'COMMENT_TO_DM'
+                                    | 'KEYWORD_TO_DM'
+                                    | 'WELCOME_DM'
+                                    | 'STORY_REPLY_TO_DM',
+                                )
                               }
                               type="button"
                               className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all ${
@@ -480,18 +503,21 @@ export function CampaignWizard({
                       </div>
 
                       {/* Keyword to DM trigger inputs */}
-                      {(type === 'KEYWORD_TO_DM' || type === 'COMMENT_TO_DM') && (
+                      {(type === 'KEYWORD_TO_DM' ||
+                        type === 'COMMENT_TO_DM' ||
+                        type === 'STORY_REPLY_TO_DM') && (
                         <div className="space-y-3">
                           <div className="space-y-1.5">
                             <Label htmlFor="keywords-in">
                               Trigger Keywords (comma separated){' '}
-                              {type === 'COMMENT_TO_DM' && '(Optional)'}
+                              {(type === 'COMMENT_TO_DM' || type === 'STORY_REPLY_TO_DM') &&
+                                '(Optional)'}
                             </Label>
                             <Input
                               id="keywords-in"
                               placeholder={
-                                type === 'COMMENT_TO_DM'
-                                  ? 'e.g. shoes, promo (leave empty for any comment)'
+                                type === 'COMMENT_TO_DM' || type === 'STORY_REPLY_TO_DM'
+                                  ? 'e.g. discount, link (leave empty for any reply)'
                                   : 'e.g. GROW, START, EBOOK'
                               }
                               value={keywords}
@@ -632,10 +658,53 @@ export function CampaignWizard({
                           rows={4}
                           value={replyMessage}
                           onChange={(e) => setReplyMessage(e.target.value)}
-                          placeholder="Hey! Thanks for leaving a comment. Here is the link to access your free guide: https://autodm.com/free-guide"
+                          placeholder="Hey! Thanks for leaving a comment. Here is the link to access your free guide: https://example.com/free-guide"
                           className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary placeholder-gray-600 resize-none font-sans"
                         />
                       </div>
+
+                      {type === 'COMMENT_TO_DM' && (
+                        <div className="space-y-3 pt-3 border-t border-white/5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex flex-col">
+                              <Label className="font-bold text-white">Public Comment Reply</Label>
+                              <span className="text-[10px] text-gray-500">
+                                Reply publicly to commenter on successful DM delivery
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setCommentReplyEnabled(!commentReplyEnabled)}
+                              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                commentReplyEnabled ? 'bg-primary' : 'bg-white/10'
+                              }`}
+                            >
+                              <span
+                                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                  commentReplyEnabled ? 'translate-x-4' : 'translate-x-0'
+                                }`}
+                              />
+                            </button>
+                          </div>
+
+                          {commentReplyEnabled && (
+                            <div className="space-y-1.5 animate-fadeIn">
+                              <Label htmlFor="comment-reply-text">Public Comment Text</Label>
+                              <Input
+                                id="comment-reply-text"
+                                placeholder="Sent! Check your DMs 😊"
+                                value={commentReplyText}
+                                onChange={(e) => setCommentReplyText(e.target.value)}
+                                className="text-xs h-9"
+                              />
+                              <span className="text-[9px] text-gray-500">
+                                Tip: Use <strong>{'{username}'}</strong> or{' '}
+                                <strong>{'{name}'}</strong> to personalize it!
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </motion.div>
                   )}
 
@@ -669,7 +738,9 @@ export function CampaignWizard({
                                 ? 'Comment'
                                 : type === 'KEYWORD_TO_DM'
                                   ? 'Keyword'
-                                  : 'New Thread'}
+                                  : type === 'STORY_REPLY_TO_DM'
+                                    ? 'Story Reply'
+                                    : 'New Thread'}
                             </span>
                           </div>
 
@@ -688,6 +759,15 @@ export function CampaignWizard({
                             <span>
                               <br />
                               Keywords: <strong className="text-white">{keywords}</strong>
+                            </span>
+                          )}
+                          {type === 'STORY_REPLY_TO_DM' && (
+                            <span>
+                              <br />
+                              Trigger:{' '}
+                              <strong className="text-white">
+                                {keywords.trim() ? `Keywords: ${keywords}` : 'All Story Replies'}
+                              </strong>
                             </span>
                           )}
                           {type === 'COMMENT_TO_DM' && (
@@ -716,7 +796,7 @@ export function CampaignWizard({
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="w-56 bg-background border border-white/10 rounded-3xl p-3 flex-shrink-0 shadow-2xl relative overflow-hidden"
+                    className="hidden lg:block w-56 bg-background border border-white/10 rounded-3xl p-3 flex-shrink-0 shadow-2xl relative overflow-hidden"
                   >
                     {/* Simulated Camera notch */}
                     <div className="h-3 w-16 bg-white/10 rounded-full mx-auto mb-2" />

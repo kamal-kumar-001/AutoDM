@@ -22,9 +22,7 @@ export default function Pricing() {
 
   const handleProceed = (planName: string) => {
     const billing = isAnnual ? 'annually' : 'monthly';
-    const destination = session
-      ? `/dashboard?plan=${planName}&billing=${billing}`
-      : `/register?plan=${planName}&billing=${billing}`;
+    const destination = `/checkout?plan=${planName}&billing=${billing}`;
     router.push(destination);
   };
 

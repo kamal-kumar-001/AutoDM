@@ -86,6 +86,18 @@ export class CommentAutomationService {
         `Comment ${commentId} matched campaign "${campaign.name}" (${campaign.type}) — enqueuing DM.`,
       );
 
+      // Update Comment record to associate it with the matched campaign
+      await this.prisma.comment
+        .update({
+          where: { id: commentRecord.id },
+          data: { campaignId: campaign.id },
+        })
+        .catch((e) =>
+          this.logger.error(
+            `Failed to associate comment ${commentRecord.id} with campaign ${campaign.id}: ${e.message}`,
+          ),
+        );
+
       await this.sendDmProducer.enqueueSendDm({
         campaignId: campaign.id,
         instagramAccountId: account.id,

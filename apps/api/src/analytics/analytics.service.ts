@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MessageDirection, MessageStatus, CampaignStatus } from '@prisma/client';
 
@@ -56,6 +56,8 @@ export interface CreatorUsageStat {
 
 @Injectable()
 export class AnalyticsService {
+  private readonly logger = new Logger(AnalyticsService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   // ─── helpers ──────────────────────────────────────────────────────
@@ -70,14 +72,21 @@ export class AnalyticsService {
   // ─── Summary ──────────────────────────────────────────────────────
   async getSummary(userId: string): Promise<AnalyticsSummary> {
     const accountIds = await this.resolveAccountIds(userId);
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const [totalComments, totalDmsSent, failedDms, activeCampaigns] = await Promise.all([
-      this.prisma.comment.count({ where: { instagramAccountId: { in: accountIds } } }),
+      this.prisma.comment.count({
+        where: {
+          instagramAccountId: { in: accountIds },
+          createdAt: { gte: last24h },
+        },
+      }),
       this.prisma.message.count({
         where: {
           instagramAccountId: { in: accountIds },
           direction: MessageDirection.OUTGOING,
           status: MessageStatus.SENT,
+          createdAt: { gte: last24h },
         },
       }),
       this.prisma.message.count({
@@ -85,6 +94,7 @@ export class AnalyticsService {
           instagramAccountId: { in: accountIds },
           direction: MessageDirection.OUTGOING,
           status: MessageStatus.FAILED,
+          createdAt: { gte: last24h },
         },
       }),
       this.prisma.campaign.count({
@@ -240,44 +250,61 @@ export class AnalyticsService {
   // ─── Recent activity ──────────────────────────────────────────────
   async getRecentActivity(userId: string, limit = 10) {
     const accountIds = await this.resolveAccountIds(userId);
+    if (accountIds.length === 0) return [];
 
-    const [recentComments, recentMessages] = await Promise.all([
-      this.prisma.comment.findMany({
-        where: { instagramAccountId: { in: accountIds } },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        select: { commentId: true, username: true, text: true, isReplied: true, createdAt: true },
-      }),
-      this.prisma.message.findMany({
-        where: { instagramAccountId: { in: accountIds }, direction: MessageDirection.OUTGOING },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        select: { messageId: true, recipientId: true, text: true, status: true, createdAt: true },
-      }),
-    ]);
+    const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    const activity = [
-      ...recentComments.map((c) => ({
-        type: 'comment' as const,
-        id: c.commentId,
-        label: `@${c.username} commented`,
-        detail: c.text.slice(0, 60),
-        success: c.isReplied,
-        ts: c.createdAt,
-      })),
-      ...recentMessages.map((m) => ({
-        type: 'dm' as const,
-        id: m.messageId,
-        label: `DM sent to ${m.recipientId}`,
-        detail: (m.text ?? '').slice(0, 60),
-        success: m.status === MessageStatus.SENT,
-        ts: m.createdAt,
-      })),
-    ]
-      .sort((a, b) => b.ts.getTime() - a.ts.getTime())
-      .slice(0, limit);
+    try {
+      const [recentComments, recentMessages] = await Promise.all([
+        this.prisma.comment.findMany({
+          where: {
+            instagramAccountId: { in: accountIds },
+            createdAt: { gte: last24h },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+          select: { commentId: true, username: true, text: true, isReplied: true, createdAt: true },
+        }),
+        this.prisma.message.findMany({
+          where: {
+            instagramAccountId: { in: accountIds },
+            direction: MessageDirection.OUTGOING,
+            createdAt: { gte: last24h },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+          select: { messageId: true, recipientId: true, text: true, status: true, createdAt: true },
+        }),
+      ]);
 
-    return activity;
+      const activity = [
+        ...recentComments.map((c) => ({
+          type: 'comment' as const,
+          id: c.commentId,
+          label: `@${c.username} commented`,
+          detail: c.text.slice(0, 60),
+          success: c.isReplied,
+          ts: c.createdAt,
+        })),
+        ...recentMessages.map((m) => ({
+          type: 'dm' as const,
+          id: m.messageId,
+          label: `DM sent to ${m.recipientId}`,
+          detail: (m.text ?? '').slice(0, 60),
+          success: m.status === MessageStatus.SENT,
+          ts: m.createdAt,
+        })),
+      ]
+        .sort((a, b) => b.ts.getTime() - a.ts.getTime())
+        .slice(0, limit);
+
+      return activity;
+    } catch (e) {
+      this.logger.warn(
+        `Failed to fetch recent activity for user ${userId}: ${e instanceof Error ? e.message : e}`,
+      );
+      return [];
+    }
   }
 
   // ─── Admin: Creator usage stats ────────────────────────────────────

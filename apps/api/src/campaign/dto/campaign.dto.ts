@@ -6,6 +6,7 @@ import {
   IsString,
   IsUUID,
   ValidateNested,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CampaignType, MatchingRule } from '@prisma/client';
@@ -57,6 +58,14 @@ export class CreateCampaignDto {
   @IsOptional()
   replyMediaUrl?: string;
 
+  @IsBoolean()
+  @IsOptional()
+  commentReplyEnabled?: boolean;
+
+  @IsString()
+  @IsOptional()
+  commentReplyText?: string;
+
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
@@ -94,6 +103,14 @@ export class UpdateCampaignDto {
   @IsString()
   @IsOptional()
   replyMediaUrl?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  commentReplyEnabled?: boolean;
+
+  @IsString()
+  @IsOptional()
+  commentReplyText?: string;
 
   @IsArray()
   @IsOptional()

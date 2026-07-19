@@ -35,6 +35,9 @@ interface MetaIgAccountDetails {
     username: string;
     name?: string;
     profile_picture_url?: string;
+    followers_count?: number;
+    follows_count?: number;
+    media_count?: number;
   };
 }
 
@@ -142,7 +145,8 @@ export class InstagramService {
           `https://graph.facebook.com/v20.0/${page.id}`,
           {
             params: {
-              fields: 'instagram_business_account{id,username,name,profile_picture_url}',
+              fields:
+                'instagram_business_account{id,username,name,profile_picture_url,followers_count,follows_count,media_count}',
               access_token: page.access_token,
             },
           },
@@ -190,6 +194,9 @@ export class InstagramService {
               profilePicture: igAccount.profile_picture_url || null,
               accessToken: encryptedPageToken,
               instagramPageId: page.id,
+              followersCount: igAccount.followers_count || 0,
+              followingCount: igAccount.follows_count || 0,
+              mediaCount: igAccount.media_count || 0,
               isConnected: true,
             },
             update: {
@@ -197,6 +204,9 @@ export class InstagramService {
               displayName: igAccount.name || null,
               profilePicture: igAccount.profile_picture_url || null,
               accessToken: encryptedPageToken,
+              followersCount: igAccount.followers_count || 0,
+              followingCount: igAccount.follows_count || 0,
+              mediaCount: igAccount.media_count || 0,
               isConnected: true,
               deletedAt: null,
             },
@@ -345,5 +355,42 @@ export class InstagramService {
     });
 
     return outgoingMsg;
+  }
+
+  async syncAccountStats(accountId: string): Promise<void> {
+    try {
+      const account = await this.prisma.instagramAccount.findUnique({
+        where: { id: accountId },
+      });
+      if (!account || !account.isConnected) return;
+
+      const accessToken = this.encryptionService.decrypt(account.accessToken);
+      if (accessToken.startsWith('mock_')) return;
+
+      const url = `https://graph.facebook.com/v20.0/${account.instagramId}`;
+      const res = await axios.get(url, {
+        params: {
+          fields: 'followers_count,follows_count,media_count',
+          access_token: accessToken,
+        },
+        timeout: 5000,
+      });
+
+      if (res.data) {
+        await this.prisma.instagramAccount.update({
+          where: { id: account.id },
+          data: {
+            followersCount: res.data.followers_count ?? account.followersCount,
+            followingCount: res.data.follows_count ?? account.followingCount,
+            mediaCount: res.data.media_count ?? account.mediaCount,
+          },
+        });
+        this.logger.log(
+          `Synced metrics for Instagram account ${account.username}: followers=${res.data.followers_count}`,
+        );
+      }
+    } catch (e: any) {
+      this.logger.warn(`Failed to sync Instagram account stats for ${accountId}: ${e.message}`);
+    }
   }
 }

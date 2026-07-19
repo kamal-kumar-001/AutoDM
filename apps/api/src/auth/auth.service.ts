@@ -187,9 +187,8 @@ export class AuthService {
       where: { email: forgotPasswordDto.email.toLowerCase() },
     });
 
-    // Return generic success to prevent email discovery/enumeration
     if (!user) {
-      return { message: 'If the email exists, a password reset link has been sent' };
+      throw new NotFoundException('No account found with this email address');
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');

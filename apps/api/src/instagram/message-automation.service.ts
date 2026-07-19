@@ -16,6 +16,7 @@ export interface MessageEvent {
   text: string;
   fromId: string; // Recipient/Sender ID
   fromUsername?: string;
+  isStoryReply?: boolean;
   webhookEventId: string;
 }
 
@@ -78,7 +79,9 @@ export class MessageAutomationService {
       where: {
         instagramAccountId: account.id,
         status: CampaignStatus.ACTIVE,
-        type: { in: [CampaignType.KEYWORD_TO_DM, CampaignType.WELCOME_DM] },
+        type: {
+          in: [CampaignType.KEYWORD_TO_DM, CampaignType.WELCOME_DM, CampaignType.STORY_REPLY_TO_DM],
+        },
         deletedAt: null,
       },
       include: { keywords: true },
@@ -119,6 +122,24 @@ export class MessageAutomationService {
         // count === 1 means the only message is the one we just saved above!
         if (messageCount === 1) {
           matched = true;
+        }
+      } else if (campaign.type === CampaignType.STORY_REPLY_TO_DM) {
+        // Story reply triggers if it is flagged as a story reply
+        if (event.isStoryReply) {
+          if (campaign.keywords.length === 0) {
+            matched = true;
+          } else {
+            matched = campaign.keywords.some((k) => {
+              const kw = k.keyword.toLowerCase().trim();
+              if (k.matchingRule === MatchingRule.EXACT) {
+                return normalizedText === kw;
+              }
+              if (k.matchingRule === MatchingRule.CONTAINS) {
+                return normalizedText.includes(kw);
+              }
+              return false;
+            });
+          }
         }
       }
 

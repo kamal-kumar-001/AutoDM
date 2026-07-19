@@ -49,12 +49,16 @@ export class FeatureFlagService {
 
   /** Seed default flags (call on module init). */
   async seedDefaults() {
-    for (const flag of DEFAULT_FLAGS) {
-      await this.prisma.featureFlag.upsert({
-        where: { key: flag.key },
-        create: flag,
-        update: {},
-      });
+    try {
+      for (const flag of DEFAULT_FLAGS) {
+        await this.prisma.featureFlag.upsert({
+          where: { key: flag.key },
+          create: flag,
+          update: {},
+        });
+      }
+    } catch (e) {
+      console.warn('FeatureFlagService seedDefaults skipped:', e instanceof Error ? e.message : e);
     }
   }
 

@@ -9,12 +9,18 @@ import { apiRequest } from '@/lib/api-client';
 interface Campaign {
   id: string;
   name: string;
-  type: 'COMMENT_TO_DM' | 'KEYWORD_TO_DM' | 'WELCOME_DM';
+  type: 'COMMENT_TO_DM' | 'KEYWORD_TO_DM' | 'WELCOME_DM' | 'STORY_REPLY_TO_DM';
   status: 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
   createdAt: string;
   instagramAccount?: {
     username: string;
     displayName: string | null;
+  };
+  metrics?: {
+    totalComments: number;
+    totalDmsSent: number;
+    failedDms: number;
+    successRate: number;
   };
 }
 
@@ -86,13 +92,15 @@ export function CampaignsList({ onEditCampaign }: { onEditCampaign?: (id: string
         return 'bg-primary/10 text-primary border-primary/20';
       case 'KEYWORD_TO_DM':
         return 'bg-accent-cyan/10 text-accent-cyan border-accent-cyan/20';
+      case 'STORY_REPLY_TO_DM':
+        return 'bg-pink-500/10 text-pink-400 border-pink-500/20';
       default:
         return 'bg-amber-500/10 text-amber-400 border-amber-500/20';
     }
   };
 
   return (
-    <div className="glass-card border-gradient p-5 rounded-xl shadow-glass flex flex-col space-y-4 h-full">
+    <div className="glass-card border-gradient p-5 rounded-xl shadow-glass flex flex-col space-y-4">
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
         <div className="flex items-center space-x-2">
@@ -177,6 +185,36 @@ export function CampaignsList({ onEditCampaign }: { onEditCampaign?: (id: string
                           {new Date(campaign.createdAt).toLocaleDateString()}
                         </span>
                       </div>
+
+                      {/* Campaign mini performance metrics */}
+                      {campaign.metrics && (
+                        <div className="grid grid-cols-3 gap-2 pt-1">
+                          <div className="bg-white/[0.02] border border-white/5 rounded-md px-2 py-1 flex flex-col justify-start">
+                            <span className="text-[7px] text-gray-500 uppercase font-bold tracking-wider">
+                              Comments
+                            </span>
+                            <span className="text-[10px] font-bold text-white mt-0.5">
+                              {campaign.metrics.totalComments}
+                            </span>
+                          </div>
+                          <div className="bg-white/[0.02] border border-white/5 rounded-md px-2 py-1 flex flex-col justify-start">
+                            <span className="text-[7px] text-gray-500 uppercase font-bold tracking-wider">
+                              DMs Sent
+                            </span>
+                            <span className="text-[10px] font-bold text-white mt-0.5">
+                              {campaign.metrics.totalDmsSent}
+                            </span>
+                          </div>
+                          <div className="bg-white/[0.02] border border-white/5 rounded-md px-2 py-1 flex flex-col justify-start">
+                            <span className="text-[7px] text-gray-500 uppercase font-bold tracking-wider">
+                              Success
+                            </span>
+                            <span className="text-[10px] font-extrabold text-primary mt-0.5">
+                              {campaign.metrics.successRate}%
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Actions toggles */}

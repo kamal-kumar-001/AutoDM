@@ -14,12 +14,14 @@ import {
   Loader2,
   Eye,
   EyeOff,
+  CreditCard,
+  CheckCircle2,
 } from 'lucide-react';
 import { Button, Input, Label, toast } from '@autodm/ui';
 import { apiRequest } from '@/lib/api-client';
 import { ConnectedAccounts } from '@/components/dashboard/connected-accounts';
 
-type SettingTab = 'profile' | 'security' | 'channels' | 'preferences';
+type SettingTab = 'profile' | 'security' | 'channels' | 'billing' | 'preferences';
 
 export default function SettingsPage() {
   const { data: session, update: updateSession } = useSession();
@@ -207,6 +209,7 @@ export default function SettingsPage() {
               { id: 'profile' as const, label: 'Profile Options', icon: User },
               { id: 'security' as const, label: 'Security & Access', icon: Lock },
               { id: 'channels' as const, label: 'Instagram Channels', icon: Globe },
+              { id: 'billing' as const, label: 'Billing & Plan', icon: CreditCard },
               { id: 'preferences' as const, label: 'Preferences', icon: Bell },
             ].map((tab) => (
               <button
@@ -226,6 +229,8 @@ export default function SettingsPage() {
 
           {/* Tab Content Panel */}
           <div className="md:col-span-3 space-y-6">
+            {activeTab === 'billing' && <SettingsBilling />}
+
             {activeTab === 'profile' && (
               <div className="glass-card border-gradient p-6 rounded-2xl shadow-glass space-y-6 animate-in fade-in duration-200">
                 <div className="flex items-center space-x-3 pb-4 border-b border-white/5">
@@ -564,7 +569,6 @@ export default function SettingsPage() {
                   value={deleteReason}
                   onChange={(e) => setDeleteReason(e.target.value)}
                   className="custom-select w-full"
-                  required
                 >
                   <option value="" disabled className="bg-zinc-900 text-gray-500">
                     Select a reason...
@@ -646,5 +650,396 @@ export default function SettingsPage() {
         </div>
       )}
     </DashboardLayout>
+  );
+}
+
+function SettingsBilling() {
+  const [plans, setPlans] = React.useState<any[]>([]);
+  const [subscription, setSubscription] = React.useState<any>(null);
+  const [usage, setUsage] = React.useState<any>(null);
+  const [invoices, setInvoices] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [isAnnual, setIsAnnual] = React.useState(false);
+  const [cancelling, setCancelling] = React.useState(false);
+
+  const fetchData = async () => {
+    try {
+      const [plansData, subData, usageData, invoiceData] = await Promise.all([
+        apiRequest<any[]>('/billing/plans'),
+        apiRequest<any>('/billing/subscription'),
+        apiRequest<any>('/billing/usage'),
+        apiRequest<any[]>('/billing/invoices').catch(() => []),
+      ]);
+      setPlans(plansData || []);
+      setSubscription(subData);
+      setUsage(usageData);
+      setInvoices(invoiceData || []);
+    } catch (e) {
+      console.error('Failed to load billing metrics', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchData();
+  }, []);
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success') {
+      toast.success('Successfully upgraded! Welcome to the premium AutoDM family.', {
+        id: 'billing-upgrade-toast',
+      });
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (params.get('payment') === 'cancel') {
+      toast.error('Payment checkout session was cancelled.');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
+
+  const handleUpgrade = (planKey: string) => {
+    const cycle = isAnnual ? 'yearly' : 'monthly';
+    window.location.href = `/checkout?plan=${planKey}&cycle=${cycle}`;
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!confirm('Are you sure you want to cancel your active subscription auto-renewal?')) return;
+    setCancelling(true);
+    try {
+      await apiRequest('/billing/cancel', { method: 'POST' });
+      toast.success(
+        'Subscription cancelled. Your access will remain active until the end of your billing cycle.',
+      );
+      fetchData();
+    } catch (e) {
+      toast.error('Failed to cancel subscription');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleDownloadReceipt = (invoice: any) => {
+    const receiptHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>AutoDM Tax Invoice - ${invoice.id.slice(0, 8)}</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 40px; color: #111; background: #fff; }
+            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+            .logo { font-size: 24px; font-weight: 800; color: #00BB88; }
+            .title { font-size: 20px; font-weight: 700; text-align: right; color: #333; }
+            .details { margin: 30px 0; display: flex; justify-content: space-between; font-size: 14px; line-height: 1.6; }
+            .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            .table th, .table td { border-bottom: 1px solid #eee; padding: 12px; text-align: left; font-size: 14px; }
+            .table th { background: #f9f9f9; font-weight: 600; }
+            .total { font-size: 18px; font-weight: 800; text-align: right; margin-top: 20px; }
+            .footer { margin-top: 50px; font-size: 12px; color: #777; text-align: center; border-top: 1px solid #eee; padding-top: 20px; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="no-print" style="margin-bottom: 20px; text-align: right;">
+            <button onclick="window.print()" style="background: #00BB88; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;">Print Receipt</button>
+          </div>
+          <div class="header">
+            <div>
+              <div class="logo">⚡ AutoDM</div>
+              <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Automated Instagram DM & Growth Platform</p>
+            </div>
+            <div class="title">
+              TAX INVOICE / RECEIPT
+              <p style="font-size: 12px; font-weight: normal; color: #666; margin: 4px 0 0 0;">Invoice ID: ${invoice.id}</p>
+              <p style="font-size: 12px; font-weight: normal; color: #666; margin: 2px 0 0 0;">Date: ${new Date(invoice.createdAt).toLocaleDateString()}</p>
+            </div>
+          </div>
+          <div class="details">
+            <div>
+              <strong>Billed To:</strong><br/>
+              ${invoice.billingDetails?.name || 'Valued Creator'}<br/>
+              ${invoice.billingDetails?.email || ''}<br/>
+              ${invoice.billingDetails?.phone || ''}<br/>
+              ${invoice.billingDetails?.address || ''}<br/>
+              ${invoice.billingDetails?.city || ''} ${invoice.billingDetails?.pincode || ''}<br/>
+              ${invoice.billingDetails?.gstin ? `GSTIN: ${invoice.billingDetails.gstin}` : ''}
+            </div>
+            <div style="text-align: right;">
+              <strong>Payment Status:</strong> <span style="color: #00BB88; font-weight: bold;">PAID</span><br/>
+              <strong>Payment Method:</strong> Razorpay Gateway<br/>
+              <strong>Payment ID:</strong> ${invoice.paymentId || 'pay_link_success'}<br/>
+            </div>
+          </div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Billing Cycle</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>AutoDM ${invoice.plan} Subscription Plan</td>
+                <td>${invoice.cycle || 'MONTHLY'}</td>
+                <td>₹${Math.round(invoice.amount / 1.18).toLocaleString('en-IN')}</td>
+              </tr>
+              <tr>
+                <td colspan="2" style="text-align: right;"><strong>Estimated Tax (18% GST):</strong></td>
+                <td>₹${Math.round(invoice.amount - invoice.amount / 1.18).toLocaleString('en-IN')}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="total">
+            Total Paid: ₹${invoice.amount.toLocaleString('en-IN')} ${invoice.currency}
+          </div>
+          <div class="footer">
+            Thank you for choosing AutoDM! For support inquiries, contact billing@autodm.com.
+          </div>
+        </body>
+      </html>
+    `;
+
+    const printWin = window.open('', '_blank');
+    if (printWin) {
+      printWin.document.write(receiptHtml);
+      printWin.document.close();
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-2">
+        <Loader2 className="h-6 w-6 text-primary animate-spin" />
+        <p className="text-xs text-gray-500">Loading plan subscription parameters...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Current plan metrics banner */}
+      <div className="glass-card border-gradient p-5 rounded-2xl flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-white/[0.01] animate-in fade-in duration-200">
+        <div className="space-y-1">
+          <div className="flex items-center space-x-2">
+            <span className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">
+              Current Tier
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[9px] font-bold text-primary">
+              {subscription?.plan || 'FREE'}
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-bold text-gray-400">
+              {subscription?.cycle || 'MONTHLY'}
+            </span>
+          </div>
+          <h4 className="text-sm font-extrabold text-white">
+            {subscription?.plan === 'FREE'
+              ? 'Free Trial Subscription'
+              : `${subscription?.plan} Creator Plan Active`}
+          </h4>
+          {subscription?.expiresAt && (
+            <p className="text-[9px] text-gray-500">
+              Renews / expires on:{' '}
+              <strong>{new Date(subscription.expiresAt).toLocaleDateString()}</strong>
+            </p>
+          )}
+        </div>
+
+        {/* Usage stats bars */}
+        {usage?.usage && (
+          <div className="space-y-3 min-w-[200px]">
+            {usage.usage.map((u: any) => (
+              <div key={u.metric} className="space-y-1">
+                <div className="flex justify-between text-[10px]">
+                  <span className="text-gray-400 capitalize">
+                    {u.metric.replace('max_', '').replace('_', ' ')}
+                  </span>
+                  <span className="text-gray-500 font-medium">
+                    {u.used} / {u.unlimited ? '∞' : u.limit}
+                  </span>
+                </div>
+                <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-primary to-accent-cyan transition-all duration-300"
+                    style={{ width: `${u.percent}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Monthly / Annual Cycle Toggle */}
+      <div className="flex items-center justify-between bg-white/5 border border-white/10 p-3 rounded-xl">
+        <div>
+          <h5 className="text-xs font-bold text-white">Choose Billing Cycle</h5>
+          <p className="text-[10px] text-gray-400">
+            Save 20% on annual subscriptions with instant activation
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsAnnual(false)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              !isAnnual ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Monthly
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsAnnual(true)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              isAnnual ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Annual
+            <span className="bg-emerald-500/20 text-emerald-400 text-[9px] px-1.5 py-0.5 rounded-full font-bold">
+              Save 20%
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* Plans selector grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-300">
+        {plans.map((plan: any) => {
+          const isCurrent = plan.plan === subscription?.plan;
+          const displayPrice = isAnnual ? Math.round(plan.price * 10) : plan.price;
+          return (
+            <div
+              key={plan.plan}
+              className={`glass-card border-gradient relative p-5 rounded-2xl flex flex-col justify-between h-full bg-white/[0.01] ${
+                isCurrent ? 'border-primary/30 ring-1 ring-primary/20' : ''
+              }`}
+            >
+              {plan.highlight && (
+                <div className="absolute -top-3 right-5 bg-gradient-to-r from-primary to-accent-cyan text-primary-foreground text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full shadow-lg">
+                  Popular
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <h4 className="text-sm font-extrabold text-white">{plan.label}</h4>
+                  <p className="text-[10px] text-gray-500 leading-normal min-h-[30px]">
+                    {plan.description}
+                  </p>
+                </div>
+
+                <div className="flex items-baseline space-x-1">
+                  <span className="text-2xl font-extrabold text-white">
+                    ₹{displayPrice.toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-[10px] text-gray-500">/{isAnnual ? 'year' : 'month'}</span>
+                </div>
+
+                <ul className="space-y-2 text-[10px] text-gray-400 border-t border-white/5 pt-4">
+                  {plan.features.map((f: string, i: number) => (
+                    <li key={i} className="flex items-center space-x-2">
+                      <CheckCircle2 className="h-3 w-3 text-primary flex-shrink-0" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="pt-5 border-t border-white/5 mt-5">
+                <Button
+                  onClick={() => handleUpgrade(plan.plan)}
+                  disabled={isCurrent}
+                  className={`w-full text-xs font-bold ${
+                    isCurrent
+                      ? 'bg-white/5 text-gray-500 border-white/5 cursor-not-allowed select-none'
+                      : plan.plan === 'FREE'
+                        ? 'bg-transparent border border-white/10 hover:bg-white/5 text-white'
+                        : 'bg-primary hover:bg-primary-hover text-primary-foreground border-0 shadow-[0_0_12px_rgba(0,187,136,0.2)] cursor-pointer'
+                  }`}
+                >
+                  {isCurrent ? 'Active Plan' : 'Select Plan'}
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Invoice History & Receipt Section */}
+      <div className="glass-card border-gradient p-6 rounded-2xl shadow-glass space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-white/10">
+          <div>
+            <h4 className="text-sm font-bold text-white">Invoice History & Receipts</h4>
+            <p className="text-[10px] text-gray-500">
+              Download formatted tax receipts for accounting
+            </p>
+          </div>
+          {subscription?.plan !== 'FREE' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCancelSubscription}
+              disabled={cancelling}
+              className="text-[10px] border-red-500/20 text-red-400 hover:bg-red-500/10 h-7"
+            >
+              {cancelling ? 'Cancelling...' : 'Cancel Auto-Renewal'}
+            </Button>
+          )}
+        </div>
+
+        {invoices.length === 0 ? (
+          <div className="text-center py-6 text-xs text-gray-500">
+            No payment receipts found yet. Subscriptions will generate receipts here automatically.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-white/10 text-gray-400 text-[10px] uppercase tracking-wider">
+                  <th className="py-2.5 px-3">Date</th>
+                  <th className="py-2.5 px-3">Invoice ID</th>
+                  <th className="py-2.5 px-3">Plan</th>
+                  <th className="py-2.5 px-3">Amount</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3 text-right">Receipt</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {invoices.map((inv) => (
+                  <tr key={inv.id} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="py-3 px-3 text-gray-300 font-mono text-[11px]">
+                      {new Date(inv.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 px-3 font-mono text-[11px] text-gray-400">
+                      {inv.id.slice(0, 8)}...
+                    </td>
+                    <td className="py-3 px-3 font-bold text-white">
+                      {inv.plan} ({inv.cycle})
+                    </td>
+                    <td className="py-3 px-3 font-semibold text-white">
+                      ₹{inv.amount.toLocaleString('en-IN')}
+                    </td>
+                    <td className="py-3 px-3">
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-bold">
+                        {inv.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      <button
+                        onClick={() => handleDownloadReceipt(inv)}
+                        className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-[10px] font-semibold text-primary transition-all inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        Download Receipt
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

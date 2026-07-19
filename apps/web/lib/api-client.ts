@@ -50,7 +50,11 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
   }
 
   // Automatically fetch active session JWT and inject Authorization header if not provided
-  if (!headers.has('Authorization') && typeof window !== 'undefined') {
+  if (
+    !headers.has('Authorization') &&
+    typeof window !== 'undefined' &&
+    typeof window.document !== 'undefined'
+  ) {
     try {
       const sessionRes = await fetch('/api/auth/session');
       if (sessionRes.ok) {

@@ -5,10 +5,13 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { Zap, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePathname } from 'next/navigation';
 import { LANDING_NAV } from '@/lib/landing-data';
 
 export default function Navbar() {
   const { data: session } = useSession();
+  const pathname = usePathname();
+  const isHomePage = pathname === '/';
   const [scrolled, setScrolled] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
@@ -44,7 +47,7 @@ export default function Navbar() {
           {LANDING_NAV.links.map((link) => (
             <a
               key={link.label}
-              href={link.href}
+              href={isHomePage ? link.href : `/${link.href}`}
               className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
             >
               {link.label}
@@ -117,7 +120,7 @@ export default function Navbar() {
               {LANDING_NAV.links.map((link) => (
                 <a
                   key={link.label}
-                  href={link.href}
+                  href={isHomePage ? link.href : `/${link.href}`}
                   onClick={() => setMobileOpen(false)}
                   className="block px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all"
                 >

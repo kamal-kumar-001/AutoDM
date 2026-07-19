@@ -113,14 +113,17 @@ export function AdminFeatureFlags() {
                     </div>
                     <p className="text-xs text-gray-500 mt-0.5">{flag.description}</p>
                   </div>
-                  {/* Global toggle */}
                   <button
                     onClick={() => toggleEnabled(flag)}
                     disabled={isSaving}
-                    className={`relative h-6 w-11 rounded-full border transition-colors flex-shrink-0 ${flag.isEnabled ? 'bg-primary border-primary' : 'bg-white/10 border-white/20'}`}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      flag.isEnabled ? 'bg-primary' : 'bg-white/10'
+                    }`}
                   >
                     <span
-                      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${flag.isEnabled ? 'translate-x-5' : 'translate-x-0.5'}`}
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        flag.isEnabled ? 'translate-x-5' : 'translate-x-0'
+                      }`}
                     />
                   </button>
                 </div>

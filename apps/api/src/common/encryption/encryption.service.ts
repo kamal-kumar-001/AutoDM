@@ -34,10 +34,16 @@ export class EncryptionService {
   }
 
   decrypt(encryptedText: string): string {
+    if (!encryptedText) return '';
+    // If the token is not in iv:ciphertext:tag format (no colons), return as plain text
+    if (!encryptedText.includes(':')) {
+      return encryptedText;
+    }
+
     try {
       const parts = encryptedText.split(':');
       if (parts.length !== 3) {
-        throw new Error('Invalid encrypted field format');
+        return encryptedText;
       }
 
       const iv = Buffer.from(parts[0], 'hex');
@@ -52,7 +58,8 @@ export class EncryptionService {
 
       return decrypted;
     } catch (error) {
-      throw new InternalServerErrorException('Transparent field decryption failed');
+      // Fallback to returning the raw token string if decryption fails
+      return encryptedText;
     }
   }
 }

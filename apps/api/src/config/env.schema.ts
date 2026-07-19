@@ -17,6 +17,7 @@ export const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
   SMTP_FROM: z.string().default('AutoDM <noreply@autodm.com>'),
+  RESEND_API_KEY: z.string().optional(),
 
   // Encryption Configuration
   ENCRYPTION_KEY: z.string().min(16).default('supersecret_encryption_key_change_me_in_production'),

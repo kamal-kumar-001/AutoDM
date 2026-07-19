@@ -2,14 +2,15 @@
 
 import * as React from 'react';
 import { Breadcrumbs, CommandPalette } from '@autodm/ui';
-import { Bell } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 
 export interface HeaderProps {
   onOpenNotifications?: () => void;
+  onOpenMobileMenu?: () => void;
 }
 
-export function Header({ onOpenNotifications }: HeaderProps) {
+export function Header({ onOpenNotifications, onOpenMobileMenu }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -60,12 +61,23 @@ export function Header({ onOpenNotifications }: HeaderProps) {
   );
 
   return (
-    <header className="h-16 border-b border-white/5 bg-black/20 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-40">
-      {/* Breadcrumbs */}
-      <Breadcrumbs items={breadcrumbItems} />
+    <header className="h-16 border-b border-white/5 bg-black/20 backdrop-blur-md px-4 md:px-6 flex items-center justify-between sticky top-0 z-40">
+      {/* Left side: Hamburger + Breadcrumbs */}
+      <div className="flex items-center space-x-2">
+        {onOpenMobileMenu && (
+          <button
+            onClick={onOpenMobileMenu}
+            className="md:hidden p-2 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/5 text-gray-400 hover:text-white transition-colors"
+            aria-label="Open navigation menu"
+          >
+            <Menu className="h-4 w-4" />
+          </button>
+        )}
+        <Breadcrumbs items={breadcrumbItems} />
+      </div>
 
       {/* Right side controls */}
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-3 md:space-x-4">
         {/* Command Palette */}
         <CommandPalette items={commandItems} />
 

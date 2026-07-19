@@ -15,6 +15,7 @@ import { CreateCampaignDto, UpdateCampaignDto } from './dto/campaign.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { CampaignStatus } from '@prisma/client';
+import { UsageLimitGuard, CheckLimit } from '../billing/usage-limit.guard';
 
 @Controller('campaigns')
 @UseGuards(JwtAuthGuard)
@@ -22,6 +23,8 @@ export class CampaignController {
   constructor(private readonly campaignService: CampaignService) {}
 
   @Post()
+  @UseGuards(UsageLimitGuard)
+  @CheckLimit('max_campaigns')
   @HttpCode(HttpStatus.CREATED)
   create(@GetUser() user: { id: string }, @Body() createCampaignDto: CreateCampaignDto) {
     return this.campaignService.create(user.id, createCampaignDto);

@@ -1,8 +1,9 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { SubscriptionService } from './subscription.service';
 import { FeatureFlagService } from './feature-flag.service';
+import { Plan, BillingCycle } from '@prisma/client';
 
 @Controller('billing')
 @UseGuards(JwtAuthGuard)
@@ -40,5 +41,38 @@ export class BillingController {
       description: f.description,
       enabled: f.isEnabled && f.enabledForPlans.split(',').includes(sub.plan),
     }));
+  }
+
+  @Post('checkout')
+  createCheckoutSession(
+    @GetUser() user: { id: string },
+    @Body('plan') plan: Plan,
+    @Body('cycle') cycle?: BillingCycle,
+    @Body('billingDetails') billingDetails?: any,
+  ) {
+    return this.subscriptionService.createCheckoutSession(
+      user.id,
+      plan,
+      cycle || BillingCycle.MONTHLY,
+      billingDetails,
+    );
+  }
+
+  /** GET /billing/invoices — invoice history for current user */
+  @Get('invoices')
+  getInvoices(@GetUser() user: { id: string }) {
+    return this.subscriptionService.getInvoices(user.id);
+  }
+
+  /** GET /billing/invoices/:id/receipt — individual printable receipt */
+  @Get('invoices/:id/receipt')
+  getInvoiceReceipt(@GetUser() user: { id: string }, @Param('id') invoiceId: string) {
+    return this.subscriptionService.getInvoiceReceipt(user.id, invoiceId);
+  }
+
+  /** POST /billing/cancel — cancel subscription auto-renewal */
+  @Post('cancel')
+  cancelSubscription(@GetUser() user: { id: string }) {
+    return this.subscriptionService.cancelSubscription(user.id);
   }
 }
