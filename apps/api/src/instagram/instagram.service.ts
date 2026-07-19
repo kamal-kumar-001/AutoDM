@@ -223,13 +223,42 @@ export class InstagramService {
       }
 
       if (linkedAccountsCount === 0) {
+        if (process.env.NODE_ENV !== 'production') {
+          const mockIgId = '17841458228090598';
+          const encryptedMockToken = this.encryptionService.encrypt('mock_dev_access_token');
+          await this.prisma.instagramAccount.upsert({
+            where: { instagramId: mockIgId },
+            create: {
+              userId,
+              instagramId: mockIgId,
+              username: 'demo_creator_hub',
+              displayName: 'Demo Creator Hub',
+              profilePicture: 'https://picsum.photos/seed/creator/200/200',
+              accessToken: encryptedMockToken,
+              followersCount: 12450,
+              followingCount: 380,
+              mediaCount: 42,
+              isConnected: true,
+            },
+            update: {
+              userId,
+              isConnected: true,
+              deletedAt: null,
+            },
+          });
+          return userId;
+        }
+
         throw new BadRequestException(
-          'No connected Instagram Business Accounts found on your Facebook Pages. Verify your FB Page links.',
+          'No connected Instagram Business Accounts found on your Facebook Pages. Please ensure your IG Business Profile is linked to your FB Page.',
         );
       }
 
       return userId;
     } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       this.logger.error(
         'Meta OAuth Token exchange failed',
         error instanceof Error ? error.stack : undefined,
