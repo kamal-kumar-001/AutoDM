@@ -18,34 +18,44 @@ export class MailService {
   }
 
   private initializeTransporters() {
-    const smtpHost = this.configService.get('SMTP_HOST');
-    const smtpPort = this.configService.get('SMTP_PORT') || 587;
+    const smtpHost = this.configService.get('SMTP_HOST') || 'smtp.gmail.com';
+    const smtpPort = Number(this.configService.get('SMTP_PORT')) || 587;
     const smtpUser = this.configService.get('SMTP_USER');
     const smtpPass = this.configService.get('SMTP_PASSWORD');
 
-    if (smtpHost && smtpUser && smtpPass) {
+    // Configure Nodemailer SMTP as primary transport whenever user/pass or host is defined
+    if (smtpUser && smtpPass && !smtpUser.includes('your_email@gmail.com')) {
       this.transporter = nodemailer.createTransport({
         host: smtpHost,
-        port: Number(smtpPort),
-        secure: Number(smtpPort) === 465,
+        port: smtpPort,
+        secure: smtpPort === 465,
         auth: {
           user: smtpUser,
           pass: smtpPass,
         },
+        tls: {
+          rejectUnauthorized: false,
+        },
       });
-      this.logger.log(`SMTP Mail transporter configured for host ${smtpHost}:${smtpPort}`);
+      this.logger.log(
+        `Primary SMTP Transporter initialized (${smtpUser} via ${smtpHost}:${smtpPort})`,
+      );
+    } else if (smtpHost && smtpHost !== 'smtp.gmail.com') {
+      this.transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        tls: {
+          rejectUnauthorized: false,
+        },
+      });
+      this.logger.log(`Primary SMTP Transporter initialized (${smtpHost}:${smtpPort})`);
     }
 
     const resendApiKey = this.configService.get('RESEND_API_KEY');
-    if (resendApiKey && resendApiKey.startsWith('re_')) {
+    if (resendApiKey && resendApiKey.startsWith('re_') && !resendApiKey.includes('PruiYBpy')) {
       this.resend = new Resend(resendApiKey);
-      this.logger.log('Resend Mail client configured.');
-    }
-
-    if (!this.transporter && !this.resend) {
-      this.logger.warn(
-        'No active SMTP or Resend API Key found. Outgoing emails will be logged to the console.',
-      );
+      this.logger.log('Fallback Resend API client configured.');
     }
   }
 
@@ -55,7 +65,7 @@ export class MailService {
       this.configService.get('SMTP_USER') ||
       'AutoDM <onboarding@resend.dev>';
 
-    // 1. Prefer SMTP if configured
+    // 1. Send via SMTP (Primary)
     if (this.transporter) {
       try {
         await this.transporter.sendMail({
@@ -65,17 +75,19 @@ export class MailService {
           html,
           text,
         });
-        this.logger.log(`Email sent via SMTP successfully to ${to}`);
+        this.logger.log(`Verification email sent via SMTP successfully to ${to}`);
         return;
       } catch (smtpError) {
         this.logger.error(
           `SMTP email delivery failed to ${to}: ${smtpError instanceof Error ? smtpError.message : smtpError}`,
         );
-        // Fall through to Resend or mock logger
+        throw new Error(
+          `SMTP Delivery Failed: ${smtpError instanceof Error ? smtpError.message : 'Check your SMTP_USER and SMTP_PASSWORD settings'}`,
+        );
       }
     }
 
-    // 2. Fallback to Resend API if available
+    // 2. Fallback to Resend API if SMTP is unconfigured
     if (this.resend) {
       try {
         const { data, error } = await this.resend.emails.send({
@@ -96,18 +108,14 @@ export class MailService {
         this.logger.error(
           `Resend API delivery failed to ${to}: ${resendError instanceof Error ? resendError.message : resendError}`,
         );
+        throw resendError;
       }
     }
 
-    // 3. Fallback to console outbox in dev mode
-    this.logger.log(`
-=======================================
-[MOCK EMAIL OUTBOX]
-To: ${to}
-Subject: ${subject}
-Plain Text: ${text || 'N/A'}
-HTML Content: ${html.replace(/\s+/g, ' ')}
-=======================================`);
+    // 3. Warning if neither SMTP nor Resend is configured
+    this.logger.warn(
+      `Email not sent to ${to}. Please configure valid SMTP_USER and SMTP_PASSWORD in .env.`,
+    );
   }
 
   async sendVerificationEmail(to: string, token: string) {

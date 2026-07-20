@@ -9,7 +9,8 @@
     "prisma": "prisma",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "create:test-user": "ts-node src/scripts/create-test-user.ts"
   },
   "dependencies": {
     "@autodm/types": "workspace:*",
