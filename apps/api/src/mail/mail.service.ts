@@ -14,17 +14,24 @@ export class MailService {
     private readonly logger: AppLogger,
   ) {
     this.logger.setContext('MailService');
-    this.initializeTransporters();
   }
 
-  private initializeTransporters() {
-    const smtpHost = this.configService.get('SMTP_HOST') || 'smtp.gmail.com';
-    const smtpPort = Number(this.configService.get('SMTP_PORT')) || 587;
-    const smtpUser = this.configService.get('SMTP_USER');
-    const smtpPass = this.configService.get('SMTP_PASSWORD');
+  private getTransporter(): nodemailer.Transporter | null {
+    if (this.transporter) return this.transporter;
 
-    // Configure Nodemailer SMTP as primary transport whenever user/pass or host is defined
-    if (smtpUser && smtpPass && !smtpUser.includes('your_email@gmail.com')) {
+    const smtpHost =
+      this.configService.get('SMTP_HOST') || process.env.SMTP_HOST || 'smtp.gmail.com';
+    const smtpPort =
+      Number(this.configService.get('SMTP_PORT')) || Number(process.env.SMTP_PORT) || 587;
+    const smtpUser = this.configService.get('SMTP_USER') || process.env.SMTP_USER;
+    const smtpPass = this.configService.get('SMTP_PASSWORD') || process.env.SMTP_PASSWORD;
+
+    if (
+      smtpUser &&
+      smtpPass &&
+      !smtpUser.includes('your_email@gmail.com') &&
+      !smtpPass.includes('your_app_password')
+    ) {
       this.transporter = nodemailer.createTransport({
         host: smtpHost,
         port: smtpPort,
@@ -37,60 +44,59 @@ export class MailService {
           rejectUnauthorized: false,
         },
       });
-      this.logger.log(
-        `Primary SMTP Transporter initialized (${smtpUser} via ${smtpHost}:${smtpPort})`,
-      );
-    } else if (smtpHost && smtpHost !== 'smtp.gmail.com') {
-      this.transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        tls: {
-          rejectUnauthorized: false,
-        },
-      });
-      this.logger.log(`Primary SMTP Transporter initialized (${smtpHost}:${smtpPort})`);
+      this.logger.log(`SMTP Mail Transporter configured (${smtpUser} via ${smtpHost}:${smtpPort})`);
+      return this.transporter;
     }
 
-    const resendApiKey = this.configService.get('RESEND_API_KEY');
+    return null;
+  }
+
+  private getResend(): Resend | null {
+    if (this.resend) return this.resend;
+
+    const resendApiKey = this.configService.get('RESEND_API_KEY') || process.env.RESEND_API_KEY;
     if (resendApiKey && resendApiKey.startsWith('re_') && !resendApiKey.includes('PruiYBpy')) {
       this.resend = new Resend(resendApiKey);
-      this.logger.log('Fallback Resend API client configured.');
+      return this.resend;
     }
+    return null;
   }
 
   async sendEmail(to: string, subject: string, html: string, text?: string) {
+    const smtpUser = this.configService.get('SMTP_USER') || process.env.SMTP_USER;
+    const smtpFrom = this.configService.get('SMTP_FROM') || process.env.SMTP_FROM;
     const fromStr =
-      this.configService.get('SMTP_FROM') ||
-      this.configService.get('SMTP_USER') ||
-      'AutoDM <onboarding@resend.dev>';
+      smtpFrom || (smtpUser ? `AutoDM <${smtpUser}>` : 'AutoDM <onboarding@resend.dev>');
+
+    const activeTransporter = this.getTransporter();
 
     // 1. Send via SMTP (Primary)
-    if (this.transporter) {
+    if (activeTransporter) {
       try {
-        await this.transporter.sendMail({
+        await activeTransporter.sendMail({
           from: fromStr,
           to,
           subject,
           html,
           text,
         });
-        this.logger.log(`Verification email sent via SMTP successfully to ${to}`);
+        this.logger.log(`Email sent via SMTP successfully to ${to}`);
         return;
       } catch (smtpError) {
         this.logger.error(
           `SMTP email delivery failed to ${to}: ${smtpError instanceof Error ? smtpError.message : smtpError}`,
         );
         throw new Error(
-          `SMTP Delivery Failed: ${smtpError instanceof Error ? smtpError.message : 'Check your SMTP_USER and SMTP_PASSWORD settings'}`,
+          `SMTP Delivery Failed: ${smtpError instanceof Error ? smtpError.message : 'Invalid SMTP credentials'}`,
         );
       }
     }
 
     // 2. Fallback to Resend API if SMTP is unconfigured
-    if (this.resend) {
+    const activeResend = this.getResend();
+    if (activeResend) {
       try {
-        const { data, error } = await this.resend.emails.send({
+        const { data, error } = await activeResend.emails.send({
           from: fromStr,
           to: [to],
           subject,
@@ -114,12 +120,14 @@ export class MailService {
 
     // 3. Warning if neither SMTP nor Resend is configured
     this.logger.warn(
-      `Email not sent to ${to}. Please configure valid SMTP_USER and SMTP_PASSWORD in .env.`,
+      `Email not sent to ${to}. Please configure SMTP_USER (${smtpUser || 'not set'}) and SMTP_PASSWORD in .env.`,
     );
   }
 
   async sendVerificationEmail(to: string, token: string) {
-    const appUrl = (this.configService.get('FRONTEND_URL') || 'http://localhost:3000').toString();
+    const rawUrl =
+      this.configService.get('FRONTEND_URL') || process.env.FRONTEND_URL || 'http://localhost:3000';
+    const appUrl = rawUrl.toString();
     const verificationUrl = `${appUrl.replace(/\/$/, '')}/verify-email?token=${token}`;
     const html = `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #111827; background-color: #f9fafb;">
@@ -142,7 +150,9 @@ export class MailService {
   }
 
   async sendResetPasswordEmail(to: string, token: string) {
-    const appUrl = (this.configService.get('FRONTEND_URL') || 'http://localhost:3000').toString();
+    const rawUrl =
+      this.configService.get('FRONTEND_URL') || process.env.FRONTEND_URL || 'http://localhost:3000';
+    const appUrl = rawUrl.toString();
     const resetUrl = `${appUrl.replace(/\/$/, '')}/reset-password?token=${token}`;
     const html = `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #111827; background-color: #f9fafb;">
