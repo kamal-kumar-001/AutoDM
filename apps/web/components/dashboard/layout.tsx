@@ -19,6 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
+import { apiRequest } from '@/lib/api-client';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -130,14 +131,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     onClick={async () => {
                       const toastId = toast.loading('Sending verification email...');
                       try {
-                        await fetch('/api/auth/resend-verification', {
+                        if (!session?.user?.email) {
+                          throw new Error('User email not found in session');
+                        }
+                        await apiRequest('/auth/resend-verification', {
                           method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ email: session.user?.email }),
+                          body: JSON.stringify({ email: session.user.email }),
                         });
                         toast.success('Verification link sent! Check your inbox.', { id: toastId });
-                      } catch {
-                        toast.error('Failed to send verification email', { id: toastId });
+                      } catch (err) {
+                        const msg =
+                          err instanceof Error ? err.message : 'Failed to send verification email';
+                        toast.error(msg, { id: toastId });
                       }
                     }}
                     className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 font-bold border border-amber-500/30 transition-all text-[11px] whitespace-nowrap cursor-pointer"

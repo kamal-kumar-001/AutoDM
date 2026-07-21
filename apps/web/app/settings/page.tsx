@@ -272,16 +272,22 @@ export default function SettingsPage() {
                             onClick={async () => {
                               const toastId = toast.loading('Sending verification email...');
                               try {
-                                await fetch('/api/auth/resend-verification', {
+                                if (!userEmail) {
+                                  throw new Error('Email address is missing');
+                                }
+                                await apiRequest('/auth/resend-verification', {
                                   method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({ email: userEmail }),
                                 });
                                 toast.success('Verification link sent! Check your inbox.', {
                                   id: toastId,
                                 });
-                              } catch {
-                                toast.error('Failed to send verification link', { id: toastId });
+                              } catch (err) {
+                                const msg =
+                                  err instanceof Error
+                                    ? err.message
+                                    : 'Failed to send verification link';
+                                toast.error(msg, { id: toastId });
                               }
                             }}
                             className="text-[10px] text-primary hover:underline font-semibold cursor-pointer"

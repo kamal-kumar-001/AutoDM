@@ -21,10 +21,14 @@ import {
 } from './dto/auth-requests.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
+import { ConfigService } from '../config/config.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -124,5 +128,22 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async getDeleteRequest(@GetUser() user: { id: string }) {
     return this.authService.getDeleteRequest(user.id);
+  }
+
+  @Post('deauthorize')
+  @HttpCode(HttpStatus.OK)
+  async deauthorize(@Body() body: any) {
+    return { success: true, message: 'Deauthorized successfully' };
+  }
+
+  @Post('data-deletion')
+  @HttpCode(HttpStatus.OK)
+  async dataDeletion(@Body() body: any) {
+    const confirmationCode = 'DEL-' + Math.random().toString(36).substring(2, 15).toUpperCase();
+    const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+    return {
+      url: `${frontendUrl.replace(/\/$/, '')}/privacy`,
+      confirmation_code: confirmationCode,
+    };
   }
 }
