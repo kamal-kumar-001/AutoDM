@@ -198,10 +198,12 @@ export class InstagramService {
               isConnected: true,
             },
             update: {
+              userId,
               username: igAccount.username,
               displayName: igAccount.name || null,
               profilePicture: igAccount.profile_picture_url || null,
               accessToken: encryptedPageToken,
+              instagramPageId: page.id,
               followersCount: igAccount.followers_count || 0,
               followingCount: igAccount.follows_count || 0,
               mediaCount: igAccount.media_count || 0,
