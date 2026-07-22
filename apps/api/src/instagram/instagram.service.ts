@@ -163,9 +163,7 @@ export class InstagramService {
           try {
             await axios.post(
               `https://graph.facebook.com/v20.0/${page.id}/subscribed_apps`,
-              {
-                subscribed_fields: ['feed', 'messages', 'mention'],
-              },
+              {},
               {
                 params: { access_token: page.access_token },
               },
