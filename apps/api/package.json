@@ -9,8 +9,7 @@
     "prisma": "prisma",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "db:push": "prisma db push",
-    "create:test-user": "npx ts-node src/scripts/create-test-user.ts"
+    "db:push": "prisma db push"
   },
   "dependencies": {
     "@autodm/types": "workspace:*",
@@ -47,7 +46,6 @@
     "@types/nodemailer": "^6.4.15",
     "@types/passport-jwt": "^4.0.1",
     "prisma": "^5.14.0",
-    "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   }
 }
