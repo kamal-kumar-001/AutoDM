@@ -1,33 +1,33 @@
 'use client';
 
 import * as React from 'react';
-import { Link2, Sparkles, Layers, Play } from 'lucide-react';
+import { Link2, Sparkles, Layers, Play, CheckCircle } from 'lucide-react';
 
 export default function SetupGuide() {
   const steps = [
     {
       step: '01',
-      title: 'Link Instagram',
-      desc: 'Navigate to Settings inside the dashboard, click "Connect Facebook" to authorize access, and select your Instagram Business account.',
-      icon: Link2,
-    },
-    {
-      step: '02',
-      title: 'Invite Testers',
-      desc: 'If in Meta Development mode, add your test accounts under App Roles -> Instagram Testers on the Facebook Developer portal and accept the invite.',
+      title: 'Professional Account',
+      desc: 'Switch your Instagram profile type to a Business or Creator account. Meta does not support automation for personal profiles.',
       icon: Sparkles,
     },
     {
+      step: '02',
+      title: 'Link Facebook Page',
+      desc: 'Link your Instagram account directly to your Facebook Page in your Instagram Profile settings -> Page.',
+      icon: Link2,
+    },
+    {
       step: '03',
-      title: 'Create Campaign',
-      desc: 'Click "Create Campaign" on the Automations tab, select your target post or keyword, compose your DMs or comment reply templates, and launch!',
-      icon: Layers,
+      title: 'Authorize AutoDM',
+      desc: 'Navigate to Settings -> Account in the AutoDM dashboard. Click "Connect Facebook" and authorize access to your Page and Instagram profile.',
+      icon: CheckCircle,
     },
     {
       step: '04',
-      title: 'Comment & Trigger',
-      desc: 'Comment your configured keyword on your post using any test account, and witness the auto-reply deliver in under 3 seconds.',
-      icon: Play,
+      title: 'Launch Campaign',
+      desc: 'Click "Create Campaign" on the Automations tab, select your target post or keyword, compose your DMs, and activate your campaign!',
+      icon: Layers,
     },
   ];
 

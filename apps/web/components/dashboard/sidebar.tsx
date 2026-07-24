@@ -18,8 +18,6 @@ import {
 import { cn } from '@autodm/ui';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { HelpGuideModal } from './help-guide-modal';
-import { ContactModal } from './contact-modal';
 
 interface SidebarItem {
   name: string;
@@ -38,11 +36,14 @@ const navItems: SidebarItem[] = [
 
 const adminNavItem: SidebarItem = { name: 'Admin', href: '/admin', icon: Shield };
 
-export function Sidebar() {
+interface SidebarProps {
+  onOpenHelp: () => void;
+  onOpenContact: () => void;
+}
+
+export function Sidebar({ onOpenHelp, onOpenContact }: SidebarProps) {
   const [collapsed, setCollapsed] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
-  const [isHelpOpen, setIsHelpOpen] = React.useState(false);
-  const [isContactOpen, setIsContactOpen] = React.useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
@@ -144,7 +145,7 @@ export function Sidebar() {
       {/* Help & Contact buttons */}
       <div className="px-3 py-2 space-y-1 border-t border-white/5 flex-shrink-0">
         <button
-          onClick={() => setIsHelpOpen(true)}
+          onClick={onOpenHelp}
           className={cn(
             'flex items-center w-full px-3 py-2 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer',
             collapsed && 'justify-center px-0',
@@ -155,7 +156,7 @@ export function Sidebar() {
           {(!mounted || !collapsed) && <span className="ml-3 truncate">Help Guide</span>}
         </button>
         <button
-          onClick={() => setIsContactOpen(true)}
+          onClick={onOpenContact}
           className={cn(
             'flex items-center w-full px-3 py-2 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer',
             collapsed && 'justify-center px-0',
@@ -192,9 +193,6 @@ export function Sidebar() {
           </button>
         )}
       </div>
-
-      <HelpGuideModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
-      <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
     </aside>
   );
 }

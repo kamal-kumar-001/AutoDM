@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, Link, Layers, PlayCircle, HelpCircle } from 'lucide-react';
+import { X, Sparkles, Link, Layers, PlayCircle, HelpCircle, CheckCircle } from 'lucide-react';
 
 interface HelpGuideModalProps {
   isOpen: boolean;
@@ -12,28 +12,28 @@ interface HelpGuideModalProps {
 export function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps) {
   const steps = [
     {
-      title: '1. Link Instagram Account',
+      title: '1. Set Instagram to Professional',
       description:
-        'Navigate to Settings -> Account tab. Click "Connect Facebook" to authorize access. Select the Instagram Business Page you want to automate. Ensure the Instagram account is set to Business or Creator mode.',
-      icon: Link,
-    },
-    {
-      title: '2. Setup Sandbox Roles (If Testing)',
-      description:
-        'If your Meta App is in Development mode, you must invite test accounts. Go to Meta Developer Portal -> App Roles -> Roles. Add your target test Instagram accounts as Instagram Testers. Accept the invite under Instagram Settings -> Website Permissions -> Tester Invites.',
+        'Open the Instagram app on your mobile device, navigate to Settings, and switch your profile type to a Business or Creator account. Meta does not support automation for personal profiles.',
       icon: HelpCircle,
     },
     {
-      title: '3. Create Your Automation Campaign',
+      title: '2. Link to Facebook Page',
       description:
-        'Go to Automations and click "Create Campaign". Set up your triggers (keywords in DMs/comments, or specific media monitors), type out your custom message (use {username} or {name} for personalization!), and choose public comment reply options.',
-      icon: Layers,
+        'Create a Facebook Page representing your brand (or use an existing page). In your Instagram Profile settings -> Page, link your Instagram account directly to your Facebook Page.',
+      icon: Link,
     },
     {
-      title: '4. Test Your Triggers',
+      title: '3. Connect Page on AutoDM',
       description:
-        'Use a separate Instagram account (registered as a tester) to comment the keyword on your selected post or send a DM. The queue worker processes the webhook and delivers the auto-reply in under 3 seconds!',
-      icon: PlayCircle,
+        'Go to Settings -> Account in your AutoDM dashboard. Click "Connect Facebook" to login. Authorize full permissions to both your Facebook Page and your linked Instagram Professional profile.',
+      icon: CheckCircle,
+    },
+    {
+      title: '4. Create & Launch Campaigns',
+      description:
+        'Navigate to Automations -> Create Campaign. Configure trigger keywords (EXACT or CONTAINS), set up direct message templates (with tags like {username}), and launch to start automating instantly!',
+      icon: Layers,
     },
   ];
 
@@ -64,15 +64,15 @@ export function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps) {
                   <Sparkles className="h-4.5 w-4.5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-extrabold text-white">How to Use AutoDM</h3>
+                  <h3 className="text-lg font-extrabold text-white">Creator Setup Guide</h3>
                   <p className="text-xs text-gray-500">
-                    Step-by-step instructions to get your automations running smoothly.
+                    Follow these simple steps to link your profile and activate DM automation.
                   </p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                className="p-1.5 rounded-lg bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -101,9 +101,8 @@ export function HelpGuideModal({ isOpen, onClose }: HelpGuideModalProps) {
             {/* Video/visual helper text */}
             <div className="p-3.5 rounded-xl bg-primary/5 border border-primary/10 text-center">
               <p className="text-[10px] text-gray-400">
-                💡 <strong>Important Note:</strong> Ensure that your Facebook page has full
-                permissions connected inside the Meta Business Suite settings, and that the account
-                is linked to your target Instagram account.
+                💡 <strong>Need Help?</strong> Click on the "Contact Support" option in your sidebar
+                to open a ticket directly with our engineering team, and we will get you linked!
               </p>
             </div>
           </motion.div>

@@ -40,7 +40,7 @@ export default function LandingPage() {
   return (
     <div className="bg-[#030712] min-h-screen text-white antialiased selection:bg-primary/30 selection:text-white overflow-x-hidden">
       {/* Global Promotion Banner */}
-      {promo.enabled && promo.text && (
+      {false && promo.enabled && promo.text && (
         <div className="bg-gradient-to-r from-primary/25 via-primary/35 to-accent-cyan/20 border-b border-primary/20 text-center py-2.5 px-4 text-xs font-black text-white flex items-center justify-center space-x-2 relative z-50 animate-pulse">
           <Megaphone className="w-3.5 h-3.5 text-primary flex-shrink-0 animate-bounce" />
           <span>{promo.text}</span>
