@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Search, Loader2, Download, Trash2, Play, Pause } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 import { toast } from '@autodm/ui';
+import { CustomSelect } from '../ui/custom-select';
 
 interface AuditLog {
   id: string;
@@ -190,21 +191,16 @@ export function AdminLogs() {
           {/* Purge timeframe select */}
           <div className="flex items-center space-x-2 bg-white/5 border border-white/10 rounded-lg p-1.5">
             <span className="text-[10px] text-gray-400 pl-1">Purge:</span>
-            <select
+            <CustomSelect
               value={purgeTimeframe}
-              onChange={(e) => setPurgeTimeframe(e.target.value)}
-              className="custom-select !h-8 !py-0 !pl-2 pr-8"
-            >
-              <option value="30" className="bg-zinc-900 text-white">
-                Older than 30 days
-              </option>
-              <option value="90" className="bg-zinc-900 text-white">
-                Older than 90 days
-              </option>
-              <option value="all" className="bg-zinc-900 text-white">
-                All time
-              </option>
-            </select>
+              onChange={(val) => setPurgeTimeframe(val)}
+              className="w-36"
+              options={[
+                { value: '30', label: 'Older than 30 days' },
+                { value: '90', label: 'Older than 90 days' },
+                { value: 'all', label: 'All time' },
+              ]}
+            />
             <button
               onClick={handlePurge}
               disabled={purging}

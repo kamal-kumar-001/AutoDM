@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button, Input, Label, toast } from '@autodm/ui';
 import { apiRequest, ApiError } from '@/lib/api-client';
+import { CustomSelect } from '../ui/custom-select';
 
 interface CampaignWizardProps {
   isOpen: boolean;
@@ -59,7 +60,7 @@ export function CampaignWizard({
   const [name, setName] = React.useState('');
   const [description, setDescription] = React.useState('');
   const [type, setType] = React.useState<
-    'COMMENT_TO_DM' | 'KEYWORD_TO_DM' | 'WELCOME_DM' | 'STORY_REPLY_TO_DM'
+    'COMMENT_TO_DM' | 'KEYWORD_TO_DM' | 'WELCOME_DM' | 'STORY_REPLY_TO_DM' | 'COMMENT_REPLY'
   >('COMMENT_TO_DM');
   const [accountId, setAccountId] = React.useState('');
   const [keywords, setKeywords] = React.useState('');
@@ -68,6 +69,7 @@ export function CampaignWizard({
   const [replyMessage, setReplyMessage] = React.useState('');
   const [commentReplyEnabled, setCommentReplyEnabled] = React.useState(false);
   const [commentReplyText, setCommentReplyText] = React.useState('');
+  const [errors, setErrors] = React.useState<Record<string, string>>({});
 
   // Live posts state
   const [posts, setPosts] = React.useState<LivePost[]>([]);
@@ -79,7 +81,7 @@ export function CampaignWizard({
   interface EditingCampaign {
     name: string;
     description?: string | null;
-    type: 'COMMENT_TO_DM' | 'KEYWORD_TO_DM' | 'WELCOME_DM' | 'STORY_REPLY_TO_DM';
+    type: 'COMMENT_TO_DM' | 'KEYWORD_TO_DM' | 'WELCOME_DM' | 'STORY_REPLY_TO_DM' | 'COMMENT_REPLY';
     instagramAccountId: string;
     replyMessage: string;
     commentReplyEnabled: boolean;
@@ -101,6 +103,7 @@ export function CampaignWizard({
           setReplyMessage(camp.replyMessage);
           setCommentReplyEnabled(camp.commentReplyEnabled || false);
           setCommentReplyText(camp.commentReplyText || '');
+          setErrors({});
 
           if (camp.keywords && camp.keywords.length > 0) {
             setKeywords(camp.keywords.map((k) => k.keyword).join(', '));
@@ -126,6 +129,7 @@ export function CampaignWizard({
       setCommentReplyEnabled(false);
       setCommentReplyText('');
       setSelectedPostId(null);
+      setErrors({});
       setStep(1);
     }
   }, [isOpen, editCampaignId]);
@@ -146,7 +150,15 @@ export function CampaignWizard({
 
   const activeAccount = accounts.find((a) => a.id === accountId) || accounts[0];
 
-  // Fetch posts when account changes and type is COMMENT_TO_DM
+  const accountOptions = React.useMemo(() => {
+    return accounts.map((acc) => ({
+      value: acc.id,
+      label: `@${acc.username}`,
+      description: acc.displayName || undefined,
+    }));
+  }, [accounts]);
+
+  // Fetch posts when account changes and type is COMMENT_TO_DM or COMMENT_REPLY
   const fetchPosts = React.useCallback(async (accId: string, silent = false) => {
     if (!silent) setPostsStatus('fetching');
     try {
@@ -164,7 +176,7 @@ export function CampaignWizard({
   }, []);
 
   React.useEffect(() => {
-    if (type !== 'COMMENT_TO_DM' || !accountId) return;
+    if ((type !== 'COMMENT_TO_DM' && type !== 'COMMENT_REPLY') || !accountId) return;
     setSelectedPostId(null);
     setPosts([]);
     fetchPosts(accountId);
@@ -193,28 +205,42 @@ export function CampaignWizard({
   }, [isOpen]);
 
   const handleNext = () => {
+    const newErrors: Record<string, string> = {};
     if (step === 1) {
       if (!name.trim()) {
-        toast.error('Please enter a campaign name');
-        return;
+        newErrors.name = 'Campaign name is required';
+      }
+      if (!accountId) {
+        newErrors.accountId = 'Target Instagram account is required';
       }
     }
     if (step === 2) {
       if (type === 'KEYWORD_TO_DM' && !keywords.trim()) {
-        toast.error('Please enter trigger keywords');
-        return;
+        newErrors.keywords = 'Trigger keywords are required';
       }
-      if (type === 'COMMENT_TO_DM' && !selectedPostId) {
-        toast.error('Please select a post to monitor comments');
-        return;
+      if ((type === 'COMMENT_TO_DM' || type === 'COMMENT_REPLY') && !selectedPostId) {
+        newErrors.postId = 'Please select a post to monitor';
       }
     }
     if (step === 3) {
-      if (!replyMessage.trim()) {
-        toast.error('Please compose a reply message template');
-        return;
+      if (type === 'COMMENT_REPLY') {
+        if (!commentReplyText.trim()) {
+          newErrors.commentReplyText = 'Automated comment reply text is required';
+        }
+      } else {
+        if (!replyMessage.trim()) {
+          newErrors.replyMessage = 'Message text template is required';
+        }
       }
     }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error(Object.values(newErrors)[0]);
+      return;
+    }
+
+    setErrors({});
     setStep((prev) => prev + 1);
   };
 
@@ -243,12 +269,20 @@ export function CampaignWizard({
         description,
         type,
         instagramAccountId: accountId,
-        replyMessage,
-        commentReplyEnabled,
-        commentReplyText: commentReplyEnabled ? commentReplyText : null,
+        replyMessage: type === 'COMMENT_REPLY' ? 'Public Reply Only' : replyMessage,
+        commentReplyEnabled: type === 'COMMENT_REPLY' ? true : commentReplyEnabled,
+        commentReplyText:
+          type === 'COMMENT_REPLY'
+            ? commentReplyText
+            : commentReplyEnabled
+              ? commentReplyText
+              : null,
       };
 
-      if ((type === 'KEYWORD_TO_DM' || type === 'COMMENT_TO_DM') && keywords.trim()) {
+      if (
+        (type === 'KEYWORD_TO_DM' || type === 'COMMENT_TO_DM' || type === 'COMMENT_REPLY') &&
+        keywords.trim()
+      ) {
         payload.keywords = keywords
           .split(',')
           .map((k) => k.trim())
@@ -259,7 +293,7 @@ export function CampaignWizard({
           }));
       }
 
-      if (type === 'COMMENT_TO_DM' && selectedPostId) {
+      if ((type === 'COMMENT_TO_DM' || type === 'COMMENT_REPLY') && selectedPostId) {
         const post = posts.find((p) => p.id === selectedPostId);
         payload.posts = [
           {
@@ -403,7 +437,13 @@ export function CampaignWizard({
                           placeholder="e.g. Ebook Funnel 'GROW'"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
+                          className={
+                            errors.name ? 'border-red-500/50 focus-visible:ring-red-500' : ''
+                          }
                         />
+                        {errors.name && (
+                          <p className="text-[10px] text-red-400 mt-1">{errors.name}</p>
+                        )}
                       </div>
 
                       <div className="space-y-1.5">
@@ -423,22 +463,27 @@ export function CampaignWizard({
                             {
                               id: 'COMMENT_TO_DM',
                               title: 'Comment to DM',
-                              desc: 'Monitor post comments',
+                              desc: 'Comment triggers a direct DM & public reply',
                             },
                             {
                               id: 'KEYWORD_TO_DM',
                               title: 'DM Auto Reply',
-                              desc: 'Auto-reply to trigger keywords',
+                              desc: 'Auto-reply to trigger keywords in DMs',
                             },
                             {
                               id: 'WELCOME_DM',
                               title: 'Welcome DM',
-                              desc: 'Reply to new message threads',
+                              desc: 'Reply to new direct message threads',
                             },
                             {
                               id: 'STORY_REPLY_TO_DM',
                               title: 'Story Auto-Reply',
-                              desc: 'Reply to story replies',
+                              desc: 'Reply to story replies/mentions in DMs',
+                            },
+                            {
+                              id: 'COMMENT_REPLY',
+                              title: 'Comment Auto-Reply',
+                              desc: 'Public reply to post comments only (No DM)',
                             },
                           ].map((t) => (
                             <button
@@ -449,7 +494,8 @@ export function CampaignWizard({
                                     | 'COMMENT_TO_DM'
                                     | 'KEYWORD_TO_DM'
                                     | 'WELCOME_DM'
-                                    | 'STORY_REPLY_TO_DM',
+                                    | 'STORY_REPLY_TO_DM'
+                                    | 'COMMENT_REPLY',
                                 )
                               }
                               type="button"
@@ -484,45 +530,53 @@ export function CampaignWizard({
 
                       <div className="space-y-1.5">
                         <Label htmlFor="acc-select">Instagram Creator Account</Label>
-                        <select
+                        <CustomSelect
                           id="acc-select"
+                          options={accountOptions}
                           value={accountId}
-                          onChange={(e) => setAccountId(e.target.value)}
-                          className="custom-select w-full"
-                        >
-                          {accounts.map((acc) => (
-                            <option
-                              key={acc.id}
-                              value={acc.id}
-                              className="bg-background text-white"
-                            >
-                              @{acc.username}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(val) => setAccountId(val)}
+                          placeholder="Select linked channel..."
+                          error={errors.accountId}
+                        />
+                        {errors.accountId && (
+                          <p className="text-[10px] text-red-400 mt-1">{errors.accountId}</p>
+                        )}
                       </div>
 
                       {/* Keyword to DM trigger inputs */}
                       {(type === 'KEYWORD_TO_DM' ||
                         type === 'COMMENT_TO_DM' ||
+                        type === 'COMMENT_REPLY' ||
                         type === 'STORY_REPLY_TO_DM') && (
                         <div className="space-y-3">
                           <div className="space-y-1.5">
                             <Label htmlFor="keywords-in">
                               Trigger Keywords (comma separated){' '}
-                              {(type === 'COMMENT_TO_DM' || type === 'STORY_REPLY_TO_DM') &&
+                              {(type === 'COMMENT_TO_DM' ||
+                                type === 'COMMENT_REPLY' ||
+                                type === 'STORY_REPLY_TO_DM') &&
                                 '(Optional)'}
                             </Label>
                             <Input
                               id="keywords-in"
                               placeholder={
-                                type === 'COMMENT_TO_DM' || type === 'STORY_REPLY_TO_DM'
+                                type === 'COMMENT_TO_DM' ||
+                                type === 'COMMENT_REPLY' ||
+                                type === 'STORY_REPLY_TO_DM'
                                   ? 'e.g. discount, link (leave empty for any reply)'
                                   : 'e.g. GROW, START, EBOOK'
                               }
                               value={keywords}
                               onChange={(e) => setKeywords(e.target.value)}
+                              className={
+                                errors.keywords
+                                  ? 'border-red-500/50 focus-visible:ring-red-500'
+                                  : ''
+                              }
                             />
+                            {errors.keywords && (
+                              <p className="text-[10px] text-red-400 mt-1">{errors.keywords}</p>
+                            )}
                             <span className="text-[10px] text-gray-500">
                               Trigger phrase is case-insensitive.
                             </span>
@@ -530,28 +584,35 @@ export function CampaignWizard({
 
                           <div className="space-y-1.5">
                             <Label htmlFor="match-rule">Matching Strategy</Label>
-                            <select
+                            <CustomSelect
                               id="match-rule"
+                              options={[
+                                {
+                                  value: 'EXACT',
+                                  label: 'Exact Match',
+                                  description:
+                                    'Triggers only when the text matches the keyword exactly',
+                                },
+                                {
+                                  value: 'CONTAINS',
+                                  label: 'Contains Phrase',
+                                  description:
+                                    'Triggers when the comment/message contains the keyword',
+                                },
+                              ]}
                               value={matchingRule}
-                              onChange={(e) =>
-                                setMatchingRule(e.target.value as 'EXACT' | 'CONTAINS')
-                              }
-                              className="custom-select w-full"
-                            >
-                              <option value="EXACT" className="bg-background text-white">
-                                Exact Match
-                              </option>
-                              <option value="CONTAINS" className="bg-background text-white">
-                                Contains Phrase
-                              </option>
-                            </select>
+                              onChange={(val) => setMatchingRule(val as 'EXACT' | 'CONTAINS')}
+                            />
                           </div>
                         </div>
                       )}
 
                       {/* Comment to DM triggers */}
-                      {type === 'COMMENT_TO_DM' && (
+                      {(type === 'COMMENT_TO_DM' || type === 'COMMENT_REPLY') && (
                         <div className="space-y-2">
+                          {errors.postId && (
+                            <p className="text-xs text-red-400 font-bold">{errors.postId}</p>
+                          )}
                           <div className="flex items-center justify-between">
                             <Label>Select Target Post</Label>
                             {postsStatus === 'fetching' && (
@@ -651,61 +712,99 @@ export function CampaignWizard({
                         </p>
                       </div>
 
-                      <div className="space-y-1.5">
-                        <Label htmlFor="reply-composer">Message Text</Label>
-                        <textarea
-                          id="reply-composer"
-                          rows={4}
-                          value={replyMessage}
-                          onChange={(e) => setReplyMessage(e.target.value)}
-                          placeholder="Hey! Thanks for leaving a comment. Here is the link to access your free guide: https://example.com/free-guide"
-                          className="w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white text-xs focus:outline-none focus:ring-1 focus:ring-primary placeholder-gray-600 resize-none font-sans"
-                        />
-                      </div>
-
-                      {(type === 'COMMENT_TO_DM' || type === 'KEYWORD_TO_DM') && (
-                        <div className="space-y-3 pt-3 border-t border-white/5">
-                          <div className="flex items-center justify-between">
-                            <div className="flex flex-col">
-                              <Label className="font-bold text-white">
-                                Public Comment Reply (Optional)
-                              </Label>
-                              <span className="text-[10px] text-gray-500">
-                                Reply publicly to commenter on successful DM delivery
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setCommentReplyEnabled(!commentReplyEnabled)}
-                              className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                                commentReplyEnabled ? 'bg-primary' : 'bg-white/10'
-                              }`}
-                            >
-                              <span
-                                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                  commentReplyEnabled ? 'translate-x-4' : 'translate-x-0'
-                                }`}
-                              />
-                            </button>
-                          </div>
-
-                          {commentReplyEnabled && (
-                            <div className="space-y-1.5 animate-fadeIn">
-                              <Label htmlFor="comment-reply-text">Public Comment Text</Label>
-                              <Input
-                                id="comment-reply-text"
-                                placeholder="Sent! Check your DMs 😊"
-                                value={commentReplyText}
-                                onChange={(e) => setCommentReplyText(e.target.value)}
-                                className="text-xs h-9"
-                              />
-                              <span className="text-[9px] text-gray-500">
-                                Tip: Use <strong>{'{username}'}</strong> or{' '}
-                                <strong>{'{name}'}</strong> to personalize it!
-                              </span>
-                            </div>
+                      {type !== 'COMMENT_REPLY' && (
+                        <div className="space-y-1.5">
+                          <Label htmlFor="reply-composer">Message Text</Label>
+                          <textarea
+                            id="reply-composer"
+                            rows={4}
+                            value={replyMessage}
+                            onChange={(e) => setReplyMessage(e.target.value)}
+                            placeholder="Hey! Thanks for leaving a comment. Here is the link to access your free guide: https://example.com/free-guide"
+                            className={`w-full p-3 rounded-lg bg-white/5 border text-white text-xs focus:outline-none placeholder-gray-600 resize-none font-sans ${
+                              errors.replyMessage
+                                ? 'border-red-500/50 focus:ring-1 focus:ring-red-500'
+                                : 'border-white/10 focus:ring-1 focus:ring-primary'
+                            }`}
+                          />
+                          {errors.replyMessage && (
+                            <p className="text-[10px] text-red-400 mt-1">{errors.replyMessage}</p>
                           )}
                         </div>
+                      )}
+
+                      {type === 'COMMENT_REPLY' ? (
+                        <div className="space-y-3 pt-3">
+                          <div className="flex flex-col">
+                            <Label className="font-bold text-white">Automated Comment Reply</Label>
+                            <span className="text-[10px] text-gray-500">
+                              The text that will be publicly posted as a reply to the comment
+                            </span>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Input
+                              id="comment-reply-text"
+                              placeholder="Thanks for commenting! Check your DM 😊"
+                              value={commentReplyText}
+                              onChange={(e) => setCommentReplyText(e.target.value)}
+                              className={`text-xs h-9 ${errors.commentReplyText ? 'border-red-500/50 focus-visible:ring-red-500' : ''}`}
+                            />
+                            {errors.commentReplyText && (
+                              <p className="text-[10px] text-red-400 mt-1">
+                                {errors.commentReplyText}
+                              </p>
+                            )}
+                            <span className="text-[9px] text-gray-600">
+                              Tip: Use <strong>{'{username}'}</strong> or{' '}
+                              <strong>{'{name}'}</strong> to personalize it!
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        (type === 'COMMENT_TO_DM' || type === 'KEYWORD_TO_DM') && (
+                          <div className="space-y-3 pt-3 border-t border-white/5">
+                            <div className="flex items-center justify-between">
+                              <div className="flex flex-col">
+                                <Label className="font-bold text-white">
+                                  Public Comment Reply (Optional)
+                                </Label>
+                                <span className="text-[10px] text-gray-500">
+                                  Reply publicly to commenter on successful DM delivery
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setCommentReplyEnabled(!commentReplyEnabled)}
+                                className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                  commentReplyEnabled ? 'bg-primary' : 'bg-white/10'
+                                }`}
+                              >
+                                <span
+                                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                    commentReplyEnabled ? 'translate-x-4' : 'translate-x-0'
+                                  }`}
+                                />
+                              </button>
+                            </div>
+
+                            {commentReplyEnabled && (
+                              <div className="space-y-1.5 animate-fadeIn">
+                                <Label htmlFor="comment-reply-text">Public Comment Text</Label>
+                                <Input
+                                  id="comment-reply-text"
+                                  placeholder="Sent! Check your DMs 😊"
+                                  value={commentReplyText}
+                                  onChange={(e) => setCommentReplyText(e.target.value)}
+                                  className="text-xs h-9"
+                                />
+                                <span className="text-[9px] text-gray-500">
+                                  Tip: Use <strong>{'{username}'}</strong> or{' '}
+                                  <strong>{'{name}'}</strong> to personalize it!
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )
                       )}
                     </motion.div>
                   )}

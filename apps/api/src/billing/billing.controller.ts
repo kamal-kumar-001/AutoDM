@@ -72,7 +72,10 @@ export class BillingController {
 
   /** POST /billing/cancel — cancel subscription auto-renewal */
   @Post('cancel')
-  cancelSubscription(@GetUser() user: { id: string }) {
-    return this.subscriptionService.cancelSubscription(user.id);
+  cancelSubscription(
+    @GetUser() user: { id: string },
+    @Body() body?: { reason?: string; feedback?: string },
+  ) {
+    return this.subscriptionService.cancelSubscription(user.id, body);
   }
 }

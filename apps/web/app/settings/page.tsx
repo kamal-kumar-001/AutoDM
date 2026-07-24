@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardLayout } from '@/components/dashboard/layout';
 import { useSession } from 'next-auth/react';
 import {
@@ -20,6 +21,7 @@ import {
 import { Button, Input, Label, toast } from '@autodm/ui';
 import { apiRequest } from '@/lib/api-client';
 import { ConnectedAccounts } from '@/components/dashboard/connected-accounts';
+import { CustomSelect } from '@/components/ui/custom-select';
 
 type SettingTab = 'profile' | 'security' | 'channels' | 'billing' | 'preferences';
 
@@ -527,25 +529,17 @@ export default function SettingsPage() {
                   {/* Timezone */}
                   <div className="space-y-1.5">
                     <Label htmlFor="pref-tz">System Timezone</Label>
-                    <select
+                    <CustomSelect
                       id="pref-tz"
                       value={timezone}
-                      onChange={(e) => setTimezone(e.target.value)}
-                      className="custom-select w-full"
-                    >
-                      <option value="UTC" className="bg-background">
-                        Coordinated Universal Time (UTC)
-                      </option>
-                      <option value="EST" className="bg-background">
-                        Eastern Standard Time (EST)
-                      </option>
-                      <option value="PST" className="bg-background">
-                        Pacific Standard Time (PST)
-                      </option>
-                      <option value="IST" className="bg-background">
-                        Indian Standard Time (IST)
-                      </option>
-                    </select>
+                      onChange={(val) => setTimezone(val)}
+                      options={[
+                        { value: 'UTC', label: 'Coordinated Universal Time (UTC)' },
+                        { value: 'EST', label: 'Eastern Standard Time (EST)' },
+                        { value: 'PST', label: 'Pacific Standard Time (PST)' },
+                        { value: 'IST', label: 'Indian Standard Time (IST)' },
+                      ]}
+                    />
                   </div>
 
                   {/* Toggle Notification */}
@@ -605,31 +599,19 @@ export default function SettingsPage() {
               {/* Reason Dropdown */}
               <div className="space-y-1.5">
                 <Label htmlFor="del-reason">Reason for leaving</Label>
-                <select
+                <CustomSelect
                   id="del-reason"
                   value={deleteReason}
-                  onChange={(e) => setDeleteReason(e.target.value)}
-                  className="custom-select w-full"
-                >
-                  <option value="" disabled className="bg-zinc-900 text-gray-500">
-                    Select a reason...
-                  </option>
-                  <option value="Alternative Found" className="bg-zinc-900">
-                    Found a better alternative
-                  </option>
-                  <option value="Too Difficult" className="bg-zinc-900">
-                    Too complex / difficult to set up
-                  </option>
-                  <option value="No Longer Needed" className="bg-zinc-900">
-                    No longer need Instagram automation
-                  </option>
-                  <option value="Privacy / Security" className="bg-zinc-900">
-                    Privacy or security concerns
-                  </option>
-                  <option value="Other" className="bg-zinc-900">
-                    Other reason
-                  </option>
-                </select>
+                  onChange={(val) => setDeleteReason(val)}
+                  placeholder="Select a reason..."
+                  options={[
+                    { value: 'Alternative Found', label: 'Found a better alternative' },
+                    { value: 'Too Difficult', label: 'Too complex / difficult to set up' },
+                    { value: 'No Longer Needed', label: 'No longer need Instagram automation' },
+                    { value: 'Privacy / Security', label: 'Privacy or security concerns' },
+                    { value: 'Other', label: 'Other reason' },
+                  ]}
+                />
               </div>
 
               {/* Feedback text area */}
@@ -695,6 +677,7 @@ export default function SettingsPage() {
 }
 
 function SettingsBilling() {
+  const { data: session, update: updateSession } = useSession();
   const [plans, setPlans] = React.useState<any[]>([]);
   const [subscription, setSubscription] = React.useState<any>(null);
   const [usage, setUsage] = React.useState<any>(null);
@@ -702,6 +685,10 @@ function SettingsBilling() {
   const [loading, setLoading] = React.useState(true);
   const [isAnnual, setIsAnnual] = React.useState(false);
   const [cancelling, setCancelling] = React.useState(false);
+
+  const [showCancelModal, setShowCancelModal] = React.useState(false);
+  const [cancelReason, setCancelReason] = React.useState('');
+  const [cancelFeedback, setCancelFeedback] = React.useState('');
 
   const fetchData = async () => {
     try {
@@ -715,6 +702,15 @@ function SettingsBilling() {
       setSubscription(subData);
       setUsage(usageData);
       setInvoices(invoiceData || []);
+
+      if (subData?.plan && subData.plan !== (session?.user as any)?.plan) {
+        updateSession({
+          user: {
+            ...session?.user,
+            plan: subData.plan,
+          },
+        }).catch(() => null);
+      }
     } catch (e) {
       console.error('Failed to load billing metrics', e);
     } finally {
@@ -745,13 +741,19 @@ function SettingsBilling() {
   };
 
   const handleCancelSubscription = async () => {
-    if (!confirm('Are you sure you want to cancel your active subscription auto-renewal?')) return;
     setCancelling(true);
     try {
-      await apiRequest('/billing/cancel', { method: 'POST' });
+      await apiRequest('/billing/cancel', {
+        method: 'POST',
+        body: JSON.stringify({
+          reason: cancelReason,
+          feedback: cancelFeedback,
+        }),
+      });
       toast.success(
         'Subscription cancelled. Your access will remain active until the end of your billing cycle.',
       );
+      setShowCancelModal(false);
       fetchData();
     } catch (e) {
       toast.error('Failed to cancel subscription');
@@ -1017,15 +1019,99 @@ function SettingsBilling() {
             </p>
           </div>
           {subscription?.plan !== 'FREE' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCancelSubscription}
-              disabled={cancelling}
-              className="text-[10px] border-red-500/20 text-red-400 hover:bg-red-500/10 h-7"
-            >
-              {cancelling ? 'Cancelling...' : 'Cancel Auto-Renewal'}
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCancelModal(true)}
+                disabled={cancelling}
+                className="text-[10px] border-red-500/20 text-red-400 hover:bg-red-500/10 h-7"
+              >
+                Cancel Auto-Renewal
+              </Button>
+
+              {/* Cancellation Feedback Modal */}
+              <AnimatePresence>
+                {showCancelModal && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setShowCancelModal(false)}
+                      className="fixed inset-0 bg-black/75 backdrop-blur-sm cursor-pointer"
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="w-full max-w-md glass-card border-gradient p-6 rounded-2xl shadow-glass z-10 space-y-4 font-sans relative"
+                    >
+                      <div>
+                        <h3 className="text-base font-extrabold text-white">
+                          Cancel Subscription Auto-Renewal
+                        </h3>
+                        <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                          We are sad to see you go. Please let us know why you are cancelling your
+                          auto-renewal. Your premium access will remain active until the end of your
+                          current billing period.
+                        </p>
+                      </div>
+
+                      {/* Cancellation reason CustomSelect */}
+                      <div className="space-y-1.5 border-t border-white/5 pt-3">
+                        <Label htmlFor="cancel-reason">Reason for cancelling</Label>
+                        <CustomSelect
+                          id="cancel-reason"
+                          value={cancelReason}
+                          onChange={(val) => setCancelReason(val)}
+                          placeholder="Select a reason..."
+                          options={[
+                            { value: 'Too Expensive', label: 'Pricing is too high' },
+                            { value: 'Missing Features', label: 'Missing key features' },
+                            { value: 'Alternative Found', label: 'Switched to another product' },
+                            { value: 'Technical Issues', label: 'Too many bugs / difficult setup' },
+                            { value: 'Other', label: 'Other reason' },
+                          ]}
+                        />
+                      </div>
+
+                      {/* Feedback text area */}
+                      <div className="space-y-1.5">
+                        <Label htmlFor="cancel-feedback">Any additional feedback? (Optional)</Label>
+                        <textarea
+                          id="cancel-feedback"
+                          value={cancelFeedback}
+                          onChange={(e) => setCancelFeedback(e.target.value)}
+                          placeholder="Tell us how we can improve AutoDM..."
+                          className="w-full h-20 px-3 py-2 rounded-xl bg-[#0D0F16] border border-white/10 text-white text-xs placeholder:text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                        />
+                      </div>
+
+                      <div className="flex justify-end space-x-2 pt-3 border-t border-white/5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          type="button"
+                          onClick={() => setShowCancelModal(false)}
+                          className="h-9 px-4 text-xs font-semibold"
+                        >
+                          Keep Subscription
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={handleCancelSubscription}
+                          disabled={cancelling || !cancelReason}
+                          className="h-9 px-4 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all disabled:opacity-50"
+                        >
+                          {cancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+                        </button>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
+              </AnimatePresence>
+            </>
           )}
         </div>
 

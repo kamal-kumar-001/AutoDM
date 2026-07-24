@@ -277,6 +277,17 @@ export class AnalyticsService {
         }),
       ]);
 
+      // Resolve recipient usernames for outgoing DMs using Comment table
+      const recipientIds = recentMessages.map((m) => m.recipientId);
+      const comments = await this.prisma.comment.findMany({
+        where: { userId: { in: recipientIds } },
+        select: { userId: true, username: true },
+      });
+      const usernameMap = new Map<string, string>();
+      for (const c of comments) {
+        usernameMap.set(c.userId, c.username);
+      }
+
       const activity = [
         ...recentComments.map((c) => ({
           type: 'comment' as const,
@@ -286,14 +297,17 @@ export class AnalyticsService {
           success: c.isReplied,
           ts: c.createdAt,
         })),
-        ...recentMessages.map((m) => ({
-          type: 'dm' as const,
-          id: m.messageId,
-          label: `DM sent to ${m.recipientId}`,
-          detail: (m.text ?? '').slice(0, 60),
-          success: m.status === MessageStatus.SENT,
-          ts: m.createdAt,
-        })),
+        ...recentMessages.map((m) => {
+          const username = usernameMap.get(m.recipientId);
+          return {
+            type: 'dm' as const,
+            id: m.messageId,
+            label: username ? `DM sent to @${username}` : `DM sent to ${m.recipientId}`,
+            detail: (m.text ?? '').slice(0, 60),
+            success: m.status === MessageStatus.SENT,
+            ts: m.createdAt,
+          };
+        }),
       ]
         .sort((a, b) => b.ts.getTime() - a.ts.getTime())
         .slice(0, limit);

@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Input, Label, toast } from '@autodm/ui';
 import { Zap, Eye, EyeOff } from 'lucide-react';
@@ -19,9 +19,16 @@ type LoginData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const { status } = useSession();
   const searchParams = useSearchParams();
   const errorParam = searchParams.get('error');
   const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (status === 'authenticated') {
+      router.push('/dashboard');
+    }
+  }, [status, router]);
 
   const [showPassword, setShowPassword] = React.useState(false);
 

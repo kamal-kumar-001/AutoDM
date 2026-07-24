@@ -25,6 +25,7 @@ enum CampaignType {
   KEYWORD_TO_DM
   WELCOME_DM
   STORY_REPLY_TO_DM
+  COMMENT_REPLY
 }
 
 enum MatchingRule {

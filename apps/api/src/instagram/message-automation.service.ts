@@ -72,7 +72,7 @@ export class MessageAutomationService {
       },
     });
 
-    this.logger.log(`Received incoming message from @${fromUsername || fromId}: "${text}"`);
+    this.logger.log(`Received incoming message: messageId=${messageId}`);
 
     // 4. Fetch ACTIVE campaigns for this account that handle messaging
     const campaigns = await this.prisma.campaign.findMany({

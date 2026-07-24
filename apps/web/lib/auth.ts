@@ -11,12 +11,21 @@ interface AuthResponse {
     name?: string | null;
     role: string;
     isVerified: boolean;
+    plan: string;
   };
 }
 
 interface RefreshResponse {
   accessToken: string;
   refreshToken: string;
+  user?: {
+    id: string;
+    email: string;
+    name?: string | null;
+    role: string;
+    isVerified: boolean;
+    plan: string;
+  };
 }
 
 export const authOptions: NextAuthOptions = {
@@ -52,6 +61,7 @@ export const authOptions: NextAuthOptions = {
             name: data.user.name,
             role: data.user.role,
             isVerified: data.user.isVerified,
+            plan: data.user.plan || 'FREE',
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
           };
@@ -63,7 +73,15 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      // Dynamic updates support (e.g. from updateSession call)
+      if (trigger === 'update' && session?.user) {
+        token.user = {
+          ...token.user,
+          ...session.user,
+        };
+      }
+
       // Initial sign in
       if (user) {
         return {
@@ -76,6 +94,7 @@ export const authOptions: NextAuthOptions = {
             name: user.name,
             role: user.role,
             isVerified: user.isVerified,
+            plan: (user as any).plan || 'FREE',
           },
         };
       }
@@ -99,6 +118,12 @@ export const authOptions: NextAuthOptions = {
           accessToken: refreshedTokens.accessToken,
           refreshToken: refreshedTokens.refreshToken,
           accessTokenExpires: Date.now() + 15 * 60 * 1000 - 10 * 1000, // 15 mins (minus 10s buffer)
+          user: refreshedTokens.user
+            ? {
+                ...token.user,
+                plan: refreshedTokens.user.plan || 'FREE',
+              }
+            : token.user,
         };
       } catch (error) {
         console.error('Error refreshing access token', error);
@@ -118,6 +143,7 @@ export const authOptions: NextAuthOptions = {
         name: token.user.name,
         role: token.user.role,
         isVerified: token.user.isVerified,
+        plan: token.user.plan || 'FREE',
       };
       return session;
     },

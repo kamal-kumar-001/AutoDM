@@ -24,7 +24,10 @@ async function fetchAuth<T>(path: string): Promise<T> {
     cache: 'no-store',
   });
   if (!res.ok) throw new Error(`${res.status}`);
-  return res.json();
+  const json = await res.json();
+  return json && typeof json === 'object' && 'success' in json && 'data' in json
+    ? (json.data as T)
+    : (json as T);
 }
 
 function QueueCard({ q }: { q: QueueStats }) {

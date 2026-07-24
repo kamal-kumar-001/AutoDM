@@ -13,6 +13,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { MonitoringModule } from './monitoring/monitoring.module';
 import { BillingModule } from './billing/billing.module';
 import { AdminModule } from './admin/admin.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { AdminModule } from './admin/admin.module';
     MonitoringModule,
     BillingModule,
     AdminModule,
+    NotificationModule,
   ],
   controllers: [AppController],
 })

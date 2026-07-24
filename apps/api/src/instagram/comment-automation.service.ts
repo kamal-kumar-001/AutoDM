@@ -125,7 +125,10 @@ export class CommentAutomationService {
   ): boolean {
     const normalizedText = text.toLowerCase().trim();
 
-    if (campaign.type === CampaignType.COMMENT_TO_DM) {
+    if (
+      campaign.type === CampaignType.COMMENT_TO_DM ||
+      campaign.type === CampaignType.COMMENT_REPLY
+    ) {
       // 1. Must match the monitored post (or bypass for Meta Developer test payloads)
       const isMonitoredPost =
         mediaId === '123123123' || campaign.posts.some((p) => p.mediaId === mediaId);

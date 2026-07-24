@@ -13,9 +13,11 @@ import { SendDmProducer } from './send-dm.producer';
 import { SendDmProcessor } from './send-dm.processor';
 import { BullModule } from '@nestjs/bullmq';
 import { QUEUE_NAMES } from '../queue/constants';
+import { BillingModule } from '../billing/billing.module';
 
 @Module({
   imports: [
+    BillingModule,
     BullModule.registerQueue(
       { name: QUEUE_NAMES.INSTAGRAM_MEDIA_FETCH },
       { name: QUEUE_NAMES.SEND_DM },

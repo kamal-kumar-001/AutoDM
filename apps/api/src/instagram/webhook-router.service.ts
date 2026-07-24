@@ -109,9 +109,7 @@ export class WebhookRouterService {
       return;
     }
 
-    this.logger.log(
-      `Routing messaging event: messageId=${messageId} from=${fromId} text="${text}"`,
-    );
+    this.logger.log(`Routing messaging event: messageId=${messageId}`);
 
     const isStoryReply = !!messagingEvent?.message?.reply_to?.story;
 
@@ -139,9 +137,7 @@ export class WebhookRouterService {
       return;
     }
 
-    this.logger.log(
-      `Routing messaging change event: messageId=${messageId} from=${fromId} text="${text}"`,
-    );
+    this.logger.log(`Routing messaging change event: messageId=${messageId}`);
 
     const isStoryReply = !!value?.message?.reply_to?.story;
 

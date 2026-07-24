@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Button, Input, Label, toast } from '@autodm/ui';
 import { apiRequest } from '@/lib/api-client';
 import { Zap, Eye, EyeOff } from 'lucide-react';
@@ -26,9 +27,16 @@ type RegisterData = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { status } = useSession();
   const [loading, setLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
+
+  React.useEffect(() => {
+    if (status === 'authenticated') {
+      router.push('/dashboard');
+    }
+  }, [status, router]);
 
   const {
     register,

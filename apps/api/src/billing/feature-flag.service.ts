@@ -41,6 +41,11 @@ const DEFAULT_FLAGS: Array<{ key: string; description: string; enabledForPlans: 
     description: 'System-wide audit logging tracker',
     enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
+  {
+    key: 'EMAIL_VERIFICATION_REQUIRED',
+    description: 'Enforce email verification for campaign automation and account link actions',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
+  },
 ];
 
 @Injectable()

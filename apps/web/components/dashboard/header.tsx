@@ -8,9 +8,14 @@ import { usePathname, useRouter } from 'next/navigation';
 export interface HeaderProps {
   onOpenNotifications?: () => void;
   onOpenMobileMenu?: () => void;
+  unreadNotificationsCount?: number;
 }
 
-export function Header({ onOpenNotifications, onOpenMobileMenu }: HeaderProps) {
+export function Header({
+  onOpenNotifications,
+  onOpenMobileMenu,
+  unreadNotificationsCount = 0,
+}: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -19,51 +24,58 @@ export function Header({ onOpenNotifications, onOpenMobileMenu }: HeaderProps) {
     const segments = pathname.split('/').filter(Boolean);
     return segments.map((seg, idx) => {
       const href = '/' + segments.slice(0, idx + 1).join('/');
-      const label = seg.charAt(0).toUpperCase() + seg.slice(1);
-      const isActive = idx === segments.length - 1;
-      return { label, href, active: isActive };
+      let label = seg.charAt(0).toUpperCase() + seg.slice(1);
+      if (seg.toLowerCase() === 'dashboard') label = 'Dashboard';
+      if (seg.toLowerCase() === 'settings') label = 'Settings';
+      if (seg.toLowerCase() === 'automations') label = 'Automations';
+      if (seg.toLowerCase() === 'inbox') label = 'Inbox';
+      if (seg.toLowerCase() === 'analytics') label = 'Analytics';
+      return { label, href };
     });
   }, [pathname]);
 
-  // Mock items for command palette
-  const commandItems = React.useMemo(
-    () => [
-      {
-        id: 'dash',
-        title: 'Go to Dashboard',
-        subtitle: 'Main analytics summary',
-        shortcut: '⌥D',
-        action: () => router.push('/'),
-      },
-      {
-        id: 'autos',
-        title: 'Go to Automations',
-        subtitle: 'Configure DM triggers',
-        shortcut: '⌥A',
-        action: () => router.push('/automations'),
-      },
-      {
-        id: 'inbox',
-        title: 'Go to Inbox',
-        subtitle: 'Instagram DM Live Chat',
-        shortcut: '⌥I',
-        action: () => router.push('/inbox'),
-      },
-      {
-        id: 'settings',
-        title: 'Go to Settings',
-        subtitle: 'Billing and Integrations',
-        shortcut: '⌥S',
-        action: () => router.push('/settings'),
-      },
-    ],
-    [router],
-  );
+  const commandItems = [
+    {
+      id: 'dash',
+      title: 'Go to Dashboard',
+      subtitle: 'Main analytics summary',
+      shortcut: '⌥D',
+      action: () => router.push('/dashboard'),
+    },
+    {
+      id: 'autos',
+      title: 'Go to Automations',
+      subtitle: 'Configure DM triggers',
+      shortcut: '⌥A',
+      action: () => router.push('/automations'),
+    },
+    {
+      id: 'inbox',
+      title: 'Go to Inbox',
+      subtitle: 'Instagram DM Live Chat',
+      shortcut: '⌥I',
+      action: () => router.push('/inbox'),
+    },
+    {
+      id: 'analytics',
+      title: 'Go to Analytics',
+      subtitle: 'Audience growth metrics',
+      shortcut: '⌥L',
+      action: () => router.push('/analytics'),
+    },
+    {
+      id: 'settings',
+      title: 'Go to Settings',
+      subtitle: 'Billing and Integrations',
+      shortcut: '⌥S',
+      action: () => router.push('/settings'),
+    },
+  ];
 
   return (
-    <header className="h-16 border-b border-white/5 bg-black/20 backdrop-blur-md px-4 md:px-6 flex items-center justify-between sticky top-0 z-40">
-      {/* Left side: Hamburger + Breadcrumbs */}
-      <div className="flex items-center space-x-2">
+    <header className="flex h-14 items-center justify-between border-b border-white/5 bg-background/50 px-4 md:px-6 backdrop-blur-md z-30">
+      {/* Left side mobile menu trigger & breadcrumbs */}
+      <div className="flex items-center space-x-3">
         {onOpenMobileMenu && (
           <button
             onClick={onOpenMobileMenu}
@@ -88,7 +100,11 @@ export function Header({ onOpenNotifications, onOpenMobileMenu }: HeaderProps) {
           aria-label="Open Notifications"
         >
           <Bell className="h-4.5 w-4.5" />
-          <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-primary text-glow" />
+          {unreadNotificationsCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-black animate-pulse shadow-lg shadow-primary/30">
+              {unreadNotificationsCount}
+            </span>
+          )}
         </button>
       </div>
     </header>

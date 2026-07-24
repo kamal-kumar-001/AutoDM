@@ -28,6 +28,29 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const { data: session } = useSession();
 
+  const [notifications, setNotifications] = React.useState<any[]>([]);
+
+  const fetchNotifications = React.useCallback(async () => {
+    try {
+      const data = await apiRequest<any[]>('/notifications');
+      setNotifications(data || []);
+    } catch (e) {
+      console.error('Failed to fetch notifications', e);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (session) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [session, fetchNotifications]);
+
+  const unreadNotificationsCount = React.useMemo(() => {
+    return notifications.filter((n) => !n.isRead).length;
+  }, [notifications]);
+
   const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Creator';
   const userRole = session?.user?.role || 'Creator';
   const isAdmin = (session?.user as any)?.role === 'ADMIN';
@@ -98,6 +121,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <Header
           onOpenNotifications={() => setIsNotificationsOpen(true)}
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
+          unreadNotificationsCount={unreadNotificationsCount}
         />
 
         {/* Scrollable Dashboard Viewport */}
@@ -257,6 +281,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       <NotificationCenter
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
+        notifications={notifications}
+        setNotifications={setNotifications}
       />
     </div>
   );

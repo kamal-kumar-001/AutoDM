@@ -4,6 +4,7 @@ import * as React from 'react';
 import { Search, Loader2, UserX, UserCheck, Crown } from 'lucide-react';
 import { toast } from '@autodm/ui';
 import { apiRequest } from '@/lib/api-client';
+import { CustomSelect } from '../ui/custom-select';
 
 interface Creator {
   id: string;
@@ -263,21 +264,15 @@ export function AdminCreators() {
               <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">
                 Select Billing Plan
               </label>
-              <select
+              <CustomSelect
                 value={selectedPlan}
-                onChange={(e) => setSelectedPlan(e.target.value as 'FREE' | 'PRO' | 'ENTERPRISE')}
-                className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-primary/50"
-              >
-                <option value="FREE" className="bg-background text-white">
-                  FREE (1 Campaign, 100 DMs)
-                </option>
-                <option value="PRO" className="bg-background text-white">
-                  PRO (10 Campaigns, 5k DMs)
-                </option>
-                <option value="ENTERPRISE" className="bg-background text-white">
-                  ENTERPRISE (Unlimited)
-                </option>
-              </select>
+                onChange={(val) => setSelectedPlan(val as 'FREE' | 'PRO' | 'ENTERPRISE')}
+                options={[
+                  { value: 'FREE', label: 'FREE (1 Campaign, 100 DMs)' },
+                  { value: 'PRO', label: 'PRO (10 Campaigns, 5k DMs)' },
+                  { value: 'ENTERPRISE', label: 'ENTERPRISE (Unlimited)' },
+                ]}
+              />
             </div>
             <div className="flex justify-end space-x-2 pt-2 border-t border-white/5">
               <button

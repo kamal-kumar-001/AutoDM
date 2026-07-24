@@ -313,11 +313,25 @@ export class InstagramService {
 
     // Grouping manually in JS for thread representation
     const threadsMap = new Map<string, any>();
+    const recipientIds = messages.map((m) => m.recipientId);
+
+    // Fetch matching comments in bulk to resolve usernames
+    const comments = await this.prisma.comment.findMany({
+      where: { userId: { in: recipientIds } },
+      select: { userId: true, username: true },
+    });
+
+    const commentUsernameMap = new Map<string, string>();
+    for (const c of comments) {
+      commentUsernameMap.set(c.userId, c.username);
+    }
+
     for (const msg of messages) {
       if (!threadsMap.has(msg.recipientId)) {
         const account = accounts.find((a) => a.id === msg.instagramAccountId);
         threadsMap.set(msg.recipientId, {
           recipientId: msg.recipientId,
+          recipientUsername: commentUsernameMap.get(msg.recipientId) || null,
           lastMessage: msg.text || (msg.mediaUrl ? 'Attachment' : ''),
           updatedAt: msg.createdAt,
           instagramAccountId: msg.instagramAccountId,

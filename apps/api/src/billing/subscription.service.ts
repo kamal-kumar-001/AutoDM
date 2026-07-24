@@ -276,7 +276,7 @@ export class SubscriptionService {
         await this.prisma.billingPlan.upsert({
           where: { key: p.key },
           create: p,
-          update: {},
+          update: p,
         });
       }
     } catch (e) {
@@ -448,7 +448,38 @@ export class SubscriptionService {
     return invoice;
   }
 
-  async cancelSubscription(userId: string) {
+  async cancelSubscription(userId: string, body?: { reason?: string; feedback?: string }) {
+    const reason = body?.reason || 'No reason provided';
+    const feedback = body?.feedback || 'No comments';
+
+    // Log to console for admin visibility
+    console.log(
+      `[Subscription Cancelled] User ${userId} cancelled. Reason: "${reason}", Feedback: "${feedback}"`,
+    );
+
+    // Create an audit log record
+    await this.prisma.auditLog
+      .create({
+        data: {
+          userId,
+          action: 'SUBSCRIPTION_CANCELLATION_REQUESTED',
+          details: `Reason: ${reason} | Feedback: ${feedback}`,
+        },
+      })
+      .catch(() => null);
+
+    // Create a warning notification for the user
+    await this.prisma.notification
+      .create({
+        data: {
+          userId,
+          title: 'Auto-Renewal Cancelled ⚠️',
+          message: `Your premium subscription auto-renewal was successfully cancelled. You will continue to have PRO access until the end of your billing cycle. Reason: "${reason}".`,
+          type: 'WARNING',
+        },
+      })
+      .catch(() => null);
+
     return this.prisma.subscription.update({
       where: { userId },
       data: {

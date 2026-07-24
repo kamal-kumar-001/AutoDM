@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { CampaignStatus } from '@prisma/client';
 import { UsageLimitGuard, CheckLimit } from '../billing/usage-limit.guard';
+import { EmailVerificationGuard } from '../auth/guards/email-verification.guard';
 
 @Controller('campaigns')
 @UseGuards(JwtAuthGuard)
@@ -23,7 +24,7 @@ export class CampaignController {
   constructor(private readonly campaignService: CampaignService) {}
 
   @Post()
-  @UseGuards(UsageLimitGuard)
+  @UseGuards(UsageLimitGuard, EmailVerificationGuard)
   @CheckLimit('max_campaigns')
   @HttpCode(HttpStatus.CREATED)
   create(@GetUser() user: { id: string }, @Body() createCampaignDto: CreateCampaignDto) {
@@ -45,6 +46,7 @@ export class CampaignController {
   }
 
   @Patch(':id')
+  @UseGuards(EmailVerificationGuard)
   update(
     @GetUser() user: { id: string },
     @Param('id') id: string,
@@ -59,6 +61,7 @@ export class CampaignController {
   }
 
   @Post(':id/duplicate')
+  @UseGuards(EmailVerificationGuard)
   @HttpCode(HttpStatus.CREATED)
   duplicate(@GetUser() user: { id: string }, @Param('id') id: string) {
     return this.campaignService.duplicate(user.id, id);

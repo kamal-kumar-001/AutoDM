@@ -72,6 +72,7 @@ export class AuthService {
   async login(loginDto: LoginDto, ipAddress?: string, userAgent?: string) {
     const user = await this.prisma.user.findUnique({
       where: { email: loginDto.email.toLowerCase() },
+      include: { subscription: true },
     });
 
     if (!user) {
@@ -104,6 +105,35 @@ export class AuthService {
       userAgent,
     });
 
+    // Seed initial notifications if user has none
+    const notificationCount = await this.prisma.notification.count({
+      where: { userId: user.id },
+    });
+    if (notificationCount === 0) {
+      await this.prisma.notification
+        .createMany({
+          data: [
+            {
+              userId: user.id,
+              title: 'Welcome to AutoDM! 🚀',
+              message:
+                'You have successfully connected your creator workspace. Navigate to settings to connect your Instagram accounts and launch your first campaign.',
+              type: 'SUCCESS',
+              isRead: false,
+            },
+            {
+              userId: user.id,
+              title: 'Tip: Customize Template Tags 💡',
+              message:
+                'Use template tags like {username} and {name} in your auto-reply messages to personalize replies automatically.',
+              type: 'INFO',
+              isRead: false,
+            },
+          ],
+        })
+        .catch(() => null);
+    }
+
     return {
       user: {
         id: user.id,
@@ -111,6 +141,7 @@ export class AuthService {
         name: user.name,
         role: user.role,
         isVerified: user.isVerified,
+        plan: user.subscription?.plan || 'FREE',
       },
       ...tokens,
     };
@@ -119,34 +150,35 @@ export class AuthService {
   async refresh(refreshTokenDto: RefreshTokenDto, ipAddress?: string, userAgent?: string) {
     const storedToken = await this.prisma.refreshToken.findUnique({
       where: { token: refreshTokenDto.refreshToken },
-      include: { user: true },
+      include: {
+        user: {
+          include: { subscription: true },
+        },
+      },
     });
 
     if (!storedToken || storedToken.expiresAt < new Date()) {
       if (storedToken) {
-        await this.prisma.refreshToken.delete({ where: { id: storedToken.id } });
+        await this.prisma.refreshToken.delete({ where: { id: storedToken.id } }).catch(() => null);
       }
       throw new UnauthorizedException('Refresh token is invalid or expired');
     }
 
     const { user } = storedToken;
 
-    // Refresh Token Rotation: Delete old token, issue new token set
-    await this.prisma.refreshToken.delete({
-      where: { id: storedToken.id },
+    // Generate only a new access token
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    const accessToken = await this.jwtService.signAsync(payload, {
+      expiresIn: '15m',
     });
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
-
+    // Extend the existing refresh token's expiration date by 30 days
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30); // 30 days
 
-    await this.prisma.refreshToken.create({
-      data: {
-        token: tokens.refreshToken,
-        userId: user.id,
-        expiresAt,
-      },
+    await this.prisma.refreshToken.update({
+      where: { id: storedToken.id },
+      data: { expiresAt },
     });
 
     await this.auditLogService.log({
@@ -156,7 +188,18 @@ export class AuthService {
       userAgent,
     });
 
-    return tokens;
+    return {
+      accessToken,
+      refreshToken: storedToken.token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        isVerified: user.isVerified,
+        plan: user.subscription?.plan || 'FREE',
+      },
+    };
   }
 
   async verifyEmail(verifyEmailDto: VerifyEmailDto) {

@@ -1,5 +1,3 @@
-'use client';
-
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -11,37 +9,72 @@ import {
   AlertTriangle,
   AlertCircle,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
-import { mockNotifications, NotificationItem } from '@/lib/mock-data';
 import { toast } from '@autodm/ui';
+import { apiRequest } from '@/lib/api-client';
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+}
 
 interface NotificationCenterProps {
   isOpen: boolean;
   onClose: () => void;
+  notifications: NotificationItem[];
+  setNotifications: React.Dispatch<React.SetStateAction<NotificationItem[]>>;
 }
 
-export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps) {
-  const [notifications, setNotifications] = React.useState<NotificationItem[]>(mockNotifications);
-
+export function NotificationCenter({
+  isOpen,
+  onClose,
+  notifications,
+  setNotifications,
+}: NotificationCenterProps) {
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    toast.success('All notifications marked as read');
+  const markAllAsRead = async () => {
+    try {
+      await apiRequest('/notifications/read-all', { method: 'POST' });
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      toast.success('All notifications marked as read');
+    } catch (e) {
+      toast.error('Failed to mark notifications as read');
+    }
   };
 
-  const markAsRead = (id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+  const markAsRead = async (id: string) => {
+    try {
+      await apiRequest(`/notifications/${id}/read`, { method: 'PATCH' });
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+    } catch (e) {
+      toast.error('Failed to update notification');
+    }
+  };
+
+  const deleteNotification = async (id: string) => {
+    try {
+      await apiRequest(`/notifications/${id}`, { method: 'DELETE' });
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      toast.success('Notification deleted');
+    } catch (e) {
+      toast.error('Failed to delete notification');
+    }
   };
 
   const getAlertIcon = (type: string) => {
-    switch (type) {
-      case 'success':
-        return <Sparkles className="h-4 w-4 text-primary" />;
-      case 'warning':
+    switch (type?.toUpperCase()) {
+      case 'SUCCESS':
+        return <Sparkles className="h-4 w-4 text-primary animate-pulse" />;
+      case 'WARNING':
         return <AlertTriangle className="h-4 w-4 text-amber-400" />;
-      case 'error':
-        return <AlertCircle className="h-4 w-4 text-red-400" />;
+      case 'ERROR':
+        return <AlertCircle className="h-4 w-4 text-red-400 animate-bounce" />;
       default:
         return <Info className="h-4 w-4 text-accent-cyan" />;
     }
@@ -66,7 +99,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-            className="fixed right-0 top-0 bottom-0 w-full max-w-sm glass-card border-l border-white/5 bg-background/95 z-50 flex flex-col shadow-2xl"
+            className="fixed right-0 top-0 bottom-0 w-full max-w-sm glass-card border-l border-white/5 bg-[#0D0F16]/95 z-50 flex flex-col shadow-2xl"
           >
             {/* Header */}
             <div className="p-4 border-b border-white/5 flex items-center justify-between">
@@ -74,7 +107,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                 <Bell className="h-4 w-4 text-primary" />
                 <h3 className="text-sm font-semibold text-white">Notifications</h3>
                 {unreadCount > 0 && (
-                  <span className="text-[10px] bg-primary text-primary-foreground font-bold px-1.5 py-0.5 rounded-full">
+                  <span className="text-[10px] bg-primary text-black font-bold px-1.5 py-0.5 rounded-full">
                     {unreadCount} new
                   </span>
                 )}
@@ -84,7 +117,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
-                    className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                    className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
                     title="Mark all as read"
                   >
                     <CheckCheck className="h-4 w-4" />
@@ -92,7 +125,7 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                 )}
                 <button
                   onClick={onClose}
-                  className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                  className="p-1.5 rounded-md text-gray-400 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -120,25 +153,41 @@ export function NotificationCenter({ isOpen, onClose }: NotificationCenterProps)
                         <h4 className="text-xs font-bold text-white leading-normal truncate">
                           {item.title}
                         </h4>
-                        {!item.isRead && (
+                        <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {!item.isRead && (
+                            <button
+                              onClick={() => markAsRead(item.id)}
+                              className="text-[9px] text-primary hover:underline flex-shrink-0 flex items-center space-x-0.5 cursor-pointer"
+                              title="Mark as read"
+                            >
+                              <Check className="h-3 w-3" />
+                            </button>
+                          )}
                           <button
-                            onClick={() => markAsRead(item.id)}
-                            className="text-[9px] text-primary hover:underline flex-shrink-0 flex items-center space-x-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => deleteNotification(item.id)}
+                            className="text-[9px] text-gray-500 hover:text-red-400 flex-shrink-0 flex items-center space-x-0.5 cursor-pointer ml-1"
+                            title="Delete"
                           >
-                            <Check className="h-3 w-3" />
-                            <span>Read</span>
+                            <Trash2 className="h-3 w-3" />
                           </button>
-                        )}
+                        </div>
                       </div>
                       <p className="text-[11px] text-gray-400 leading-normal">{item.message}</p>
-                      <span className="text-[9px] text-gray-500 block">{item.createdAt}</span>
+                      <span className="text-[9px] text-gray-500 block">
+                        {new Date(item.createdAt).toLocaleDateString(undefined, {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </span>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="flex flex-col items-center justify-center py-20 text-center space-y-2 text-gray-500">
-                  <Bell className="h-8 w-8 text-gray-600" />
-                  <p className="text-xs">All caught up! No notifications.</p>
+                  <Bell className="h-8 w-8 text-gray-600 animate-pulse" />
+                  <p className="text-xs font-semibold">All caught up! No notifications.</p>
                 </div>
               )}
             </div>

@@ -94,6 +94,59 @@ export class SendDmProcessor extends WorkerHost {
       }
     }
 
+    if (campaign?.type === 'COMMENT_REPLY') {
+      this.logger.log(
+        `[Job ${job.id}] COMMENT_REPLY type — skipping DM, posting public comment reply only.`,
+      );
+
+      if (commentId) {
+        await this.prisma.comment.update({
+          where: { id: commentId },
+          data: {
+            isReplied: true,
+            replyText: `Public reply: ${campaign.commentReplyText?.slice(0, 50)}...`,
+          },
+        });
+      }
+
+      if (commentId && campaign.commentReplyText) {
+        try {
+          const triggeringComment = await this.prisma.comment.findUnique({
+            where: { id: commentId },
+          });
+
+          if (triggeringComment?.commentId) {
+            const commentReplyUrl = `https://graph.facebook.com/v20.0/${triggeringComment.commentId}/replies`;
+            this.logger.log(`[Job ${job.id}] Posting public comment reply via: ${commentReplyUrl}`);
+
+            const personalizedCommentReply = campaign.commentReplyText
+              .replace(/{username}/g, recipientUsername)
+              .replace(/{name}/g, recipientName);
+
+            if (accessToken.startsWith('mock_')) {
+              this.logger.log(`[Job ${job.id}] Sandbox mode — mocking public comment reply.`);
+            } else {
+              await axios.post(
+                commentReplyUrl,
+                { message: personalizedCommentReply },
+                {
+                  params: { access_token: accessToken },
+                  timeout: 10000,
+                },
+              );
+            }
+            this.logger.log(`[Job ${job.id}] Successfully posted public comment reply.`);
+          }
+        } catch (replyError: any) {
+          const metaError = replyError?.response?.data?.error?.message;
+          this.logger.error(
+            `[Job ${job.id}] Failed to post public comment reply: ${metaError || replyError.message}`,
+          );
+        }
+      }
+      return;
+    }
+
     const personalizedMessage = replyMessage
       .replace(/{username}/g, recipientUsername)
       .replace(/{name}/g, recipientName);
@@ -147,8 +200,59 @@ export class SendDmProcessor extends WorkerHost {
         this.logger.error(`[Job ${job.id}] Meta API failed: ${msg}`);
         sendStatus = MessageStatus.FAILED;
         errorMsg = msg;
-        // Re-throw so BullMQ will retry the job
-        throw error;
+
+        // Persist the FAILED message status and mark the comment as processed in the database
+        await this.prisma
+          .$transaction(async (tx) => {
+            await tx.message.create({
+              data: {
+                instagramAccountId: account.id,
+                recipientId: targetRecipientId,
+                senderId: account.instagramId,
+                text: personalizedMessage,
+                mediaUrl: replyMediaUrl ?? null,
+                messageId: `failed_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+                direction: MessageDirection.OUTGOING,
+                status: MessageStatus.FAILED,
+                errorMessage: errorMsg,
+                campaignId: campaignId === 'manual' ? null : campaignId,
+              },
+            });
+
+            if (commentId) {
+              await tx.comment.update({
+                where: { id: commentId },
+                data: {
+                  isReplied: true,
+                  replyText: `Failed: ${errorMsg}`,
+                },
+              });
+            }
+          })
+          .catch((dbErr) => {
+            this.logger.error(
+              `[Job ${job.id}] Failed to save failure state to DB: ${dbErr.message}`,
+            );
+          });
+
+        // Determine if it is a temporary error (e.g. 5xx or network timeout/no response)
+        const isTemporary = error.response ? error.response.status >= 500 : true;
+
+        // Meta permission/authentication errors (code 200, 10, 190, 100) are permanent
+        const isMetaPermissionError =
+          metaError &&
+          (metaError.code === 200 ||
+            metaError.code === 10 ||
+            metaError.code === 190 ||
+            metaError.code === 100);
+
+        if (isTemporary && !isMetaPermissionError) {
+          // Re-throw so BullMQ will retry the job
+          throw error;
+        }
+
+        // Otherwise return normally so the job completes successfully and isn't retried endlessly
+        return;
       }
     }
 

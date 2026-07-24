@@ -75,6 +75,7 @@ export default function CheckoutPage() {
     country: 'India',
     gstin: '',
   });
+  const [errors, setErrors] = React.useState<Record<string, string>>({});
 
   // Auto-fill from session
   React.useEffect(() => {
@@ -101,17 +102,20 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (
-      !formData.name ||
-      !formData.email ||
-      !formData.phone ||
-      !formData.address ||
-      !formData.city ||
-      !formData.pincode
-    ) {
-      toast.error('Please fill in all required billing fields.');
+    const newErrors: Record<string, string> = {};
+    if (!formData.name.trim()) newErrors.name = 'Full Name / Company is required';
+    if (!formData.email.trim()) newErrors.email = 'Billing Email is required';
+    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
+    if (!formData.address.trim()) newErrors.address = 'Street Address is required';
+    if (!formData.city.trim()) newErrors.city = 'City is required';
+    if (!formData.pincode.trim()) newErrors.pincode = 'Pincode is required';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast.error('Please resolve the errors on the billing form.');
       return;
     }
+    setErrors({});
 
     setLoading(true);
 
@@ -184,10 +188,18 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, name: e.target.value });
+                        setErrors({ ...errors, name: '' });
+                      }}
                       placeholder="Kamal Khatiwal"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
+                      className={`w-full bg-white/5 border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none transition-colors ${
+                        errors.name
+                          ? 'border-red-500/50 focus:border-red-500'
+                          : 'border-white/10 focus:border-primary'
+                      }`}
                     />
+                    {errors.name && <p className="text-[10px] text-red-400 mt-1">{errors.name}</p>}
                   </div>
 
                   <div>
@@ -197,10 +209,20 @@ export default function CheckoutPage() {
                     <input
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, email: e.target.value });
+                        setErrors({ ...errors, email: '' });
+                      }}
                       placeholder="creator@autodm.com"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
+                      className={`w-full bg-white/5 border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none transition-colors ${
+                        errors.email
+                          ? 'border-red-500/50 focus:border-red-500'
+                          : 'border-white/10 focus:border-primary'
+                      }`}
                     />
+                    {errors.email && (
+                      <p className="text-[10px] text-red-400 mt-1">{errors.email}</p>
+                    )}
                   </div>
                 </div>
 
@@ -211,10 +233,18 @@ export default function CheckoutPage() {
                   <input
                     type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, phone: e.target.value });
+                      setErrors({ ...errors, phone: '' });
+                    }}
                     placeholder="+91 98765 43210"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
+                    className={`w-full bg-white/5 border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none transition-colors ${
+                      errors.phone
+                        ? 'border-red-500/50 focus:border-red-500'
+                        : 'border-white/10 focus:border-primary'
+                    }`}
                   />
+                  {errors.phone && <p className="text-[10px] text-red-400 mt-1">{errors.phone}</p>}
                 </div>
 
                 <div>
@@ -224,10 +254,20 @@ export default function CheckoutPage() {
                   <input
                     type="text"
                     value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, address: e.target.value });
+                      setErrors({ ...errors, address: '' });
+                    }}
                     placeholder="Suite 402, Creator Hub Tower"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
+                    className={`w-full bg-white/5 border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none transition-colors ${
+                      errors.address
+                        ? 'border-red-500/50 focus:border-red-500'
+                        : 'border-white/10 focus:border-primary'
+                    }`}
                   />
+                  {errors.address && (
+                    <p className="text-[10px] text-red-400 mt-1">{errors.address}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
@@ -236,10 +276,18 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, city: e.target.value });
+                        setErrors({ ...errors, city: '' });
+                      }}
                       placeholder="Mumbai"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
+                      className={`w-full bg-white/5 border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none transition-colors ${
+                        errors.city
+                          ? 'border-red-500/50 focus:border-red-500'
+                          : 'border-white/10 focus:border-primary'
+                      }`}
                     />
+                    {errors.city && <p className="text-[10px] text-red-400 mt-1">{errors.city}</p>}
                   </div>
 
                   <div>
@@ -262,10 +310,20 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       value={formData.pincode}
-                      onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, pincode: e.target.value });
+                        setErrors({ ...errors, pincode: '' });
+                      }}
                       placeholder="400001"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
+                      className={`w-full bg-white/5 border rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none transition-colors ${
+                        errors.pincode
+                          ? 'border-red-500/50 focus:border-red-500'
+                          : 'border-white/10 focus:border-primary'
+                      }`}
                     />
+                    {errors.pincode && (
+                      <p className="text-[10px] text-red-400 mt-1">{errors.pincode}</p>
+                    )}
                   </div>
                 </div>
 

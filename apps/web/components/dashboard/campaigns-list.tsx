@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Layers, Play, Pause, AlertCircle, Loader2, Edit, Trash } from 'lucide-react';
 import { Input, toast } from '@autodm/ui';
 import { apiRequest } from '@/lib/api-client';
+import { CampaignDetailsModal } from './campaign-details';
 
 interface Campaign {
   id: string;
@@ -29,6 +30,19 @@ export function CampaignsList({ onEditCampaign }: { onEditCampaign?: (id: string
   const [statusFilter, setStatusFilter] = React.useState<'ALL' | 'ACTIVE' | 'PAUSED'>('ALL');
   const [campaigns, setCampaigns] = React.useState<Campaign[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [viewCampaignId, setViewCampaignId] = React.useState<string | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = React.useState(false);
+
+  const handleViewDetails = (id: string) => {
+    setViewCampaignId(id);
+    setIsDetailsOpen(true);
+  };
+
+  const handleCloseDetails = () => {
+    setIsDetailsOpen(false);
+    setViewCampaignId(null);
+    fetchCampaigns();
+  };
 
   const fetchCampaigns = async () => {
     try {
@@ -90,6 +104,8 @@ export function CampaignsList({ onEditCampaign }: { onEditCampaign?: (id: string
     switch (type) {
       case 'COMMENT_TO_DM':
         return 'bg-primary/10 text-primary border-primary/20';
+      case 'COMMENT_REPLY':
+        return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
       case 'KEYWORD_TO_DM':
         return 'bg-accent-cyan/10 text-accent-cyan border-accent-cyan/20';
       case 'STORY_REPLY_TO_DM':
@@ -155,7 +171,8 @@ export function CampaignsList({ onEditCampaign }: { onEditCampaign?: (id: string
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="p-3 rounded-lg bg-white/5 border border-white/5 hover:border-white/10 transition-colors flex items-center justify-between gap-4"
+                    onClick={() => handleViewDetails(campaign.id)}
+                    className="p-3 rounded-lg bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/[0.07] transition-all flex items-center justify-between gap-4 cursor-pointer"
                   >
                     {/* Info block */}
                     <div className="flex-1 min-w-0 space-y-1.5">
@@ -218,11 +235,12 @@ export function CampaignsList({ onEditCampaign }: { onEditCampaign?: (id: string
                     </div>
 
                     {/* Actions toggles */}
-                    <div className="flex items-center space-x-1.5">
+                    <div className="flex items-center space-x-1.5 z-10">
                       <button
-                        onClick={() =>
-                          toggleCampaignStatus(campaign.id, campaign.status, campaign.name)
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleCampaignStatus(campaign.id, campaign.status, campaign.name);
+                        }}
                         className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
                           campaign.status === 'ACTIVE'
                             ? 'bg-primary/10 border-primary/20 text-primary hover:bg-primary/20'
@@ -240,7 +258,10 @@ export function CampaignsList({ onEditCampaign }: { onEditCampaign?: (id: string
                       </button>
 
                       <button
-                        onClick={() => onEditCampaign?.(campaign.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditCampaign?.(campaign.id);
+                        }}
                         className="p-1.5 rounded-lg border border-white/5 bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
                         title="Edit Campaign"
                       >
@@ -248,7 +269,10 @@ export function CampaignsList({ onEditCampaign }: { onEditCampaign?: (id: string
                       </button>
 
                       <button
-                        onClick={() => handleArchive(campaign.id, campaign.name)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleArchive(campaign.id, campaign.name);
+                        }}
                         className="p-1.5 rounded-lg border border-white/5 bg-white/5 text-gray-500 hover:text-red-400 hover:bg-white/10 transition-all cursor-pointer"
                         title="Archive Campaign"
                       >
@@ -267,6 +291,16 @@ export function CampaignsList({ onEditCampaign }: { onEditCampaign?: (id: string
           </AnimatePresence>
         )}
       </div>
+
+      {/* Campaign Details View Modal */}
+      <CampaignDetailsModal
+        isOpen={isDetailsOpen}
+        onClose={handleCloseDetails}
+        campaignId={viewCampaignId}
+        onEdit={onEditCampaign || (() => {})}
+        onStatusToggle={toggleCampaignStatus}
+        onArchive={handleArchive}
+      />
     </div>
   );
 }

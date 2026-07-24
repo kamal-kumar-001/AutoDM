@@ -19,6 +19,7 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { MediaFetchProducer } from './media-fetch.producer';
 import { InstagramCacheService } from './instagram-cache.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailVerificationGuard } from '../auth/guards/email-verification.guard';
 
 @Controller('instagram')
 export class InstagramController {
@@ -58,7 +59,7 @@ export class InstagramController {
   }
 
   @Get('connect')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, EmailVerificationGuard)
   connect(@GetUser() user: { id: string }) {
     const authUrl = this.instagramService.getAuthUrl(user.id);
     return { url: authUrl };
