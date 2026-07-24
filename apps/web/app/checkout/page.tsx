@@ -62,6 +62,22 @@ export default function CheckoutPage() {
     initialCycle === 'YEARLY' || initialCycle === 'ANNUALLY' ? 'YEARLY' : 'MONTHLY',
   );
   const [loading, setLoading] = React.useState(false);
+  const [promoDiscount, setPromoDiscount] = React.useState(0);
+  const [promoText, setPromoText] = React.useState('');
+
+  // Fetch promotions config from public endpoint
+  React.useEffect(() => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    fetch(`${apiUrl}/pricing-promo`)
+      .then((res) => res.json())
+      .then((resJson) => {
+        if (resJson && resJson.success && resJson.data && resJson.data.promo) {
+          setPromoDiscount(resJson.data.promo.discountPercent || 0);
+          setPromoText(resJson.data.promo.text || '');
+        }
+      })
+      .catch((err) => console.error('Failed to load promotions config on checkout page', err));
+  }, []);
 
   // Form State
   const [formData, setFormData] = React.useState({
@@ -89,7 +105,8 @@ export default function CheckoutPage() {
   }, [session]);
 
   const planInfo = PLAN_PRICES[planKey] || PLAN_PRICES.PRO;
-  const basePrice = cycle === 'YEARLY' ? planInfo.yearly : planInfo.monthly;
+  const originalPrice = cycle === 'YEARLY' ? planInfo.yearly : planInfo.monthly;
+  const basePrice = Math.round(originalPrice * (1 - promoDiscount / 100));
   const tax = Math.round(basePrice * 0.18);
   const totalAmount = basePrice + tax;
 
@@ -436,18 +453,30 @@ export default function CheckoutPage() {
               {/* Line Items */}
               <div className="space-y-3 border-b border-white/10 pb-4 text-xs">
                 <div className="flex justify-between text-gray-300">
-                  <span>
-                    {planInfo.name} ({cycle === 'YEARLY' ? '12 Months' : '1 Month'})
+                  <span>Original Plan Price ({cycle === 'YEARLY' ? '12 Months' : '1 Month'})</span>
+                  <span className="font-semibold text-gray-400">
+                    ₹{originalPrice.toLocaleString('en-IN')}
                   </span>
-                  <span className="font-semibold">₹{basePrice.toLocaleString('en-IN')}</span>
                 </div>
 
                 {cycle === 'YEARLY' && (
                   <div className="flex justify-between text-emerald-400 text-[11px]">
                     <span>Annual Billing Discount</span>
-                    <span>-20% Applied</span>
+                    <span>-20% Included</span>
                   </div>
                 )}
+
+                {promoDiscount > 0 && (
+                  <div className="flex justify-between text-primary text-[11px] font-bold">
+                    <span>Promotional Discount ({promoDiscount}% Off)</span>
+                    <span>-₹{(originalPrice - basePrice).toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-gray-300 font-bold border-t border-white/5 pt-1.5">
+                  <span>Subtotal</span>
+                  <span>₹{basePrice.toLocaleString('en-IN')}</span>
+                </div>
 
                 <div className="flex justify-between text-gray-400 text-[11px]">
                   <span>Estimated Tax (18% GST)</span>

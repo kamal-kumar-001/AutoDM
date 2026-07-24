@@ -13,6 +13,7 @@ import { AdminLogs } from '@/components/admin/admin-logs';
 import { AdminQueue } from '@/components/admin/admin-queue';
 import { AdminFeatureFlags } from '@/components/admin/admin-feature-flags';
 import { AdminMonitoring } from '@/components/admin/admin-monitoring';
+import { AdminPromotions } from '@/components/admin/admin-promotions';
 import {
   Users,
   Layers,
@@ -23,6 +24,7 @@ import {
   Flag,
   Activity,
   BarChart3,
+  Megaphone,
 } from 'lucide-react';
 
 const TABS = [
@@ -35,6 +37,7 @@ const TABS = [
   { id: 'queue', label: 'Queue', icon: Server },
   { id: 'flags', label: 'Feature Flags', icon: Flag },
   { id: 'monitoring', label: 'Monitoring', icon: Activity },
+  { id: 'promotions', label: 'Promotions', icon: Megaphone },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -87,6 +90,7 @@ export default function AdminPage() {
           {tab === 'queue' && <AdminQueue />}
           {tab === 'flags' && <AdminFeatureFlags />}
           {tab === 'monitoring' && <AdminMonitoring />}
+          {tab === 'promotions' && <AdminPromotions />}
         </div>
       </div>
     </AdminLayout>

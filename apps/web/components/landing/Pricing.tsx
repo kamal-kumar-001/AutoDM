@@ -3,10 +3,18 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { Check, Sparkles } from 'lucide-react';
+import { Check, Sparkles, Percent } from 'lucide-react';
 import { PRICING_CONTENT } from '@/lib/landing-data';
 
-export default function Pricing() {
+interface PricingProps {
+  promo?: {
+    enabled: boolean;
+    text: string;
+    discountPercent: number;
+  };
+}
+
+export default function Pricing({ promo }: PricingProps) {
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -26,6 +34,8 @@ export default function Pricing() {
     router.push(destination);
   };
 
+  const discountPercent = promo?.discountPercent || 0;
+
   return (
     <section id="pricing" className="py-24 sm:py-32 relative bg-[#00BB88]/[0.01]">
       <div className="max-w-7xl mx-auto px-6">
@@ -38,6 +48,14 @@ export default function Pricing() {
             {PRICING_CONTENT.description}
           </p>
 
+          {/* Promotional notification banner badge inside pricing */}
+          {promo?.enabled && promo.text && (
+            <div className="inline-flex items-center space-x-2 bg-primary/10 border border-primary/20 rounded-full px-4 py-1.5 text-xs text-primary font-bold animate-pulse mx-auto">
+              <Percent className="w-3.5 h-3.5" />
+              <span>{promo.text}</span>
+            </div>
+          )}
+
           {/* Monthly / Annually Interactive Toggle */}
           <div className="flex items-center justify-center gap-3 pt-6">
             <span
@@ -47,7 +65,7 @@ export default function Pricing() {
             </span>
             <button
               onClick={() => setIsAnnual(!isAnnual)}
-              className="relative w-12 h-6 rounded-full bg-white/5 border border-white/10 transition-colors"
+              className="relative w-12 h-6 rounded-full bg-white/5 border border-white/10 transition-colors cursor-pointer"
               aria-label="Toggle billing cycle"
             >
               <div
@@ -72,10 +90,15 @@ export default function Pricing() {
           {PRICING_CONTENT.plans.map((plan) => {
             const isSelected = selectedPlan === plan.name;
 
-            // Calculate dynamic price based on cycle
+            // Calculate dynamic price based on cycle and promo discount
+            let originalPriceVal = 0;
             let displayPrice = plan.price;
+            let discountedPrice = 0;
+
             if (plan.name === 'Pro') {
-              displayPrice = isAnnual ? '₹799' : '₹999';
+              originalPriceVal = isAnnual ? 799 : 999;
+              discountedPrice = Math.round(originalPriceVal * (1 - discountPercent / 100));
+              displayPrice = `₹${discountedPrice}`;
             }
 
             return (
@@ -108,9 +131,27 @@ export default function Pricing() {
                     )}
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl sm:text-5xl font-black text-white tracking-tight">
-                      {displayPrice}
-                    </span>
+                    {plan.name === 'Pro' ? (
+                      <div className="flex flex-col">
+                        {discountPercent > 0 && (
+                          <div className="flex items-center space-x-1.5 mb-0.5">
+                            <span className="text-xs text-red-400 line-through font-semibold">
+                              ₹{originalPriceVal}
+                            </span>
+                            <span className="text-[9px] bg-red-500/10 border border-red-500/20 text-red-400 px-1 py-0.2 rounded font-bold uppercase animate-pulse">
+                              Save {discountPercent}%
+                            </span>
+                          </div>
+                        )}
+                        <span className="text-4xl sm:text-5xl font-black text-white tracking-tight">
+                          {displayPrice}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-4xl sm:text-5xl font-black text-white tracking-tight">
+                        {plan.price}
+                      </span>
+                    )}
                     <span className="text-sm text-gray-500 font-medium">
                       {plan.name === 'Enterprise'
                         ? ''
@@ -139,7 +180,7 @@ export default function Pricing() {
                     e.stopPropagation();
                     handleProceed(plan.name);
                   }}
-                  className={`w-full py-3.5 text-center rounded-2xl text-sm font-bold transition-all transform hover:-translate-y-0.5 active:translate-y-0 ${
+                  className={`w-full py-3.5 text-center rounded-2xl text-sm font-bold transition-all transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer ${
                     isSelected
                       ? 'bg-gradient-to-r from-primary to-accent-cyan text-white shadow-md hover:shadow-lg'
                       : 'bg-white/5 border border-white/10 hover:bg-white/10 text-white'

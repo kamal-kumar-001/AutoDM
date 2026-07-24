@@ -21,6 +21,7 @@ import {
   X,
   Bell,
   BarChart3,
+  Megaphone,
 } from 'lucide-react';
 import { cn, toast } from '@autodm/ui';
 
@@ -48,6 +49,7 @@ export function AdminLayout({ children, activeTab, setActiveTab }: AdminLayoutPr
     { id: 'queue', name: 'Job Queue', icon: Server },
     { id: 'flags', name: 'Feature Flags', icon: Flag },
     { id: 'monitoring', name: 'Monitoring', icon: Activity },
+    { id: 'promotions', name: 'Promotions', icon: Megaphone },
   ];
 
   const handleTabSelect = (id: string) => {

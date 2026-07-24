@@ -12,10 +12,14 @@ import {
   Zap,
   LogOut,
   Shield,
+  HelpCircle,
+  Mail,
 } from 'lucide-react';
 import { cn } from '@autodm/ui';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
+import { HelpGuideModal } from './help-guide-modal';
+import { ContactModal } from './contact-modal';
 
 interface SidebarItem {
   name: string;
@@ -37,6 +41,8 @@ const adminNavItem: SidebarItem = { name: 'Admin', href: '/admin', icon: Shield 
 export function Sidebar() {
   const [collapsed, setCollapsed] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
+  const [isHelpOpen, setIsHelpOpen] = React.useState(false);
+  const [isContactOpen, setIsContactOpen] = React.useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
@@ -135,6 +141,32 @@ export function Sidebar() {
         })}
       </nav>
 
+      {/* Help & Contact buttons */}
+      <div className="px-3 py-2 space-y-1 border-t border-white/5 flex-shrink-0">
+        <button
+          onClick={() => setIsHelpOpen(true)}
+          className={cn(
+            'flex items-center w-full px-3 py-2 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer',
+            collapsed && 'justify-center px-0',
+          )}
+          title="Help Guide & Instructions"
+        >
+          <HelpCircle className="h-4 w-4 flex-shrink-0" />
+          {(!mounted || !collapsed) && <span className="ml-3 truncate">Help Guide</span>}
+        </button>
+        <button
+          onClick={() => setIsContactOpen(true)}
+          className={cn(
+            'flex items-center w-full px-3 py-2 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer',
+            collapsed && 'justify-center px-0',
+          )}
+          title="Contact Support"
+        >
+          <Mail className="h-4 w-4 flex-shrink-0" />
+          {(!mounted || !collapsed) && <span className="ml-3 truncate">Contact Support</span>}
+        </button>
+      </div>
+
       {/* Footer Profile */}
       <div className="p-4 border-t border-white/5 flex items-center justify-between overflow-hidden flex-shrink-0">
         <div className="flex items-center space-x-3 truncate">
@@ -153,13 +185,16 @@ export function Sidebar() {
         {(!mounted || !collapsed) && (
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
-            className="p-1.5 rounded-md text-gray-500 hover:text-red-400 hover:bg-white/5 transition-colors"
+            className="p-1.5 rounded-md text-gray-500 hover:text-red-400 hover:bg-white/5 transition-colors cursor-pointer"
             title="Log Out"
           >
             <LogOut className="h-4 w-4" />
           </button>
         )}
       </div>
+
+      <HelpGuideModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+      <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
     </aside>
   );
 }

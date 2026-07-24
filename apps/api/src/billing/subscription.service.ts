@@ -287,6 +287,32 @@ export class SubscriptionService {
     }
   }
 
+  async seedPromoDefaults(): Promise<void> {
+    try {
+      const defaults = [
+        {
+          key: 'promo_banner_text',
+          value: 'Special launch discount! 30% off for the first 100 creators! Use code: LAUNCH30',
+        },
+        { key: 'promo_banner_enabled', value: 'true' },
+        { key: 'promo_discount_percent', value: '30' },
+      ];
+
+      for (const d of defaults) {
+        await this.prisma.systemSetting.upsert({
+          where: { key: d.key },
+          create: d,
+          update: {}, // Only create default if it does not exist, do not overwrite custom values
+        });
+      }
+    } catch (e) {
+      console.warn(
+        'SubscriptionService seedPromoDefaults skipped:',
+        e instanceof Error ? e.message : e,
+      );
+    }
+  }
+
   /** Get usage summary for current period. */
   async getUsageSummary(userId: string) {
     const period = new Date().toISOString().slice(0, 7);
@@ -366,7 +392,21 @@ export class SubscriptionService {
               ? 999
               : 4999;
 
-      const totalAmountPaise = Math.round(basePrice * 1.18 * 100);
+      // Fetch promotions discount config
+      const promoEnabledSetting = await this.prisma.systemSetting.findUnique({
+        where: { key: 'promo_banner_enabled' },
+      });
+      const promoDiscountSetting = await this.prisma.systemSetting.findUnique({
+        where: { key: 'promo_discount_percent' },
+      });
+
+      const isPromoEnabled = promoEnabledSetting?.value === 'true';
+      const promoDiscountPercent = isPromoEnabled
+        ? parseInt(promoDiscountSetting?.value || '0', 10)
+        : 0;
+
+      const discountedBasePrice = Math.round(basePrice * (1 - promoDiscountPercent / 100));
+      const totalAmountPaise = Math.round(discountedBasePrice * 1.18 * 100);
 
       const user = await this.prisma.user.findUnique({
         where: { id: userId },

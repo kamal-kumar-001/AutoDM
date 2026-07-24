@@ -170,6 +170,16 @@ export function AdminQueue() {
                     Retry
                   </button>
                 </div>
+
+                {/* Collapsible job details payload */}
+                <details className="group mt-2 border-t border-white/5 pt-1.5">
+                  <summary className="text-[9px] text-gray-500 cursor-pointer hover:text-gray-300 transition-colors select-none">
+                    View payload details
+                  </summary>
+                  <pre className="mt-1.5 text-[9px] text-gray-500 bg-black/40 border border-white/5 rounded-lg p-2.5 overflow-x-auto max-h-40 font-mono">
+                    {JSON.stringify(job.data, null, 2)}
+                  </pre>
+                </details>
               </div>
             ))}
           </div>

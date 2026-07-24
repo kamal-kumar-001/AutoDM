@@ -7,6 +7,8 @@ import { useShortcuts, toast } from '@autodm/ui';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NotificationCenter } from './notification-center';
+import { HelpGuideModal } from './help-guide-modal';
+import { ContactModal } from './contact-modal';
 import {
   LayoutDashboard,
   MessageSquareCode,
@@ -17,6 +19,8 @@ import {
   Zap,
   LogOut,
   X,
+  HelpCircle,
+  Mail,
 } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import { apiRequest } from '@/lib/api-client';
@@ -26,6 +30,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isHelpOpen, setIsHelpOpen] = React.useState(false);
+  const [isContactOpen, setIsContactOpen] = React.useState(false);
   const { data: session } = useSession();
 
   const [notifications, setNotifications] = React.useState<any[]>([]);
@@ -247,6 +253,30 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </nav>
               </div>
 
+              {/* Help & Contact buttons (Mobile) */}
+              <div className="px-3 py-2 space-y-1 border-t border-white/5 flex-shrink-0">
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setIsHelpOpen(true);
+                  }}
+                  className="flex items-center w-full px-3 py-2 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+                >
+                  <HelpCircle className="h-4 w-4 flex-shrink-0" />
+                  <span className="ml-3 truncate">Help Guide</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setIsContactOpen(true);
+                  }}
+                  className="flex items-center w-full px-3 py-2 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+                >
+                  <Mail className="h-4 w-4 flex-shrink-0" />
+                  <span className="ml-3 truncate">Contact Support</span>
+                </button>
+              </div>
+
               {/* Footer */}
               <div className="pt-4 border-t border-white/5 flex items-center justify-between">
                 <div className="flex items-center space-x-2.5 min-w-0">
@@ -266,7 +296,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                     setIsMobileMenuOpen(false);
                     signOut();
                   }}
-                  className="p-1.5 rounded-md text-gray-500 hover:text-red-400 hover:bg-white/5 transition-all"
+                  className="p-1.5 rounded-md text-gray-500 hover:text-red-400 hover:bg-white/5 transition-all cursor-pointer"
                   title="Sign Out"
                 >
                   <LogOut className="h-4 w-4" />
@@ -284,6 +314,9 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         notifications={notifications}
         setNotifications={setNotifications}
       />
+
+      <HelpGuideModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+      <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
     </div>
   );
 }

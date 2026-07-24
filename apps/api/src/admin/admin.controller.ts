@@ -214,4 +214,23 @@ export class AdminController {
   ) {
     return this.adminService.updateBillingPlan(key, body);
   }
+
+  // ─── Promo Settings ──────────────────────────────────────────────
+
+  @Get('promo')
+  getPromo() {
+    return this.adminService.getPromoSettings();
+  }
+
+  @Post('promo')
+  updatePromo(
+    @Body()
+    body: {
+      text: string;
+      enabled: boolean;
+      discountPercent: number;
+    },
+  ) {
+    return this.adminService.updatePromoSettings(body);
+  }
 }

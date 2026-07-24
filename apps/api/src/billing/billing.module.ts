@@ -22,5 +22,6 @@ export class BillingModule implements OnModuleInit {
   async onModuleInit() {
     await this.featureFlag.seedDefaults();
     await this.subscriptionService.seedPlansDefaults();
+    await this.subscriptionService.seedPromoDefaults();
   }
 }

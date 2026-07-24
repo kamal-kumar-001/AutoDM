@@ -380,4 +380,50 @@ export class AdminService {
       recentInvoices,
     };
   }
+
+  async getPromoSettings() {
+    const settings = await this.prisma.systemSetting.findMany({
+      where: {
+        key: {
+          in: ['promo_banner_text', 'promo_banner_enabled', 'promo_discount_percent'],
+        },
+      },
+    });
+
+    const settingsMap = settings.reduce(
+      (acc, curr) => {
+        acc[curr.key] = curr.value;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+
+    return {
+      text: settingsMap['promo_banner_text'] || '',
+      enabled: settingsMap['promo_banner_enabled'] === 'true',
+      discountPercent: parseInt(settingsMap['promo_discount_percent'] || '0', 10),
+    };
+  }
+
+  async updatePromoSettings(data: { text: string; enabled: boolean; discountPercent: number }) {
+    await this.prisma.systemSetting.upsert({
+      where: { key: 'promo_banner_text' },
+      update: { value: data.text },
+      create: { key: 'promo_banner_text', value: data.text },
+    });
+
+    await this.prisma.systemSetting.upsert({
+      where: { key: 'promo_banner_enabled' },
+      update: { value: String(data.enabled) },
+      create: { key: 'promo_banner_enabled', value: String(data.enabled) },
+    });
+
+    await this.prisma.systemSetting.upsert({
+      where: { key: 'promo_discount_percent' },
+      update: { value: String(data.discountPercent) },
+      create: { key: 'promo_discount_percent', value: String(data.discountPercent) },
+    });
+
+    return { success: true };
+  }
 }
