@@ -25,6 +25,9 @@ export const metadata: Metadata = {
     locale: 'en_US',
     type: 'website',
   },
+  verification: {
+    google: 'HFp8bpyG41psm7hb5aYEgShOZ50wfwEnVCsbBKZEfp8',
+  },
   twitter: {
     card: 'summary_large_image',
     title: 'AutoDM - Instagram DM Automation',

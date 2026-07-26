@@ -55,6 +55,7 @@
 
 ## 4. Refactoring Audit Log (Phase 21, Phase 22 & Phase 23)
 
+- **SEO & Google Search Console Verification**: Configured `verification: { google: 'HFp8bpyG41psm7hb5aYEgShOZ50wfwEnVCsbBKZEfp8' }` in `apps/web/app/layout.tsx` metadata. Renders `<meta name="google-site-verification" content="HFp8bpyG41psm7hb5aYEgShOZ50wfwEnVCsbBKZEfp8" />` across all pages.
 - **Pricing Data Centralization & Instant Loading**: Created `apps/web/lib/pricing-data.ts` as the single canonical file containing fallback pricing plans (`DEFAULT_PLANS`), launch promotions (`DEFAULT_PROMO`), plan feature flags (`DEFAULT_FEATURE_FLAGS`), and comparison matrix specifications (`COMPARISON_SPECIFICATIONS`). Pricing page (`/pricing`) initializes state immediately with this data, eliminating full-screen loading spinners and guaranteeing **0ms instant rendering** even if backend APIs are offline or unreachable.
 - **API Client Centralization**: Converted all raw `fetch` calls across 18 components to use `@/lib/api-client` utilities (`apiRequest` & `fetchWithAuth`).
 - **Session Type Augmentation**: Extended `next-auth` module definitions (`types/next-auth.d.ts`) to natively include `role`, `isVerified`, and `plan` on `session.user`. Replaced 14 unsafe `(session?.user as any)?.role` casts with standard typed access.
