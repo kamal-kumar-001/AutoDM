@@ -3,8 +3,7 @@
 import * as React from 'react';
 import { motion } from 'framer-motion';
 import { Cpu, HardDrive, Clock, Hash } from 'lucide-react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+import { fetchWithAuth } from '@/lib/api-client';
 
 interface SystemMetrics {
   uptimeSeconds: number;
@@ -13,21 +12,6 @@ interface SystemMetrics {
   memoryPercent: number;
   nodeVersion: string;
   pid: number;
-}
-
-async function fetchAuth<T>(path: string): Promise<T> {
-  const s = await fetch('/api/auth/session');
-  const session = await s.json();
-  const jwt = (session as any)?.accessToken as string | undefined;
-  const res = await fetch(`${API_URL}${path}`, {
-    headers: jwt ? { Authorization: `Bearer ${jwt}` } : {},
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`${res.status}`);
-  const json = await res.json();
-  return json && typeof json === 'object' && 'success' in json && 'data' in json
-    ? (json.data as T)
-    : (json as T);
 }
 
 function formatUptime(seconds: number): string {
@@ -87,7 +71,7 @@ export function SystemMetricsPanel() {
   const [metrics, setMetrics] = React.useState<SystemMetrics | null>(null);
 
   const load = React.useCallback(() => {
-    fetchAuth<SystemMetrics>('/monitoring/metrics')
+    fetchWithAuth<SystemMetrics>('/monitoring/metrics')
       .then((res) => (typeof res?.uptimeSeconds === 'number' ? setMetrics(res) : null))
       .catch(() => null);
   }, []);

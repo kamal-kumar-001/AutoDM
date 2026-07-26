@@ -2,8 +2,10 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Param,
   Query,
+  Body,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -54,5 +56,24 @@ export class MonitoringController {
   @Get('metrics')
   getMetrics() {
     return this.monitoringService.getSystemMetrics();
+  }
+
+  /** GET /monitoring/webhook-status — check if webhook routing is paused */
+  @Get('webhook-status')
+  getWebhookStatus() {
+    return this.monitoringService.getWebhookStatus();
+  }
+
+  /** POST /monitoring/webhook-status — pause/resume webhook processing */
+  @Post('webhook-status')
+  @HttpCode(HttpStatus.OK)
+  updateWebhookStatus(@Body() body: { paused: boolean }) {
+    return this.monitoringService.updateWebhookStatus(body.paused);
+  }
+
+  /** DELETE /monitoring/webhook-logs — purge all webhook logs */
+  @Delete('webhook-logs')
+  purgeWebhookLogs() {
+    return this.monitoringService.purgeWebhookLogs();
   }
 }

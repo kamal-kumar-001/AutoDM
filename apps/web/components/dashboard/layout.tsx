@@ -59,7 +59,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Creator';
   const userRole = session?.user?.role || 'Creator';
-  const isAdmin = (session?.user as any)?.role === 'ADMIN';
+  const isAdmin = session?.user?.role === 'ADMIN';
 
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -149,7 +149,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               className="relative z-10 max-w-7xl mx-auto space-y-6"
             >
               {/* Email Verification Banner */}
-              {session?.user && (session.user as any).isVerified === false && (
+              {session?.user && session.user.isVerified === false && (
                 <div className="p-3.5 rounded-xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-sm">
                   <div className="flex items-center space-x-2.5 text-amber-300">
                     <span className="flex-shrink-0 text-base">⚠️</span>

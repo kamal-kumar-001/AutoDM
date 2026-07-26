@@ -3,8 +3,8 @@
 import * as React from 'react';
 import { motion } from 'framer-motion';
 import { BarChart2 } from 'lucide-react';
+import { fetchWithAuth } from '@/lib/api-client';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 interface DailyUsage {
   date: string;
   comments: number;
@@ -12,24 +12,12 @@ interface DailyUsage {
   failedDms: number;
 }
 
-async function fetchAuth<T>(path: string): Promise<T> {
-  const s = await fetch('/api/auth/session');
-  const session = await s.json();
-  const jwt = (session as any)?.accessToken as string | undefined;
-  const res = await fetch(`${API_URL}${path}`, {
-    headers: jwt ? { Authorization: `Bearer ${jwt}` } : {},
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`${res.status}`);
-  return res.json();
-}
-
 export function DailyUsageChart() {
   const [data, setData] = React.useState<DailyUsage[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    fetchAuth<DailyUsage[]>('/analytics/daily-usage?days=30')
+    fetchWithAuth<DailyUsage[]>('/analytics/daily-usage?days=30')
       .then((r) => setData(Array.isArray(r) ? r : []))
       .catch(() => setData([]))
       .finally(() => setLoading(false));

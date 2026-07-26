@@ -66,6 +66,10 @@ export class CreateCampaignDto {
   @IsOptional()
   commentReplyText?: string;
 
+  @IsBoolean()
+  @IsOptional()
+  followCheckEnabled?: boolean;
+
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })
@@ -111,6 +115,10 @@ export class UpdateCampaignDto {
   @IsString()
   @IsOptional()
   commentReplyText?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  followCheckEnabled?: boolean;
 
   @IsArray()
   @IsOptional()

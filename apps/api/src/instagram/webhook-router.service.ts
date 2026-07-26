@@ -103,6 +103,7 @@ export class WebhookRouterService {
     const messageId: string = messagingEvent?.message?.mid;
     const text: string = messagingEvent?.message?.text ?? '';
     const fromId: string = messagingEvent?.sender?.id;
+    const quickReplyPayload: string | undefined = messagingEvent?.message?.quick_reply?.payload;
 
     if (!messageId || !fromId) {
       this.logger.warn(`Skipping messaging event — missing messageId or fromId.`);
@@ -119,6 +120,7 @@ export class WebhookRouterService {
       text,
       fromId,
       isStoryReply,
+      quickReplyPayload,
       webhookEventId,
     });
   }
@@ -131,6 +133,7 @@ export class WebhookRouterService {
     const messageId: string = value?.message?.mid;
     const text: string = value?.message?.text ?? '';
     const fromId: string = value?.sender?.id;
+    const quickReplyPayload: string | undefined = value?.message?.quick_reply?.payload;
 
     if (!messageId || !fromId) {
       this.logger.warn(`Skipping messaging event changes — missing messageId or fromId.`);
@@ -147,6 +150,7 @@ export class WebhookRouterService {
       text,
       fromId,
       isStoryReply,
+      quickReplyPayload,
       webhookEventId,
     });
   }

@@ -2,25 +2,13 @@
 
 import * as React from 'react';
 import { Hash, Zap } from 'lucide-react';
+import { fetchWithAuth } from '@/lib/api-client';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 interface TopKeyword {
   keyword: string;
   matchingRule: string;
   campaignName: string;
   triggerCount: number;
-}
-
-async function fetchAuth<T>(path: string): Promise<T> {
-  const s = await fetch('/api/auth/session');
-  const session = await s.json();
-  const jwt = (session as any)?.accessToken as string | undefined;
-  const res = await fetch(`${API_URL}${path}`, {
-    headers: jwt ? { Authorization: `Bearer ${jwt}` } : {},
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`${res.status}`);
-  return res.json();
 }
 
 const ruleColors: Record<string, string> = {
@@ -34,7 +22,7 @@ export function TopKeywordsCard() {
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    fetchAuth<TopKeyword[]>('/analytics/top-keywords')
+    fetchWithAuth<TopKeyword[]>('/analytics/top-keywords')
       .then((r) => setKeywords(Array.isArray(r) ? r : []))
       .catch(() => setKeywords([]))
       .finally(() => setLoading(false));

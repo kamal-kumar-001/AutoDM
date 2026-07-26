@@ -3,8 +3,7 @@
 import * as React from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+import { fetchWithAuth } from '@/lib/api-client';
 
 interface HealthStatus {
   api: boolean;
@@ -12,21 +11,6 @@ interface HealthStatus {
   redis: boolean;
   status: 'healthy' | 'degraded' | 'down';
   checkedAt: string;
-}
-
-async function fetchAuth<T>(path: string): Promise<T> {
-  const s = await fetch('/api/auth/session');
-  const session = await s.json();
-  const jwt = (session as any)?.accessToken as string | undefined;
-  const res = await fetch(`${API_URL}${path}`, {
-    headers: jwt ? { Authorization: `Bearer ${jwt}` } : {},
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`${res.status}`);
-  const json = await res.json();
-  return json && typeof json === 'object' && 'success' in json && 'data' in json
-    ? (json.data as T)
-    : (json as T);
 }
 
 function StatusDot({ ok, label }: { ok: boolean; label: string }) {
@@ -50,7 +34,7 @@ export function HealthPanel() {
   const [loading, setLoading] = React.useState(true);
 
   const load = React.useCallback(() => {
-    fetchAuth<HealthStatus>('/monitoring/health')
+    fetchWithAuth<HealthStatus>('/monitoring/health')
       .then(setHealth)
       .catch(() => setHealth(null))
       .finally(() => setLoading(false));

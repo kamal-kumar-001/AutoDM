@@ -94,7 +94,7 @@ export const authOptions: NextAuthOptions = {
             name: user.name,
             role: user.role,
             isVerified: user.isVerified,
-            plan: (user as any).plan || 'FREE',
+            plan: user.plan || 'FREE',
           },
         };
       }

@@ -22,6 +22,7 @@ import {
   Bell,
   BarChart3,
   Megaphone,
+  LifeBuoy,
 } from 'lucide-react';
 import { cn, toast } from '@autodm/ui';
 
@@ -40,7 +41,7 @@ export function AdminLayout({ children, activeTab, setActiveTab }: AdminLayoutPr
   const userRole = session?.user?.role || 'ADMIN';
 
   const menuItems = [
-    { id: 'dashboard', name: 'SaaS Dashboard', icon: BarChart3 },
+    { id: 'dashboard', name: 'Dashboard', icon: BarChart3 },
     { id: 'creators', name: 'Creators', icon: Users },
     { id: 'campaigns', name: 'Campaigns', icon: Layers },
     { id: 'delete-requests', name: 'Delete Requests', icon: Trash2 },
@@ -50,6 +51,7 @@ export function AdminLayout({ children, activeTab, setActiveTab }: AdminLayoutPr
     { id: 'flags', name: 'Feature Flags', icon: Flag },
     { id: 'monitoring', name: 'Monitoring', icon: Activity },
     { id: 'promotions', name: 'Promotions', icon: Megaphone },
+    { id: 'support', name: 'Support Tickets', icon: LifeBuoy },
   ];
 
   const handleTabSelect = (id: string) => {

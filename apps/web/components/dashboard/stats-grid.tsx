@@ -73,7 +73,7 @@ export function StatsGrid() {
               {stat.title}
             </span>
             <div className="p-1.5 rounded-lg bg-white/5 border border-white/10">
-              {(stat as any).icon ?? <Instagram className="h-4 w-4 text-pink-500" />}
+              {stat.icon ?? <Instagram className="h-4 w-4 text-pink-500" />}
             </div>
           </div>
 

@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Layers, Play, Pause, AlertCircle, Loader2, Edit, Trash } from 'lucide-react';
 import { Input, toast } from '@autodm/ui';
 import { apiRequest } from '@/lib/api-client';
-import { CampaignDetailsModal } from './campaign-details';
 
 interface Campaign {
   id: string;
@@ -25,7 +24,13 @@ interface Campaign {
   };
 }
 
-export function CampaignsList({ onEditCampaign }: { onEditCampaign?: (id: string) => void }) {
+export function CampaignsList({
+  onEditCampaign,
+  onViewCampaign,
+}: {
+  onEditCampaign?: (id: string) => void;
+  onViewCampaign?: (id: string) => void;
+}) {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<'ALL' | 'ACTIVE' | 'PAUSED'>('ALL');
   const [campaigns, setCampaigns] = React.useState<Campaign[]>([]);
@@ -34,8 +39,12 @@ export function CampaignsList({ onEditCampaign }: { onEditCampaign?: (id: string
   const [isDetailsOpen, setIsDetailsOpen] = React.useState(false);
 
   const handleViewDetails = (id: string) => {
-    setViewCampaignId(id);
-    setIsDetailsOpen(true);
+    if (onViewCampaign) {
+      onViewCampaign(id);
+    } else {
+      setViewCampaignId(id);
+      setIsDetailsOpen(true);
+    }
   };
 
   const handleCloseDetails = () => {
@@ -291,16 +300,6 @@ export function CampaignsList({ onEditCampaign }: { onEditCampaign?: (id: string
           </AnimatePresence>
         )}
       </div>
-
-      {/* Campaign Details View Modal */}
-      <CampaignDetailsModal
-        isOpen={isDetailsOpen}
-        onClose={handleCloseDetails}
-        campaignId={viewCampaignId}
-        onEdit={onEditCampaign || (() => {})}
-        onStatusToggle={toggleCampaignStatus}
-        onArchive={handleArchive}
-      />
     </div>
   );
 }

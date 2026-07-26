@@ -426,4 +426,25 @@ export class AdminService {
 
     return { success: true };
   }
+
+  async getSupportTickets() {
+    return this.prisma.supportTicket.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: {
+          select: {
+            email: true,
+            name: true,
+          },
+        },
+      },
+    });
+  }
+
+  async resolveSupportTicket(id: string) {
+    return this.prisma.supportTicket.update({
+      where: { id },
+      data: { status: 'RESOLVED' },
+    });
+  }
 }

@@ -69,6 +69,7 @@ export function CampaignWizard({
   const [replyMessage, setReplyMessage] = React.useState('');
   const [commentReplyEnabled, setCommentReplyEnabled] = React.useState(false);
   const [commentReplyText, setCommentReplyText] = React.useState('');
+  const [followCheckEnabled, setFollowCheckEnabled] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
   // Live posts state
@@ -86,6 +87,7 @@ export function CampaignWizard({
     replyMessage: string;
     commentReplyEnabled: boolean;
     commentReplyText?: string | null;
+    followCheckEnabled: boolean;
     keywords?: { keyword: string; matchingRule: 'EXACT' | 'CONTAINS' }[];
     posts?: { mediaId: string }[];
   }
@@ -103,6 +105,7 @@ export function CampaignWizard({
           setReplyMessage(camp.replyMessage);
           setCommentReplyEnabled(camp.commentReplyEnabled || false);
           setCommentReplyText(camp.commentReplyText || '');
+          setFollowCheckEnabled(camp.followCheckEnabled || false);
           setErrors({});
 
           if (camp.keywords && camp.keywords.length > 0) {
@@ -128,6 +131,7 @@ export function CampaignWizard({
       setReplyMessage('');
       setCommentReplyEnabled(false);
       setCommentReplyText('');
+      setFollowCheckEnabled(false);
       setSelectedPostId(null);
       setErrors({});
       setStep(1);
@@ -260,6 +264,7 @@ export function CampaignWizard({
         replyMessage: string;
         commentReplyEnabled: boolean;
         commentReplyText: string | null;
+        followCheckEnabled: boolean;
         keywords?: { keyword: string; matchingRule: string }[];
         posts?: { mediaId: string; mediaUrl: string; permalink: string }[];
       }
@@ -277,6 +282,7 @@ export function CampaignWizard({
             : commentReplyEnabled
               ? commentReplyText
               : null,
+        followCheckEnabled,
       };
 
       if (
@@ -803,6 +809,30 @@ export function CampaignWizard({
                                 </span>
                               </div>
                             )}
+
+                            {/* Follow Check Toggle Switch */}
+                            <div className="pt-3 border-t border-white/5 flex items-center justify-between">
+                              <div className="flex flex-col">
+                                <Label className="font-bold text-white">Follow Check Gate</Label>
+                                <span className="text-[10px] text-gray-500 max-w-[280px]">
+                                  Require users to follow your account. Non-followers get a DM with
+                                  a follow check button before delivering the campaign reply.
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setFollowCheckEnabled(!followCheckEnabled)}
+                                className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                  followCheckEnabled ? 'bg-primary' : 'bg-white/10'
+                                }`}
+                              >
+                                <span
+                                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                    followCheckEnabled ? 'translate-x-4' : 'translate-x-0'
+                                  }`}
+                                />
+                              </button>
+                            </div>
                           </div>
                         )
                       )}

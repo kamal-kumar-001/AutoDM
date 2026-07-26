@@ -1,6 +1,6 @@
 import { ApiResponse } from '@autodm/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export class ApiError extends Error {
   code: string;
@@ -103,4 +103,32 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
     const errMsg = error instanceof Error ? error.message : 'A connection error occurred';
     throw new ApiError(getFriendlyErrorMessage(errMsg), 'CONNECTION_ERROR');
   }
+}
+
+/**
+ * Lightweight authenticated fetch helper for components that need raw control
+ * over the request (e.g. non-JSON endpoints, streaming). Automatically injects
+ * the session JWT and unwraps the `{ success, data }` envelope when present.
+ */
+export async function fetchWithAuth<T>(path: string, options?: RequestInit): Promise<T> {
+  const sessionRes = await fetch('/api/auth/session');
+  const session = await sessionRes.json();
+  const jwt = (session as { accessToken?: string })?.accessToken;
+
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+      ...(options?.headers ?? {}),
+    },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) throw new Error(`${res.status}`);
+  const json = await res.json();
+
+  return json && typeof json === 'object' && 'success' in json && 'data' in json
+    ? (json.data as T)
+    : (json as T);
 }

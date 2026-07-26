@@ -1,9 +1,12 @@
+import * as React from 'react';
+
 export interface StatCard {
   title: string;
   value: string | number;
   change: string;
   trend: 'up' | 'down' | 'neutral';
   description: string;
+  icon?: React.ReactNode;
 }
 
 export interface MockCampaign {

@@ -3,8 +3,7 @@
 import * as React from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, XCircle, TrendingUp } from 'lucide-react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+import { fetchWithAuth } from '@/lib/api-client';
 
 interface RatesData {
   sent: number;
@@ -12,18 +11,6 @@ interface RatesData {
   pending: number;
   successRate: number;
   failureRate: number;
-}
-
-async function fetchAuth<T>(path: string): Promise<T> {
-  const s = await fetch('/api/auth/session');
-  const session = await s.json();
-  const jwt = (session as any)?.accessToken as string | undefined;
-  const res = await fetch(`${API_URL}${path}`, {
-    headers: jwt ? { Authorization: `Bearer ${jwt}` } : {},
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`${res.status}`);
-  return res.json();
 }
 
 function RateArc({ pct, color, label }: { pct: number; color: string; label: string }) {
@@ -69,7 +56,7 @@ export function RatesCard() {
   const [data, setData] = React.useState<RatesData | null>(null);
 
   React.useEffect(() => {
-    fetchAuth<RatesData>('/analytics/rates')
+    fetchWithAuth<RatesData>('/analytics/rates')
       .then((r) => (typeof r?.sent === 'number' ? setData(r) : null))
       .catch(() => null);
   }, []);

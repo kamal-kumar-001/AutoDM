@@ -11,7 +11,7 @@ export default function MonitoringPage() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      if ((session?.user as any)?.role === 'ADMIN') {
+      if (session?.user?.role === 'ADMIN') {
         router.replace('/admin');
       }
     } else if (status === 'unauthenticated') {
@@ -27,7 +27,7 @@ export default function MonitoringPage() {
     );
   }
 
-  if (status === 'authenticated' && (session?.user as any)?.role !== 'ADMIN') {
+  if (status === 'authenticated' && session?.user?.role !== 'ADMIN') {
     notFound();
   }
 

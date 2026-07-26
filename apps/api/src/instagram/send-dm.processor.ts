@@ -147,9 +147,48 @@ export class SendDmProcessor extends WorkerHost {
       return;
     }
 
-    const personalizedMessage = replyMessage
-      .replace(/{username}/g, recipientUsername)
-      .replace(/{name}/g, recipientName);
+    let isAlreadyFollowing = false;
+    if (campaign?.followCheckEnabled && !job.data.isFollowBypass) {
+      if (accessToken.startsWith('mock_')) {
+        // In sandbox mock mode: simulate follower status based on recipient ID parity:
+        // odd-ending IDs => already following, even-ending IDs => not following.
+        const lastChar = targetRecipientId.slice(-1);
+        const isOdd = !isNaN(Number(lastChar)) && Number(lastChar) % 2 !== 0;
+        isAlreadyFollowing = isOdd;
+        this.logger.log(
+          `[Job ${job.id}] Sandbox Follow check: recipientId=${targetRecipientId} (already following: ${isAlreadyFollowing})`,
+        );
+      } else {
+        // Live verification: Try fetching relationship details from Meta
+        try {
+          const checkRes = await axios.get(
+            `https://graph.facebook.com/v20.0/${account.instagramId}/followers`,
+            {
+              params: {
+                user_id: targetRecipientId,
+                access_token: accessToken,
+              },
+              timeout: 5000,
+            },
+          );
+          if (checkRes.data?.data && Array.isArray(checkRes.data.data)) {
+            isAlreadyFollowing = checkRes.data.data.some((f: any) => f.id === targetRecipientId);
+          }
+        } catch (e: any) {
+          this.logger.warn(
+            `[Job ${job.id}] Meta Follow check failed/unsupported (requires app-review instagram_manage_insights permission): ${e.message}. Defaulting to prompt verification.`,
+          );
+        }
+      }
+    }
+
+    const isPromptMode =
+      campaign?.followCheckEnabled && !job.data.isFollowBypass && !isAlreadyFollowing;
+    const followPromptText = `Hey @${recipientUsername}! Thanks for commenting. 🚀 First, make sure you follow @${account.username}, then tap the button below to get the link!`;
+
+    const personalizedMessage = isPromptMode
+      ? followPromptText
+      : replyMessage.replace(/{username}/g, recipientUsername).replace(/{name}/g, recipientName);
 
     let messageId: string;
     let sendStatus: MessageStatus = MessageStatus.SENT;
@@ -157,7 +196,9 @@ export class SendDmProcessor extends WorkerHost {
 
     // 3a. Sandbox mock path
     if (accessToken.startsWith('mock_')) {
-      this.logger.log(`[Job ${job.id}] Sandbox mode — mocking Meta API send DM.`);
+      this.logger.log(
+        `[Job ${job.id}] Sandbox mode — mocking Meta API send DM. isPromptMode=${isPromptMode} (already following: ${isAlreadyFollowing})`,
+      );
       messageId = `mock_msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     } else {
       // 3b. Live Meta Graph API call — Instagram Messaging API
@@ -171,6 +212,17 @@ export class SendDmProcessor extends WorkerHost {
           ? { comment_id: igCommentId }
           : { id: targetRecipientId };
 
+        const messagePayload: any = { text: personalizedMessage };
+        if (isPromptMode) {
+          messagePayload.quick_replies = [
+            {
+              content_type: 'text',
+              title: 'I am following! 📖',
+              payload: `CONFIRM_FOLLOW_CAMPAIGN_${campaignId}`,
+            },
+          ];
+        }
+
         this.logger.log(
           `[Job ${job.id}] Sending DM via: ${baseUrl}. Recipient config: ${JSON.stringify(recipientPayload)}`,
         );
@@ -179,7 +231,7 @@ export class SendDmProcessor extends WorkerHost {
           baseUrl,
           {
             recipient: recipientPayload,
-            message: { text: personalizedMessage },
+            message: messagePayload,
           },
           {
             params: { access_token: accessToken },

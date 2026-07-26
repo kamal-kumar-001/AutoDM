@@ -12,6 +12,7 @@ export interface SendDmPayload {
   igCommentId?: string; // Native Meta Instagram comment ID (optional)
   replyMessage: string;
   replyMediaUrl?: string;
+  isFollowBypass?: boolean;
 }
 
 @Injectable()

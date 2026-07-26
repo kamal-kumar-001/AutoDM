@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Search, Loader2, Download, Trash2, Play, Pause } from 'lucide-react';
-import { apiRequest } from '@/lib/api-client';
+import { apiRequest, API_BASE_URL } from '@/lib/api-client';
 import { toast } from '@autodm/ui';
 import { CustomSelect } from '../ui/custom-select';
 
@@ -132,7 +132,6 @@ export function AdminLogs() {
         ...(actionFilter ? { action: actionFilter } : {}),
       });
 
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
       const res = await fetch(`${API_BASE_URL}/admin/logs/download?${q}`, {
         headers: jwt ? { Authorization: `Bearer ${jwt}` } : {},
       });

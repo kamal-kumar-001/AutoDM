@@ -84,7 +84,7 @@ export function AdminCreators() {
 
   const handleStartEditPlan = (creator: Creator) => {
     setEditingCreator(creator);
-    setSelectedPlan((creator.subscription?.plan as any) || 'FREE');
+    setSelectedPlan((creator.subscription?.plan as 'FREE' | 'PRO' | 'ENTERPRISE') || 'FREE');
   };
 
   const savePlanOverride = async () => {

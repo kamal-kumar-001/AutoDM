@@ -102,6 +102,27 @@ export class WebhookController {
       this.logger.warn('META_APP_SECRET not configured. Skipping HMAC signature validation.');
     }
 
+    // Check if webhooks are paused
+    const pausedSetting = await this.prisma.systemSetting.findUnique({
+      where: { key: 'webhook_processing_paused' },
+    });
+    const isPaused = pausedSetting?.value === 'true';
+
+    if (isPaused) {
+      if (savedEventId) {
+        await this.prisma.webhookEvent
+          .update({
+            where: { id: savedEventId },
+            data: {
+              status: 'PAUSED',
+              errorMessage: 'Webhook processing is currently paused by admin.',
+            },
+          })
+          .catch(() => null);
+      }
+      return { received: true, paused: true };
+    }
+
     // 3. Fire-and-forget routing
     if (savedEventId) {
       this.webhookRouter

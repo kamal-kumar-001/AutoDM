@@ -2,24 +2,12 @@
 
 import * as React from 'react';
 import { FileImage, MessageCircle } from 'lucide-react';
+import { fetchWithAuth } from '@/lib/api-client';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 interface TopPost {
   mediaId: string;
   totalComments: number;
   repliedComments: number;
-}
-
-async function fetchAuth<T>(path: string): Promise<T> {
-  const s = await fetch('/api/auth/session');
-  const session = await s.json();
-  const jwt = (session as any)?.accessToken as string | undefined;
-  const res = await fetch(`${API_URL}${path}`, {
-    headers: jwt ? { Authorization: `Bearer ${jwt}` } : {},
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`${res.status}`);
-  return res.json();
 }
 
 export function TopPostsCard() {
@@ -27,7 +15,7 @@ export function TopPostsCard() {
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    fetchAuth<TopPost[]>('/analytics/top-posts')
+    fetchWithAuth<TopPost[]>('/analytics/top-posts')
       .then((r) => setPosts(Array.isArray(r) ? r : []))
       .catch(() => setPosts([]))
       .finally(() => setLoading(false));

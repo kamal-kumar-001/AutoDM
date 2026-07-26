@@ -1,5 +1,7 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { GetUser } from './auth/decorators/get-user.decorator';
 
 @Controller()
 export class AppController {
@@ -44,6 +46,10 @@ export class AppController {
       {} as Record<string, string>,
     );
 
+    const featureFlags = await this.prisma.featureFlag.findMany({
+      orderBy: { key: 'asc' },
+    });
+
     return {
       plans,
       promo: {
@@ -51,6 +57,22 @@ export class AppController {
         enabled: settingsMap['promo_banner_enabled'] === 'true',
         discountPercent: parseInt(settingsMap['promo_discount_percent'] || '0', 10),
       },
+      featureFlags,
     };
+  }
+
+  @Post('support/tickets')
+  @UseGuards(JwtAuthGuard)
+  async createSupportTicket(
+    @GetUser() user: { id: string },
+    @Body() body: { subject: string; message: string },
+  ) {
+    return this.prisma.supportTicket.create({
+      data: {
+        userId: user.id,
+        subject: body.subject,
+        message: body.message,
+      },
+    });
   }
 }

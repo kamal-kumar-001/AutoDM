@@ -6,17 +6,13 @@ import Hero from '@/components/landing/Hero';
 import TrustedBy from '@/components/landing/TrustedBy';
 import Features from '@/components/landing/Features';
 import DashboardMockup from '@/components/landing/DashboardMockup';
-import Pricing from '@/components/landing/Pricing';
+import Testimonials from '@/components/landing/Testimonials';
 import SetupGuide from '@/components/landing/SetupGuide';
 import FAQ from '@/components/landing/FAQ';
 import Footer from '@/components/landing/Footer';
 import { Megaphone } from 'lucide-react';
-
-interface PromoSettings {
-  enabled: boolean;
-  text: string;
-  discountPercent: number;
-}
+import { API_BASE_URL } from '@/lib/api-client';
+import { PromoSettings } from '@/types';
 
 export default function LandingPage() {
   const [promo, setPromo] = React.useState<PromoSettings>({
@@ -26,8 +22,7 @@ export default function LandingPage() {
   });
 
   React.useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-    fetch(`${apiUrl}/pricing-promo`)
+    fetch(`${API_BASE_URL}/pricing-promo`)
       .then((res) => res.json())
       .then((resJson) => {
         if (resJson && resJson.success && resJson.data && resJson.data.promo) {
@@ -41,7 +36,7 @@ export default function LandingPage() {
     <div className="bg-[#030712] min-h-screen text-white antialiased selection:bg-primary/30 selection:text-white overflow-x-hidden">
       {/* Global Promotion Banner */}
       {false && promo.enabled && promo.text && (
-        <div className="bg-gradient-to-r from-primary/25 via-primary/35 to-accent-cyan/20 border-b border-primary/20 text-center py-2.5 px-4 text-xs font-black text-white flex items-center justify-center space-x-2 relative z-50 animate-pulse">
+        <div className="bg-gradient-to-r from-primary/20 via-primary/30 to-accent-cyan/15 border-b border-primary/10 text-center py-2 px-4 text-[10px] font-black text-white flex items-center justify-center space-x-2 relative z-50 uppercase tracking-widest">
           <Megaphone className="w-3.5 h-3.5 text-primary flex-shrink-0 animate-bounce" />
           <span>{promo.text}</span>
         </div>
@@ -60,7 +55,7 @@ export default function LandingPage() {
         <TrustedBy />
         <Features />
         <DashboardMockup />
-        <Pricing promo={promo} />
+        <Testimonials />
         <SetupGuide />
         <FAQ />
         <Footer />

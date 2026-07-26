@@ -47,7 +47,9 @@ export default function Navbar() {
           {LANDING_NAV.links.map((link) => (
             <a
               key={link.label}
-              href={isHomePage ? link.href : `/${link.href}`}
+              href={
+                link.href.startsWith('#') ? (isHomePage ? link.href : `/${link.href}`) : link.href
+              }
               className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
             >
               {link.label}
@@ -120,7 +122,13 @@ export default function Navbar() {
               {LANDING_NAV.links.map((link) => (
                 <a
                   key={link.label}
-                  href={isHomePage ? link.href : `/${link.href}`}
+                  href={
+                    link.href.startsWith('#')
+                      ? isHomePage
+                        ? link.href
+                        : `/${link.href}`
+                      : link.href
+                  }
                   onClick={() => setMobileOpen(false)}
                   className="block px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all"
                 >

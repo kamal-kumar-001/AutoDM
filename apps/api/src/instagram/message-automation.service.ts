@@ -17,6 +17,7 @@ export interface MessageEvent {
   fromId: string; // Recipient/Sender ID
   fromUsername?: string;
   isStoryReply?: boolean;
+  quickReplyPayload?: string;
   webhookEventId: string;
 }
 
@@ -31,7 +32,7 @@ export class MessageAutomationService {
   }
 
   async handle(event: MessageEvent): Promise<void> {
-    const { instagramId, messageId, text, fromId, fromUsername } = event;
+    const { instagramId, messageId, text, fromId, fromUsername, quickReplyPayload } = event;
 
     // 1. Resolve the InstagramAccount record (match by instagramId or page id, with developer bypass if instagramId is '0' or '23245')
     const account = await this.prisma.instagramAccount.findFirst({
@@ -73,6 +74,30 @@ export class MessageAutomationService {
     });
 
     this.logger.log(`Received incoming message: messageId=${messageId}`);
+
+    // 3.5 Quick Reply Follow Confirmation bypass
+    if (quickReplyPayload && quickReplyPayload.startsWith('CONFIRM_FOLLOW_CAMPAIGN_')) {
+      const campaignId = quickReplyPayload.replace('CONFIRM_FOLLOW_CAMPAIGN_', '');
+      const campaign = await this.prisma.campaign.findUnique({
+        where: { id: campaignId },
+      });
+      if (campaign && campaign.status === CampaignStatus.ACTIVE) {
+        this.logger.log(
+          `User ${fromId} confirmed follow check for campaign ${campaignId} — enqueuing reply with bypass.`,
+        );
+
+        await this.sendDmProducer.enqueueSendDm({
+          campaignId: campaign.id,
+          instagramAccountId: account.id,
+          recipientId: fromId,
+          recipientUsername: fromUsername || 'user',
+          replyMessage: campaign.replyMessage,
+          replyMediaUrl: campaign.replyMediaUrl ?? undefined,
+          isFollowBypass: true,
+        });
+        return;
+      }
+    }
 
     // 4. Fetch ACTIVE campaigns for this account that handle messaging
     const campaigns = await this.prisma.campaign.findMany({

@@ -7,6 +7,7 @@ import { apiRequest } from '@/lib/api-client';
 
 interface Conversation {
   recipientId: string;
+  recipientUsername?: string | null;
   lastMessage: string;
   updatedAt: string;
   instagramAccountId: string;
@@ -132,6 +133,7 @@ export default function InboxPage() {
   const filteredConversations = conversations.filter(
     (c) =>
       c.recipientId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.recipientUsername?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.instagramAccountUsername.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
@@ -198,12 +200,17 @@ export default function InboxPage() {
                       }`}
                     >
                       <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary/30 to-secondary/30 flex items-center justify-center font-bold text-white text-xs border border-white/10 shrink-0">
-                        {c.recipientId.substring(0, 2).toUpperCase()}
+                        {(c.recipientUsername || c.recipientId).substring(0, 2).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-white truncate block">
-                            ID: {c.recipientId}
+                          <span
+                            className="text-xs font-bold text-white truncate block max-w-[140px]"
+                            title={c.recipientUsername || c.recipientId}
+                          >
+                            {c.recipientUsername
+                              ? `@${c.recipientUsername}`
+                              : `ID: ${c.recipientId}`}
                           </span>
                           <span className="text-[10px] text-gray-500">
                             {new Date(c.updatedAt).toLocaleTimeString([], {
@@ -232,11 +239,18 @@ export default function InboxPage() {
                 <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
                   <div className="flex items-center gap-3">
                     <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center font-bold text-white text-xs border border-white/10">
-                      {selectedRecipientId.substring(0, 2).toUpperCase()}
+                      {(activeConversation?.recipientUsername || selectedRecipientId)
+                        .substring(0, 2)
+                        .toUpperCase()}
                     </div>
                     <div>
-                      <h4 className="text-xs font-bold text-white">
-                        Recipient ID: {selectedRecipientId}
+                      <h4
+                        className="text-xs font-bold text-white truncate max-w-[200px]"
+                        title={activeConversation?.recipientUsername || selectedRecipientId}
+                      >
+                        {activeConversation?.recipientUsername
+                          ? `@${activeConversation.recipientUsername}`
+                          : `ID: ${selectedRecipientId}`}
                       </h4>
                       <p className="text-[10px] text-gray-400">
                         Connected through page: @{activeConversation?.instagramAccountUsername}

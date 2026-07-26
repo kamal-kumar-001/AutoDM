@@ -4,6 +4,7 @@ import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, Send, Loader2 } from 'lucide-react';
 import { toast } from '@autodm/ui';
+import { apiRequest } from '@/lib/api-client';
 
 interface ContactModalProps {
   isOpen: boolean;
@@ -23,13 +24,20 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
     }
 
     setSending(true);
-    // Simulate support ticket creation or dispatching mail
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    toast.success('Your support request has been sent! We will reply within 24 hours.');
-    setSubject('');
-    setMessage('');
-    setSending(false);
-    onClose();
+    try {
+      await apiRequest('/support/tickets', {
+        method: 'POST',
+        body: JSON.stringify({ subject, message }),
+      });
+      toast.success('Your support request has been sent! We will reply within 24 hours.');
+      setSubject('');
+      setMessage('');
+      onClose();
+    } catch (err) {
+      toast.error('Failed to submit support request. Please try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (

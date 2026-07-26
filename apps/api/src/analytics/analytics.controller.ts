@@ -16,6 +16,11 @@ export class AnalyticsController {
     return this.analyticsService.getSummary(user.id);
   }
 
+  @Get('followers')
+  getFollowers(@GetUser() user: { id: string }) {
+    return this.analyticsService.getFollowerStats(user.id);
+  }
+
   @Get('chart')
   getChart(@GetUser() user: { id: string }) {
     return this.analyticsService.getChartData(user.id);

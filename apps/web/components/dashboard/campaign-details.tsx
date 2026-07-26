@@ -23,6 +23,7 @@ interface CampaignDetail {
   status: string;
   createdAt: string;
   replyMessage: string;
+  followCheckEnabled: boolean;
   instagramAccount?: {
     username: string;
     displayName?: string | null;
@@ -178,6 +179,20 @@ export function CampaignDetailsModal({
                       </span>
                       <span className="text-white block font-bold">
                         {new Date(campaign.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-gray-500 block text-[9px] uppercase font-semibold">
+                        Follow Gate
+                      </span>
+                      <span
+                        className={`inline-block text-[9px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider ${
+                          campaign.followCheckEnabled
+                            ? 'bg-primary/10 border border-primary/20 text-primary'
+                            : 'bg-white/5 border border-white/10 text-gray-500'
+                        }`}
+                      >
+                        {campaign.followCheckEnabled ? 'ENABLED' : 'DISABLED'}
                       </span>
                     </div>
                     {campaign.keywords && campaign.keywords.length > 0 && (

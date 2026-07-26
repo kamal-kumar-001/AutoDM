@@ -299,7 +299,7 @@ export class InstagramService {
   async getConversations(userId: string) {
     const accounts = await this.prisma.instagramAccount.findMany({
       where: { userId, isConnected: true, deletedAt: null },
-      select: { id: true, username: true },
+      select: { id: true, username: true, accessToken: true },
     });
 
     const accountIds = accounts.map((a) => a.id);
@@ -313,11 +313,11 @@ export class InstagramService {
 
     // Grouping manually in JS for thread representation
     const threadsMap = new Map<string, any>();
-    const recipientIds = messages.map((m) => m.recipientId);
+    const uniqueRecipientIds = Array.from(new Set(messages.map((m) => m.recipientId)));
 
     // Fetch matching comments in bulk to resolve usernames
     const comments = await this.prisma.comment.findMany({
-      where: { userId: { in: recipientIds } },
+      where: { userId: { in: uniqueRecipientIds } },
       select: { userId: true, username: true },
     });
 
@@ -326,12 +326,54 @@ export class InstagramService {
       commentUsernameMap.set(c.userId, c.username);
     }
 
+    // Fetch from Meta API for missing usernames
+    const missingRecipientIds = uniqueRecipientIds.filter((id) => !commentUsernameMap.has(id));
+    const metaUsernameMap = new Map<string, string>();
+
+    if (missingRecipientIds.length > 0) {
+      await Promise.all(
+        missingRecipientIds.slice(0, 8).map(async (id) => {
+          try {
+            const firstMsg = messages.find((m) => m.recipientId === id);
+            if (!firstMsg) return;
+            const account = accounts.find((a) => a.id === firstMsg.instagramAccountId);
+            if (
+              !account ||
+              !account.accessToken ||
+              account.accessToken.includes('mock') ||
+              account.accessToken.includes('placeholder')
+            ) {
+              metaUsernameMap.set(id, `mock_user_${id.substring(id.length - 4)}`);
+              return;
+            }
+
+            // Call Meta Graph API User Profile endpoint
+            const res = await fetch(
+              `https://graph.facebook.com/v20.0/${id}?fields=username,name&access_token=${account.accessToken}`,
+            );
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.username) {
+                metaUsernameMap.set(id, data.username);
+              }
+            }
+          } catch (err) {
+            // ignore
+          }
+        }),
+      );
+    }
+
     for (const msg of messages) {
       if (!threadsMap.has(msg.recipientId)) {
         const account = accounts.find((a) => a.id === msg.instagramAccountId);
+        const resolvedUsername =
+          commentUsernameMap.get(msg.recipientId) ||
+          metaUsernameMap.get(msg.recipientId) ||
+          `ig_user_${msg.recipientId.substring(msg.recipientId.length - 4)}`;
         threadsMap.set(msg.recipientId, {
           recipientId: msg.recipientId,
-          recipientUsername: commentUsernameMap.get(msg.recipientId) || null,
+          recipientUsername: resolvedUsername,
           lastMessage: msg.text || (msg.mediaUrl ? 'Attachment' : ''),
           updatedAt: msg.createdAt,
           instagramAccountId: msg.instagramAccountId,

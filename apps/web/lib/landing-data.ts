@@ -5,7 +5,8 @@ import {
   BarChart3,
   Link2,
   RefreshCw,
-  Twitter,
+  Instagram,
+  Mail,
   Github,
   Linkedin,
 } from 'lucide-react';
@@ -14,7 +15,7 @@ export const LANDING_NAV = {
   logo: 'AutoDM',
   links: [
     { label: 'Features', href: '#features' },
-    { label: 'Pricing', href: '#pricing' },
+    { label: 'Pricing', href: '/pricing' },
     { label: 'FAQ', href: '#faq' },
   ],
 };
@@ -159,7 +160,8 @@ export const FOOTER_CONTENT = {
   tagline: 'The fastest way to turn Instagram comments into revenue — automatically.',
   copyright: `© ${new Date().getFullYear()} AutoDM. All rights reserved.`,
   socials: [
-    { name: 'Twitter', icon: Twitter, href: 'https://twitter.com/autodm' },
+    { name: 'Instagram', icon: Instagram, href: 'https://www.instagram.com/kamal_khatiwal/' },
+    { name: 'Mail', icon: Mail, href: 'mailto:kamal.khatiwal@gmail.com' },
     { name: 'GitHub', icon: Github, href: 'https://github.com/kamal-kumar-001/AutoDM' },
     { name: 'LinkedIn', icon: Linkedin, href: 'https://linkedin.com/in/kamalkhatiwal' },
   ],
@@ -168,8 +170,8 @@ export const FOOTER_CONTENT = {
       title: 'Product',
       links: [
         { label: 'Features', href: '#features' },
-        { label: 'Pricing', href: '#pricing' },
-        { label: 'Changelog', href: '#' },
+        { label: 'Pricing', href: '/pricing' },
+        { label: 'Follower Analyzer', href: 'https://followeranalyzer.vercel.app/' },
         { label: 'Roadmap', href: '#' },
       ],
     },

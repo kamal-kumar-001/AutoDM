@@ -6,17 +6,17 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://autodmweb.vercel.app'),
-  title: 'AutoDM - Instagram DM Automation',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://www.dmpilot.org'),
+  title: 'AutoDM - DM Automation',
   description: 'Scale your creator presence with high-performance Instagram DM automation.',
   openGraph: {
-    title: 'AutoDM - Instagram DM Automation',
+    title: 'AutoDM - DM Automation',
     description: 'Scale your creator presence with high-performance Instagram DM automation.',
-    url: 'https://autodmweb.vercel.app',
+    url: 'https://www.dmpilot.org',
     siteName: 'AutoDM',
     images: [
       {
-        url: 'https://autodmweb.vercel.app/icon.svg',
+        url: 'https://www.dmpilot.org/icon.svg',
         width: 1200,
         height: 630,
         alt: 'AutoDM Logo',
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'AutoDM - Instagram DM Automation',
     description: 'Scale your creator presence with high-performance Instagram DM automation.',
-    images: ['https://autodmweb.vercel.app/icon.svg'],
+    images: ['https://www.dmpilot.org/icon.svg'],
   },
 };
 

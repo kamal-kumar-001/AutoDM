@@ -191,7 +191,7 @@ export default function SettingsPage() {
   };
 
   const userEmail = session?.user?.email || 'user@autodm.com';
-  const userRole = (session?.user as any)?.role || 'CREATOR';
+  const userRole = session?.user?.role || 'CREATOR';
 
   return (
     <DashboardLayout>
@@ -259,7 +259,7 @@ export default function SettingsPage() {
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="prof-email">Email Address</Label>
-                      {(session?.user as any)?.isVerified !== false ? (
+                      {session?.user?.isVerified !== false ? (
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                           <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                           Verified ✓
@@ -703,7 +703,7 @@ function SettingsBilling() {
       setUsage(usageData);
       setInvoices(invoiceData || []);
 
-      if (subData?.plan && subData.plan !== (session?.user as any)?.plan) {
+      if (subData?.plan && subData.plan !== session?.user?.plan) {
         updateSession({
           user: {
             ...session?.user,

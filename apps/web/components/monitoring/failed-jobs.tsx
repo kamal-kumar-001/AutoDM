@@ -3,8 +3,7 @@
 import * as React from 'react';
 import { Loader2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { toast } from '@autodm/ui';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+import { fetchWithAuth } from '@/lib/api-client';
 
 interface FailedJob {
   id: string;
@@ -17,33 +16,13 @@ interface FailedJob {
   finishedOn?: number;
 }
 
-async function fetchAuth<T>(path: string, opts?: RequestInit): Promise<T> {
-  const s = await fetch('/api/auth/session');
-  const session = await s.json();
-  const jwt = (session as any)?.accessToken as string | undefined;
-  const res = await fetch(`${API_URL}${path}`, {
-    ...opts,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
-      ...(opts?.headers ?? {}),
-    },
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`${res.status}`);
-  const json = await res.json();
-  return json && typeof json === 'object' && 'success' in json && 'data' in json
-    ? (json.data as T)
-    : (json as T);
-}
-
 export function FailedJobs() {
   const [jobs, setJobs] = React.useState<FailedJob[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [retrying, setRetrying] = React.useState<string | null>(null);
 
   const load = React.useCallback(() => {
-    fetchAuth<FailedJob[]>('/monitoring/failed-jobs')
+    fetchWithAuth<FailedJob[]>('/monitoring/failed-jobs')
       .then((res) => setJobs(Array.isArray(res) ? res : []))
       .catch(() => setJobs([]))
       .finally(() => setLoading(false));
@@ -57,7 +36,7 @@ export function FailedJobs() {
     setRetrying(job.id);
     try {
       const encodedQueue = encodeURIComponent(job.queue);
-      await fetchAuth(`/monitoring/failed-jobs/${encodedQueue}/${job.id}/retry`, {
+      await fetchWithAuth(`/monitoring/failed-jobs/${encodedQueue}/${job.id}/retry`, {
         method: 'POST',
       });
       toast.success(`Job re-queued`, {

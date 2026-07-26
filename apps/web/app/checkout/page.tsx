@@ -14,7 +14,7 @@ import {
   Building2,
 } from 'lucide-react';
 import { toast } from '@autodm/ui';
-import { apiRequest } from '@/lib/api-client';
+import { apiRequest, API_BASE_URL } from '@/lib/api-client';
 
 const PLAN_PRICES: Record<
   string,
@@ -67,8 +67,7 @@ export default function CheckoutPage() {
 
   // Fetch promotions config from public endpoint
   React.useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-    fetch(`${apiUrl}/pricing-promo`)
+    fetch(`${API_BASE_URL}/pricing-promo`)
       .then((res) => res.json())
       .then((resJson) => {
         if (resJson && resJson.success && resJson.data && resJson.data.promo) {

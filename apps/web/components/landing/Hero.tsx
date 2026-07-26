@@ -10,6 +10,14 @@ import { HERO_CONTENT } from '@/lib/landing-data';
 export default function Hero() {
   const { data: session } = useSession();
   const bars = [45, 70, 55, 90, 65, 80, 95, 60, 75, 88, 50, 72, 85, 60];
+  const [activeStep, setActiveStep] = React.useState(0);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % 4);
+    }, 2500);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-28 pb-16">
@@ -166,47 +174,109 @@ export default function Hero() {
               </div>
             </div>
 
-            {/* Activity Stream Preview */}
-            <div className="space-y-2.5">
-              {[
-                {
-                  user: '@sam_marketing',
-                  info: 'Triggered keyword: "promo"',
-                  state: 'Sent',
-                  ok: true,
-                },
-                {
-                  user: '@alex_tech',
-                  info: 'Commented on post "Launch"',
-                  state: 'Queued',
-                  ok: true,
-                },
-                {
-                  user: '@creativestudio',
-                  info: 'Triggered comment-to-DM',
-                  state: 'Delivered',
-                  ok: true,
-                },
-              ].map((item, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/5 text-xs"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-primary to-accent-cyan flex items-center justify-center text-white font-extrabold text-[10px]">
-                      {item.user[1].toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-white leading-none">{item.user}</p>
-                      <p className="text-[10px] text-gray-500 mt-1 leading-none">{item.info}</p>
-                    </div>
+            {/* Live DM Simulation Widget */}
+            <div className="space-y-2.5 bg-white/[0.01] border border-white/5 rounded-xl p-4">
+              <div className="flex justify-between items-center border-b border-white/5 pb-2 mb-2">
+                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
+                  LIVE SIMULATOR
+                </span>
+                <span className="flex items-center gap-1 text-[9px] text-primary font-black uppercase tracking-wider">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" /> Live Syncing
+                </span>
+              </div>
+
+              {/* Step 1: User Comments */}
+              <div
+                className={`p-2.5 rounded-xl transition-all duration-300 border ${
+                  activeStep === 0
+                    ? 'bg-primary/5 border-primary/25 translate-x-1'
+                    : 'bg-white/[0.02] border-transparent opacity-40'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-full bg-pink-500 flex items-center justify-center font-bold text-white text-[9px]">
+                    IS
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                    <span className="text-[10px] font-semibold text-gray-400">{item.state}</span>
+                  <div>
+                    <p className="text-[10px] font-bold text-white leading-none">
+                      @ishita.tech <span className="text-gray-500 font-normal">commented:</span>
+                    </p>
+                    <p className="text-[11px] text-gray-300 mt-1 font-semibold">
+                      "Need the pricing ebook! 🔥"
+                    </p>
                   </div>
                 </div>
-              ))}
+              </div>
+
+              {/* Step 2: AutoDM Processing */}
+              <div
+                className={`p-2.5 rounded-xl transition-all duration-300 border ${
+                  activeStep === 1
+                    ? 'bg-accent-cyan/5 border-accent-cyan/25 translate-x-1'
+                    : 'bg-white/[0.02] border-transparent opacity-40'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-lg bg-accent-cyan/10 border border-accent-cyan/20 flex items-center justify-center font-bold text-accent-cyan text-[10px]">
+                    ⚙️
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-white leading-none">AutoDM Engine</p>
+                    <p className="text-[10px] text-accent-cyan mt-1 font-bold">
+                      Matching keyword "ebook" & checking follow gate... MATCHED
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 3: Meta DM Dispatched */}
+              <div
+                className={`p-2.5 rounded-xl transition-all duration-300 border ${
+                  activeStep === 2
+                    ? 'bg-primary/5 border-primary/25 translate-x-1'
+                    : 'bg-white/[0.02] border-transparent opacity-40'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center font-bold text-primary text-[10px]">
+                    ✓
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-white leading-none">
+                      Meta Messaging API
+                    </p>
+                    <p className="text-[10px] text-primary mt-1 font-bold">
+                      Direct Message queued & sent in 280ms
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 4: DM Arrives on Phone */}
+              <div
+                className={`p-2.5 rounded-xl transition-all duration-300 border ${
+                  activeStep === 3
+                    ? 'bg-amber-400/5 border-amber-400/25 translate-x-1'
+                    : 'bg-white/[0.02] border-transparent opacity-40'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-accent-cyan flex items-center justify-center text-white text-[10px]">
+                    ✉
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold text-white leading-none">
+                      Inbox Delivery{' '}
+                      <span className="text-[9px] bg-amber-400/10 border border-amber-400/20 text-amber-400 px-1 rounded ml-1 font-bold">
+                        NEW
+                      </span>
+                    </p>
+                    <p className="text-[10px] text-gray-300 mt-1 truncate">
+                      "Hey Ishita! Here is the link: <strong>autodm.com/ebook</strong>"
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

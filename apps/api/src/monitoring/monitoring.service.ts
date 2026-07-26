@@ -196,4 +196,25 @@ export class MonitoringService {
       pid: process.pid,
     };
   }
+
+  async getWebhookStatus() {
+    const setting = await this.prisma.systemSetting.findUnique({
+      where: { key: 'webhook_processing_paused' },
+    });
+    return { paused: setting?.value === 'true' };
+  }
+
+  async updateWebhookStatus(paused: boolean) {
+    await this.prisma.systemSetting.upsert({
+      where: { key: 'webhook_processing_paused' },
+      update: { value: String(paused) },
+      create: { key: 'webhook_processing_paused', value: String(paused) },
+    });
+    return { success: true, paused };
+  }
+
+  async purgeWebhookLogs() {
+    const result = await this.prisma.webhookEvent.deleteMany({});
+    return { count: result.count };
+  }
 }

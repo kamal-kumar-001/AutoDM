@@ -233,4 +233,14 @@ export class AdminController {
   ) {
     return this.adminService.updatePromoSettings(body);
   }
+
+  @Get('support-tickets')
+  getSupportTickets() {
+    return this.adminService.getSupportTickets();
+  }
+
+  @Patch('support-tickets/:id/resolve')
+  resolveSupportTicket(@Param('id') id: string) {
+    return this.adminService.resolveSupportTicket(id);
+  }
 }

@@ -4,11 +4,13 @@ import * as React from 'react';
 import { DashboardLayout } from '@/components/dashboard/layout';
 import { StatsGrid } from '@/components/dashboard/stats-grid';
 import { AnalyticsChart } from '@/components/dashboard/analytics-chart';
+import { FollowersChart } from '@/components/dashboard/followers-chart';
 import { CampaignsList } from '@/components/dashboard/campaigns-list';
 import { ConnectedAccounts } from '@/components/dashboard/connected-accounts';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { EmptyState } from '@/components/dashboard/empty-state';
 import { CampaignWizard } from '@/components/dashboard/campaign-wizard';
+import { CampaignDetailsModal } from '@/components/dashboard/campaign-details';
 import { Button, toast } from '@autodm/ui';
 import { UserPlus, FolderPlus, Loader2 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
@@ -18,6 +20,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = React.useState(true);
   const [isWizardOpen, setIsWizardOpen] = React.useState(false);
   const [editingCampaignId, setEditingCampaignId] = React.useState<string | null>(null);
+  const [viewCampaignId, setViewCampaignId] = React.useState<string | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = React.useState(false);
   const [campaignsRefreshKey, setCampaignsRefreshKey] = React.useState(0);
 
   const fetchAccounts = async () => {
@@ -144,7 +148,15 @@ export default function DashboardPage() {
               {/* Left Column: Line Charts & Campaign list */}
               <div className="lg:col-span-2 space-y-6">
                 <AnalyticsChart />
-                <CampaignsList key={campaignsRefreshKey} onEditCampaign={handleEditCampaign} />
+                <FollowersChart />
+                <CampaignsList
+                  key={campaignsRefreshKey}
+                  onEditCampaign={handleEditCampaign}
+                  onViewCampaign={(id) => {
+                    setViewCampaignId(id);
+                    setIsDetailsOpen(true);
+                  }}
+                />
               </div>
 
               {/* Right Column: Channels & Activity feeds */}
@@ -163,6 +175,42 @@ export default function DashboardPage() {
         onClose={handleCloseWizard}
         onSuccess={handleWizardSuccess}
         editCampaignId={editingCampaignId}
+      />
+
+      {/* Campaign Details View Modal */}
+      <CampaignDetailsModal
+        isOpen={isDetailsOpen}
+        onClose={() => {
+          setIsDetailsOpen(false);
+          setViewCampaignId(null);
+          setCampaignsRefreshKey((prev) => prev + 1);
+        }}
+        campaignId={viewCampaignId}
+        onEdit={handleEditCampaign}
+        onStatusToggle={async (id, currentStatus, name) => {
+          const toastId = toast.loading(`Updating status for ${name}...`);
+          try {
+            await apiRequest(`/campaigns/${id}/status`, {
+              method: 'PATCH',
+            });
+            toast.success(`Campaign successfully updated`, { id: toastId });
+            setCampaignsRefreshKey((prev) => prev + 1);
+          } catch (error) {
+            toast.error('Failed to update status', { id: toastId });
+          }
+        }}
+        onArchive={async (id) => {
+          const toastId = toast.loading('Archiving campaign...');
+          try {
+            await apiRequest(`/campaigns/${id}`, { method: 'DELETE' });
+            toast.success('Campaign archived successfully', { id: toastId });
+            setIsDetailsOpen(false);
+            setViewCampaignId(null);
+            setCampaignsRefreshKey((prev) => prev + 1);
+          } catch (error) {
+            toast.error('Failed to archive campaign', { id: toastId });
+          }
+        }}
       />
     </DashboardLayout>
   );

@@ -39,6 +39,7 @@ export class CampaignService {
         replyMediaUrl: dto.replyMediaUrl || null,
         commentReplyEnabled: dto.commentReplyEnabled ?? false,
         commentReplyText: dto.commentReplyText || null,
+        followCheckEnabled: dto.followCheckEnabled ?? false,
         status: CampaignStatus.ACTIVE,
         keywords: dto.keywords
           ? {
@@ -198,6 +199,8 @@ export class CampaignService {
         commentReplyEnabled:
           dto.commentReplyEnabled !== undefined ? dto.commentReplyEnabled : undefined,
         commentReplyText: dto.commentReplyText || null,
+        followCheckEnabled:
+          dto.followCheckEnabled !== undefined ? dto.followCheckEnabled : undefined,
       },
     });
 

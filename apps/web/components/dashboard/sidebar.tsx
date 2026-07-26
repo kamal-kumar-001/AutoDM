@@ -14,6 +14,7 @@ import {
   Shield,
   HelpCircle,
   Mail,
+  Link2,
 } from 'lucide-react';
 import { cn } from '@autodm/ui';
 import { usePathname, useRouter } from 'next/navigation';
@@ -50,7 +51,7 @@ export function Sidebar({ onOpenHelp, onOpenContact }: SidebarProps) {
 
   const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'Creator';
   const userRole = session?.user?.role || 'Creator';
-  const isAdmin = (session?.user as any)?.role === 'ADMIN';
+  const isAdmin = session?.user?.role === 'ADMIN';
   const allNavItems = isAdmin ? [...navItems, adminNavItem] : navItems;
 
   React.useEffect(() => {
@@ -166,6 +167,19 @@ export function Sidebar({ onOpenHelp, onOpenContact }: SidebarProps) {
           <Mail className="h-4 w-4 flex-shrink-0" />
           {(!mounted || !collapsed) && <span className="ml-3 truncate">Contact Support</span>}
         </button>
+        <a
+          href="https://followeranalyzer.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(
+            'flex items-center w-full px-3 py-2 rounded-lg text-xs font-semibold text-gray-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer',
+            collapsed && 'justify-center px-0',
+          )}
+          title="Instagram Relationship Analyzer"
+        >
+          <Link2 className="h-4 w-4 flex-shrink-0 text-primary" />
+          {(!mounted || !collapsed) && <span className="ml-3 truncate">Follower Analyzer</span>}
+        </a>
       </div>
 
       {/* Footer Profile */}

@@ -14,6 +14,7 @@ import { AdminQueue } from '@/components/admin/admin-queue';
 import { AdminFeatureFlags } from '@/components/admin/admin-feature-flags';
 import { AdminMonitoring } from '@/components/admin/admin-monitoring';
 import { AdminPromotions } from '@/components/admin/admin-promotions';
+import { AdminSupport } from '@/components/admin/admin-support';
 import {
   Users,
   Layers,
@@ -25,6 +26,7 @@ import {
   Activity,
   BarChart3,
   Megaphone,
+  LifeBuoy,
 } from 'lucide-react';
 
 const TABS = [
@@ -38,6 +40,7 @@ const TABS = [
   { id: 'flags', label: 'Feature Flags', icon: Flag },
   { id: 'monitoring', label: 'Monitoring', icon: Activity },
   { id: 'promotions', label: 'Promotions', icon: Megaphone },
+  { id: 'support', label: 'Support Tickets', icon: LifeBuoy },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -49,7 +52,7 @@ export default function AdminPage() {
 
   // Client-side role guard
   React.useEffect(() => {
-    if (status === 'authenticated' && (session?.user as any)?.role !== 'ADMIN') {
+    if (status === 'authenticated' && session?.user?.role !== 'ADMIN') {
       router.replace('/');
     }
   }, [status, session, router]);
@@ -62,7 +65,7 @@ export default function AdminPage() {
     );
   }
 
-  if ((session?.user as any)?.role !== 'ADMIN') return null;
+  if (session?.user?.role !== 'ADMIN') return null;
 
   return (
     <AdminLayout activeTab={tab} setActiveTab={setTab}>
@@ -91,6 +94,7 @@ export default function AdminPage() {
           {tab === 'flags' && <AdminFeatureFlags />}
           {tab === 'monitoring' && <AdminMonitoring />}
           {tab === 'promotions' && <AdminPromotions />}
+          {tab === 'support' && <AdminSupport />}
         </div>
       </div>
     </AdminLayout>

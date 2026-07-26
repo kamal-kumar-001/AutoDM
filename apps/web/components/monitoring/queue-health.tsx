@@ -2,8 +2,7 @@
 
 import * as React from 'react';
 import { Loader2, Pause, Play } from 'lucide-react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+import { fetchWithAuth } from '@/lib/api-client';
 
 interface QueueStats {
   name: string;
@@ -13,21 +12,6 @@ interface QueueStats {
   failed: number;
   delayed: number;
   paused: boolean;
-}
-
-async function fetchAuth<T>(path: string): Promise<T> {
-  const s = await fetch('/api/auth/session');
-  const session = await s.json();
-  const jwt = (session as any)?.accessToken as string | undefined;
-  const res = await fetch(`${API_URL}${path}`, {
-    headers: jwt ? { Authorization: `Bearer ${jwt}` } : {},
-    cache: 'no-store',
-  });
-  if (!res.ok) throw new Error(`${res.status}`);
-  const json = await res.json();
-  return json && typeof json === 'object' && 'success' in json && 'data' in json
-    ? (json.data as T)
-    : (json as T);
 }
 
 function QueueCard({ q }: { q: QueueStats }) {
@@ -72,7 +56,7 @@ export function QueueHealth() {
   const [loading, setLoading] = React.useState(true);
 
   const load = React.useCallback(() => {
-    fetchAuth<QueueStats[]>('/monitoring/queues')
+    fetchWithAuth<QueueStats[]>('/monitoring/queues')
       .then((res) => setQueues(Array.isArray(res) ? res : []))
       .catch(() => setQueues([]))
       .finally(() => setLoading(false));
