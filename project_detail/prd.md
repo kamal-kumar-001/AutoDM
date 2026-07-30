@@ -1,12 +1,51 @@
 # Product Requirements Document (PRD) — AutoDM (Instagram Business OS)
 
-## 1. Vision & Purpose
+## 1. Product Vision & Executive Summary
 
-AutoDM is a Meta-compliant direct messaging and comment automation platform built for creators, social commerce brands, and agencies. It automates lead capture by turning public comments, story interactions, and direct messages into personalized automated DMs and replies. The platform is designed to scale into a complete **Instagram Business OS** containing native CRM tracking, AI-powered conversational agents, and social commerce payments.
+AutoDM is India's premier Meta-compliant Instagram DM automation engine and social business operating system. It converts high-volume comment engagement into direct buyer conversations, qualified leads, and digital commerce revenue on autopilot.
 
 ---
 
-## 2. Core Automation Campaign Types
+## 2. Meta Development Mode Diagnostics & Permission Model
+
+### Developer Root Cause Explanation: Why DMs Fail For Some Accounts
+
+- **Meta Dev Mode Rule**: Before Meta App Review approval for `instagram_manage_messages`, Meta Graph API **ONLY** allows sending DMs and receiving webhooks for Instagram/Facebook accounts registered as **Developers, Admins, or Testers** in the Meta App Dashboard under _App Roles_.
+- **Non-Tester Behavior**: When an unregistered Instagram account comments on a post while the app is in Development Mode, Meta blocks the outgoing DM and returns error `(#200) Requires instagram_manage_messages permission` or suppresses the webhook.
+- **App Review Resolution**: Once App Review is approved and the Meta App is set to **Live Mode**, DMs deliver universally to all Instagram accounts worldwide.
+
+---
+
+## 3. Webhook Audit Logs & Correlation Specs
+
+### Log Table Specifications
+
+The Webhook Audit Logs interface (`/admin/monitoring` or `<WebhookLogs>`) renders a real-time correlation table:
+
+| Column Header        | Field Source                | Description & Format                                                 |
+| -------------------- | --------------------------- | -------------------------------------------------------------------- |
+| **Time**             | `WebhookEvent.createdAt`    | Time & date timestamp (`HH:mm:ss YYYY-MM-DD`).                       |
+| **Comment ID**       | `WebhookEvent.commentId`    | Native Instagram Comment ID (`1784...`).                             |
+| **User**             | `WebhookEvent.username`     | Instagram commenter handle (`@username`).                            |
+| **Send Status**      | `WebhookEvent.status`       | Status badge (`PROCESSED`, `FAILED`, `PENDING`, `PAUSED`).           |
+| **Error Diagnostic** | `WebhookEvent.errorMessage` | Formatted Meta API error message with Dev Mode guidance.             |
+| **fbtrace_id**       | `WebhookEvent.fbtraceId`    | Unique Meta trace ID returned by Graph API for Meta support tickets. |
+
+### Control Features
+
+- **Global Webhook Pause Switch**: Enables 1-click system-wide webhook processing pause/resume.
+- **Timeframe Purge Selector**: Allows deleting logs by timeframe (`All Logs`, `Older than 24h`, `Older than 7d`, `Older than 30d`).
+- **Audit Inspector Modal**: Clicking any log row opens a modal detailing Comment ID, User, Send Status, Meta Dev Mode explanation, `fbtrace_id`, and raw JSON webhook payload.
+
+---
+
+## 4. Clean Logging Directives
+
+- Muted verbose background logs (`Received incoming message`, `No active messaging campaigns for account`) to ensure clean server logs.
+
+---
+
+## 5. Core Automation Campaign Types
 
 | Campaign Type           | Trigger Event                             | Action / Response                              | Use Case                                      |
 | ----------------------- | ----------------------------------------- | ---------------------------------------------- | --------------------------------------------- |

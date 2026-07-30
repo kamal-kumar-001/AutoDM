@@ -71,9 +71,9 @@ export class MonitoringController {
     return this.monitoringService.updateWebhookStatus(body.paused);
   }
 
-  /** DELETE /monitoring/webhook-logs — purge all webhook logs */
+  /** DELETE /monitoring/webhook-logs — purge webhook logs with timeframe filter */
   @Delete('webhook-logs')
-  purgeWebhookLogs() {
-    return this.monitoringService.purgeWebhookLogs();
+  purgeWebhookLogs(@Query('olderThan') olderThan?: string) {
+    return this.monitoringService.purgeWebhookLogs(olderThan);
   }
 }

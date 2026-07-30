@@ -28,7 +28,7 @@ export default function FAQ() {
 
         {/* Accordions with AnimatePresence */}
         <div className="space-y-4 max-w-3xl mx-auto mb-16">
-          {FAQS_CONTENT.map((faq, idx) => {
+          {FAQS_CONTENT.items.map((faq, idx) => {
             const isOpen = openIndex === idx;
             return (
               <div

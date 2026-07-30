@@ -239,21 +239,46 @@ export class SendDmProcessor extends WorkerHost {
           },
         );
         messageId = response.data.message_id;
-        this.logger.log(`[Job ${job.id}] Meta API success — message_id=${messageId}`);
+        const fbtraceId = response.headers?.['x-fb-trace-id'] || null;
+
+        if (job.data.webhookEventId) {
+          await this.prisma.webhookEvent
+            .update({
+              where: { id: job.data.webhookEventId },
+              data: {
+                status: 'PROCESSED',
+                fbtraceId,
+              },
+            })
+            .catch(() => null);
+        }
       } catch (error: any) {
         // Log the full Meta API error response for debugging
         const metaError = error?.response?.data?.error;
-        if (metaError) {
-          this.logger.error(
-            `[Job ${job.id}] Meta API Error: code=${metaError.code} subcode=${metaError.error_subcode} type=${metaError.type} message="${metaError.message}"`,
-          );
-        }
-        const msg = metaError?.message || (error instanceof Error ? error.message : String(error));
-        this.logger.error(`[Job ${job.id}] Meta API failed: ${msg}`);
-        sendStatus = MessageStatus.FAILED;
-        errorMsg = msg;
+        const fbtraceId =
+          metaError?.fbtrace_id || error?.response?.headers?.['x-fb-trace-id'] || null;
 
-        // Persist the FAILED message status and mark the comment as processed in the database
+        let rawMsg = metaError?.message || (error instanceof Error ? error.message : String(error));
+
+        // Format actionable Meta Dev Mode diagnostic explanation for developer
+        if (
+          metaError &&
+          (metaError.code === 200 ||
+            metaError.code === 10 ||
+            metaError.code === 190 ||
+            metaError.code === 100)
+        ) {
+          rawMsg = `(#${metaError.code}) Meta Dev Mode Restriction: User @${recipientUsername} must be added as a Tester in Meta Developer Portal (App Roles) to receive DMs before App Review. Trace ID: ${fbtraceId || 'N/A'}`;
+        }
+
+        this.logger.error(
+          `[Job ${job.id}] Meta API failed for @${recipientUsername} (trace: ${fbtraceId}): ${rawMsg}`,
+        );
+
+        sendStatus = MessageStatus.FAILED;
+        errorMsg = rawMsg;
+
+        // Persist the FAILED message status and update WebhookEvent trace
         await this.prisma
           .$transaction(async (tx) => {
             await tx.message.create({
@@ -267,6 +292,7 @@ export class SendDmProcessor extends WorkerHost {
                 direction: MessageDirection.OUTGOING,
                 status: MessageStatus.FAILED,
                 errorMessage: errorMsg,
+                fbtraceId,
                 campaignId: campaignId === 'manual' ? null : campaignId,
               },
             });
@@ -277,6 +303,19 @@ export class SendDmProcessor extends WorkerHost {
                 data: {
                   isReplied: true,
                   replyText: `Failed: ${errorMsg}`,
+                },
+              });
+            }
+
+            if (job.data.webhookEventId) {
+              await tx.webhookEvent.update({
+                where: { id: job.data.webhookEventId },
+                data: {
+                  status: 'FAILED',
+                  errorMessage: errorMsg,
+                  fbtraceId,
+                  commentId: igCommentId || commentId,
+                  username: recipientUsername,
                 },
               });
             }
@@ -308,7 +347,7 @@ export class SendDmProcessor extends WorkerHost {
       }
     }
 
-    // 4. Persist result in a transaction
+    // 4. Persist success result in a transaction
     await this.prisma.$transaction(async (tx) => {
       // Save outgoing Message record
       await tx.message.create({

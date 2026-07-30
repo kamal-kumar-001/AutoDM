@@ -8,12 +8,39 @@ AutoDM implements a dark-mode-first aesthetic built for high-trust creator tools
 - **Primary Brand Colors**:
   - Mint Emerald: `#00BB88` (Primary CTAs, active status, success toasts, and glowing text).
   - Cyan Accent: `#06b6d4` (Data visualizations, loading indicators, and secondary highlights).
+  - Amber Gold: `#f59e0b` (Viral surge warnings, spike alerts, and founding member badges).
 - **Glassmorphism Layering**: Subtly transparent card backgrounds (`rgba(255, 255, 255, 0.02)`) with `backdrop-filter: blur(16px)` and glowing pseudo-element border outlines (`.border-gradient`).
 - **Typography**: Clean, readable sans-serif system stack using Google Font `Inter` (`font-sans`).
 
 ---
 
-## 2. Monorepo Shared UI Package (`packages/ui`)
+## 2. Mandatory UI/UX Directives & Layout Rules
+
+### Rule 1: High-Contrast Innovation Cards (`#innovations`)
+
+- **Numbered Badges**: Each innovation card displays prominent mono-font numbers (`01` through `06`).
+- **Interactive Demo Containers**: Cards feature live micro-demos:
+  - **01 Reply Desk**: Dual-tone filter box highlighting spam comments crossed out vs. genuine buyer questions highlighted in emerald neon.
+  - **02 Multilingual**: Interactive pill badges showcasing regional script support (Hindi हिन्दी, Tamil தமிழ், Hinglish, etc.).
+  - **03 DM Variants**: Stacked code blocks displaying rotated DM copy variants (`V1`, `V2`, `V3`).
+  - **04 Viral Queue**: Animated flame icon with amber surge pacing indicator ("Spike Detected • Auto Paced").
+  - **05 Spike Alerts**: Pulse-glowing alert banner preview ("🔥 Reel Heating Up: 2,400 DMs/hr").
+  - **06 Voice Create**: Cyan voice waveform audio preview ("🎙️ Listening… -> Automation Created").
+
+### Rule 2: Interactive Seat Selector & Ticker Banners (`/pricing`)
+
+- **Founding Member Ticker**: High-visibility top banner displaying spot counter (`950 / 1,000 claimed`) with an animated progress bar and `50 spots left` urgency pill.
+- **Interactive Team Seat Slider**: Agency Plan card features a 4-button seat selector (`5 Seats`, `10 Seats`, `15 Seats`, `20 Seats`) updating client account capacity dynamically.
+- **Refund Guarantee Badge**: Prominent green border container (`100% Refund if Your Account Gets Restricted Guarantee`).
+
+### Rule 3: Mobile PWA Responsive Experience (`#mobile`)
+
+- **PWA Layout**: Optimized for mobile viewports with sticky bottom-action drawers, lock-screen push notification previews, and touch-friendly card paddings.
+- **Horizontal Touch Swiping**: Pricing plan cards and persona cards enforce `overflow-x-auto snap-x snap-mandatory scrollbar-none` on mobile devices.
+
+---
+
+## 3. Monorepo Shared UI Package (`packages/ui`)
 
 Shared components are packaged in `@autodm/ui` for cross-app reuse:
 
@@ -27,39 +54,3 @@ Shared components are packaged in `@autodm/ui` for cross-app reuse:
 | **`<Breadcrumbs>`**    | Custom React Component          | ChevronRight separators, home icon, and active text green glow.                                                                                |
 | **`<CommandPalette>`** | Custom Keyboard Primitive       | Quick-search dialog triggered via `⌘K` or `Ctrl+K`. Features live search filtering and keyboard arrow selection.                               |
 | **`<Toaster>`**        | Sonner Toast                    | Dark-mode toast notification stack with custom neon status glows (`#00FFBB` success, `#FF6666` error).                                         |
-
----
-
-## 3. Web Application Component Architecture (`apps/web/components/`)
-
-Components are organized into functional domain folders:
-
-```text
-apps/web/components/
-├── admin/          # Admin Portal management modules (creators, campaigns, flags, queues, support)
-├── analytics/      # Metric cards and daily usage charts (rates, top keywords, top posts)
-├── dashboard/      # Creator workspace (header, sidebar, wizard, campaigns list, stats grid)
-├── landing/        # Marketing landing sections (Hero, Features, DashboardMockup, Testimonials, FAQ)
-├── monitoring/     # System health panels, webhook logs, failed queue job inspector
-└── ui/             # Custom dropdowns and layout utilities
-```
-
----
-
-## 4. Responsive Layout Rules & Micro-Animations
-
-1. **Pricing Card Mobile Snap Carousel**:
-   - Flex container: `flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-4 p-4`
-   - Card dimensions: `snap-align-center min-w-[85vw] flex-shrink-0 sm:min-w-0 sm:w-auto`
-   - Enables touch-swipe navigation on smartphones while keeping a 3-column grid on desktop.
-
-2. **Horizontal Scroll Table Container**:
-   - Table wrapper: `overflow-x-auto scrollbar-none border border-white/10 rounded-xl`
-   - Enforces `min-w-[600px]` on the HTML `<table>` element to prevent column squishing on mobile screens.
-
-3. **Viewport-Level Overlay Modals**:
-   - Modal backdrops (`<CampaignDetailsModal>`, `<CampaignWizard>`) render with `fixed inset-0 bg-[#030712]/80 backdrop-blur-md z-50`.
-   - Prevents modals from being clipped by nested component scroll heights.
-
-4. **Mobile Navigation Drawer**:
-   - Built with Framer Motion `AnimatePresence` for smooth height expansion and fade-in animations on mobile screens.

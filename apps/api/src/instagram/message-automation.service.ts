@@ -32,7 +32,15 @@ export class MessageAutomationService {
   }
 
   async handle(event: MessageEvent): Promise<void> {
-    const { instagramId, messageId, text, fromId, fromUsername, quickReplyPayload } = event;
+    const {
+      instagramId,
+      messageId,
+      text,
+      fromId,
+      fromUsername,
+      quickReplyPayload,
+      webhookEventId,
+    } = event;
 
     // 1. Resolve the InstagramAccount record (match by instagramId or page id, with developer bypass if instagramId is '0' or '23245')
     const account = await this.prisma.instagramAccount.findFirst({
@@ -73,8 +81,6 @@ export class MessageAutomationService {
       },
     });
 
-    this.logger.log(`Received incoming message: messageId=${messageId}`);
-
     // 3.5 Quick Reply Follow Confirmation bypass
     if (quickReplyPayload && quickReplyPayload.startsWith('CONFIRM_FOLLOW_CAMPAIGN_')) {
       const campaignId = quickReplyPayload.replace('CONFIRM_FOLLOW_CAMPAIGN_', '');
@@ -82,10 +88,6 @@ export class MessageAutomationService {
         where: { id: campaignId },
       });
       if (campaign && campaign.status === CampaignStatus.ACTIVE) {
-        this.logger.log(
-          `User ${fromId} confirmed follow check for campaign ${campaignId} — enqueuing reply with bypass.`,
-        );
-
         await this.sendDmProducer.enqueueSendDm({
           campaignId: campaign.id,
           instagramAccountId: account.id,
@@ -94,26 +96,23 @@ export class MessageAutomationService {
           replyMessage: campaign.replyMessage,
           replyMediaUrl: campaign.replyMediaUrl ?? undefined,
           isFollowBypass: true,
+          webhookEventId,
         });
         return;
       }
     }
 
-    // 4. Fetch ACTIVE campaigns for this account that handle messaging
+    // 4. Load active campaigns
     const campaigns = await this.prisma.campaign.findMany({
       where: {
         instagramAccountId: account.id,
         status: CampaignStatus.ACTIVE,
-        type: {
-          in: [CampaignType.KEYWORD_TO_DM, CampaignType.WELCOME_DM, CampaignType.STORY_REPLY_TO_DM],
-        },
         deletedAt: null,
       },
       include: { keywords: true },
     });
 
     if (campaigns.length === 0) {
-      this.logger.log(`No active messaging campaigns for account ${account.id}.`);
       return;
     }
 

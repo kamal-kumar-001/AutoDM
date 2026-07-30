@@ -157,7 +157,7 @@ export class MonitoringService {
 
   // ──────────────── Webhook Logs ────────────────
 
-  async getWebhookLogs(page = 1, limit = 30) {
+  async getWebhookLogs(page = 1, limit = 50) {
     const skip = (page - 1) * limit;
     const [logs, total] = await Promise.all([
       this.prisma.webhookEvent.findMany({
@@ -168,8 +168,13 @@ export class MonitoringService {
           id: true,
           eventId: true,
           provider: true,
+          commentId: true,
+          username: true,
+          senderId: true,
           status: true,
           errorMessage: true,
+          fbtraceId: true,
+          payload: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -213,8 +218,21 @@ export class MonitoringService {
     return { success: true, paused };
   }
 
-  async purgeWebhookLogs() {
-    const result = await this.prisma.webhookEvent.deleteMany({});
-    return { count: result.count };
+  async purgeWebhookLogs(olderThan?: string) {
+    let whereClause = {};
+
+    if (olderThan === '24h' || olderThan === '1d') {
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      whereClause = { createdAt: { lt: cutoff } };
+    } else if (olderThan === '7d') {
+      const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      whereClause = { createdAt: { lt: cutoff } };
+    } else if (olderThan === '30d') {
+      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      whereClause = { createdAt: { lt: cutoff } };
+    }
+
+    const result = await this.prisma.webhookEvent.deleteMany({ where: whereClause });
+    return { count: result.count, timeframe: olderThan || 'all' };
   }
 }

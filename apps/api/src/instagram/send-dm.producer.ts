@@ -13,6 +13,7 @@ export interface SendDmPayload {
   replyMessage: string;
   replyMediaUrl?: string;
   isFollowBypass?: boolean;
+  webhookEventId?: string;
 }
 
 @Injectable()

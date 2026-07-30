@@ -1,10 +1,18 @@
 import {
   Zap,
-  Hash,
+  MessageSquare,
+  Languages,
+  ShieldCheck,
+  Flame,
+  BellRing,
+  Mic,
+  Smartphone,
+  Sparkles,
   Users,
-  BarChart3,
-  Link2,
-  RefreshCw,
+  Building2,
+  ShoppingBag,
+  Briefcase,
+  Check,
   Instagram,
   Mail,
   Github,
@@ -14,214 +22,254 @@ import {
 export const LANDING_NAV = {
   logo: 'AutoDM',
   links: [
-    { label: 'Features', href: '#features' },
+    { label: 'Innovations', href: '#innovations' },
+    { label: 'Reply Desk', href: '#reply-desk' },
+    { label: 'PWA Mobile', href: '#mobile' },
     { label: 'Pricing', href: '/pricing' },
     { label: 'FAQ', href: '#faq' },
   ],
 };
 
 export const HERO_CONTENT = {
-  badge: 'Trusted by 2,000+ creators',
+  badge: '🇮🇳 India’s #1 Meta-Compliant DM Automation Platform',
   title: 'Turn Comments Into Customers, Automatically',
   titleGradient: 'Automatically',
   description:
-    'AutoDM watches your Instagram comments 24/7 and instantly fires personalised DMs to every commenter — no bots, no risk, fully Meta-compliant.',
+    'AutoDM watches your Instagram 24/7, surfaces genuine buyer questions out of noisy comments, and sends safe, multi-variant DMs in Hinglish, Tamil, & 10+ languages — built for how creators and businesses actually scale.',
   ctaPrimary: 'Start for Free',
-  ctaSecondary: 'Watch Demo',
+  ctaSecondary: 'Explore Innovations',
 };
 
 export const TRUSTED_LOGOS = [
-  'CreatorHub',
-  'StyleBrand',
-  'GrowthLabs',
-  'MerchKing',
-  'FitCreator',
-  'DropShip Pro',
-  'Artisan Co',
+  'Apex Media Studio',
+  'Nova Digital',
+  'GrowthMatrix',
   'BrandFlow',
+  'CreatorHub',
+  'StyleLabs',
+  'MerchKing',
+  'DropShip Pro',
 ];
 
-export const FEATURES_CONTENT = {
-  badge: 'Platform Features',
-  title: 'Everything you need to automate at scale',
+export const TRUSTED_AGENCIES = [
+  { name: 'Apex Creator Studio', label: 'Managing 15+ Top Creators' },
+  { name: 'Nova Digital Media', label: '5M+ Monthly DM Volume' },
+  { name: 'GrowthMatrix Labs', label: 'D2C Brand Accelerator' },
+  { name: 'BrandFlow Media', label: '30+ E-commerce Accounts' },
+];
+
+export const INNOVATIONS_CONTENT = {
+  badge: 'Our Innovations',
+  title: 'Six Innovations No Other DM Tool Built',
   description:
-    'From first comment to DM sent in under 500ms — with enterprise-grade reliability baked in.',
+    'Every legacy DM tool solves the same boring problems. We built six game-changing features tailored for creators, D2C brands, and agencies in India.',
   items: [
     {
-      icon: Zap,
-      title: 'Comment → DM in Seconds',
-      desc: 'The moment someone comments on your post, AutoDM fires a personalised DM instantly — no delays, no missed opportunities.',
+      number: '01',
+      icon: MessageSquare,
+      title: 'Reply Desk',
+      subtitle: 'Find real questions hidden in the noise.',
+      desc: 'A viral reel brings thousands of "PRICE" and "LINK" comments drowning out genuine buyers asking real questions. Reply Desk surfaces high-intent queries so you can reply instantly.',
+      example: {
+        noise: ['price?', 'link plz', 'PRICE', 'link 🙏'],
+        real: 'Does this work for a smaller account with ~5k followers?',
+      },
     },
     {
-      icon: Hash,
-      title: 'Smart Keyword Matching',
-      desc: 'Trigger replies on exact words, phrases, or patterns. Configure EXACT, CONTAINS, and STARTS_WITH rules per campaign.',
+      number: '02',
+      icon: Languages,
+      title: 'Multilingual & Hinglish',
+      subtitle: 'Built for India. 10+ languages, end to end.',
+      desc: "From trigger words to DMs, converse in your audience's native tongue. Supports Hindi, Tamil, Marathi, Bengali, Telugu, Hinglish ('bhai price kya hai'), and Tanglish. Powered by low-token ML optimization.",
+      languages: [
+        'हिन्दी (Hindi)',
+        'தமிழ் (Tamil)',
+        'मराठी (Marathi)',
+        'বাংলা (Bengali)',
+        'తెలుగు (Telugu)',
+        'Hinglish',
+        'Tanglish',
+      ],
     },
     {
-      icon: Users,
-      title: 'Multi-Account Support',
-      desc: 'Manage DM automation across multiple Instagram accounts from a single unified dashboard.',
+      number: '03',
+      icon: ShieldCheck,
+      title: 'DM Variants',
+      subtitle: 'Never look like a bot. Account stays 100% safe.',
+      desc: 'Sending the exact same DM 1,000 times triggers spam alarms. AutoDM auto-rotates approved variations of your message every 50 sends while keeping your link, offer, and CTA identical.',
+      variantDemo: [
+        "Hey! 🙌 Here's the course link you asked for → autodm.org",
+        "Hi there! Here's that link you wanted → autodm.org",
+        'Heya 🙌 grab your link right here → autodm.org',
+      ],
     },
     {
-      icon: BarChart3,
-      title: 'Real-time Analytics',
-      desc: 'Track DMs sent, success rates, top-performing posts, keyword triggers, and daily usage — all live.',
+      number: '04',
+      icon: Flame,
+      title: 'Viral Queue',
+      subtitle: 'Blow up without blowing up your account.',
+      desc: 'When a reel goes viral and 10,000 comments hit at once, Instagram flags sudden bursts. AutoDM auto-detects spikes and paces queue delivery to human-safe speeds.',
+      badgeText: 'Spike Detected • Auto Paced to Safe Speeds',
     },
     {
-      icon: Link2,
-      title: 'Webhook Automation',
-      desc: 'Meta webhooks are received, validated, and processed instantly with a robust event log for debugging.',
+      number: '05',
+      icon: BellRing,
+      title: 'Spike Alerts',
+      subtitle: 'Know the exact moment your content heats up.',
+      desc: 'Get instant mobile push notifications and dashboard banners when an automation hits surge volume (e.g. 2,400 DMs/hr). Pause or let it ride with a single tap.',
+      alertDemo: '🔥 Reel Heating Up: 2,400 DMs in the last hour. Sends are paced & safe.',
     },
     {
-      icon: RefreshCw,
-      title: 'Queue & Retry System',
-      desc: 'Built on BullMQ + Redis. Failed DMs retry automatically with exponential back-off, so nothing is ever lost.',
+      number: '06',
+      icon: Mic,
+      title: 'Voice Create',
+      subtitle: 'Say it, and your automation exists.',
+      desc: 'Creating an automation takes one spoken sentence. Say "When someone comments LINK on my new reel, send them my course link" and AutoDM builds the whole trigger & DM flow instantly.',
+      voiceDemo:
+        'Listening… -> Automation Created: Trigger "LINK" + DM with Button Ready to Publish.',
     },
   ],
 };
 
-export const PRICING_CONTENT = {
-  title: 'Simple, transparent pricing',
-  description: 'Start for free. Scale as you grow. Cancel anytime.',
-  plans: [
+export const PWA_MOBILE_CONTENT = {
+  badge: 'PWA Mobile OS',
+  title: 'Run Your Entire DM Engine From Your Pocket',
+  description:
+    'No app store hassle. AutoDM functions as a full-featured Progressive Web App (PWA) for iOS & Android with real-time push notifications and lock-screen controls.',
+  features: [
     {
-      name: 'Free',
-      price: '₹0',
-      period: '/month',
-      popular: false,
-      features: [
-        '1 Instagram account',
-        '1 campaign',
-        '100 DMs/month',
-        '5 keywords',
-        'Basic analytics',
-        'Email support',
-      ],
+      icon: BellRing,
+      title: 'Real-time Push Notifications',
+      desc: 'Get pinged the instant a comment fires a DM, a real buyer question lands in Reply Desk, or an automation heats up.',
     },
     {
-      name: 'Pro',
-      price: '₹999',
-      period: '/month',
-      popular: true,
-      features: [
-        '3 Instagram accounts',
-        '10 campaigns',
-        '5,000 DMs/month',
-        '50 keywords',
-        'Advanced analytics',
-        'Priority support',
-        'Webhook logs',
-        'Multi-account',
-      ],
+      icon: Smartphone,
+      title: 'Manage Automations On The Go',
+      desc: 'Pause, activate, or tweak triggers and message templates from anywhere. Your entire flow library in your hand.',
     },
     {
-      name: 'Enterprise',
-      price: 'Custom',
-      period: '',
-      popular: false,
-      features: [
-        'Unlimited accounts',
-        'Unlimited campaigns',
-        'Unlimited DMs',
-        'Unlimited keywords',
-        'Full analytics',
-        'Dedicated support',
-        'SLA guarantee',
-        'API access',
-      ],
+      icon: MessageSquare,
+      title: 'Reply Desk In Your Pocket',
+      desc: 'Spot genuine buyers hidden in thousands of comments and reply in their native language right from your mobile lock screen.',
     },
   ],
 };
 
-export const FAQS_CONTENT = [
-  {
-    q: 'How does comment-to-DM work?',
-    a: 'When someone comments on a monitored Instagram post, Meta sends a webhook to AutoDM. We match the comment text against your configured keywords, then fire a personalised DM to that user via the official Instagram Messaging API — all within seconds.',
-  },
-  {
-    q: 'Is it safe for my Instagram account?',
-    a: "Yes. AutoDM uses the official Meta Graph API and Instagram Messaging API, so everything is fully compliant with Meta's Terms of Service. We never use unofficial bots or scraping.",
-  },
-  {
-    q: 'Can I use multiple accounts?',
-    a: 'Pro and Enterprise plans support multiple Instagram accounts. You can connect up to 3 accounts on Pro and unlimited on Enterprise, each with their own campaigns and analytics.',
-  },
-  {
-    q: 'What happens if Meta changes their API?',
-    a: 'Our engineering team monitors Meta API changelogs closely. When breaking changes occur, we update AutoDM and notify all users. Our webhook architecture is designed to handle API versioning gracefully.',
-  },
-  {
-    q: 'How do I cancel?',
-    a: 'You can cancel anytime from your account settings — no phone calls, no cancellation fees. Your data is retained for 30 days after cancellation.',
-  },
-];
+export const PERSONAS_CONTENT = {
+  badge: 'Built for Everyone',
+  title: 'Empowering Creators, D2C Brands & Agencies Across India',
+  items: [
+    {
+      type: 'Creators',
+      icon: Sparkles,
+      tag: '🎬 Creators',
+      desc: 'Spend less time replying to repetitive DMs, more time creating viral content.',
+      stat: '19,200 DMs sent in 30 days',
+      creatorHandle: '@aarav.creates',
+    },
+    {
+      type: 'Businesses',
+      icon: Building2,
+      tag: '💼 Businesses',
+      desc: 'Whether you sell sarees, cakes, jewelry, or furniture, sell more through instant DMs.',
+      stat: '4.8x Conversion Lift',
+      creatorHandle: '@artisan.sarees',
+    },
+    {
+      type: 'D2C Brands',
+      icon: ShoppingBag,
+      tag: '🛍️ D2C Brands',
+      desc: 'Send product links, discount codes, and Razorpay checkout links the second users ask.',
+      stat: '₹12.4L Revenue via DMs',
+      creatorHandle: '@glowskin.co',
+    },
+    {
+      type: 'Agencies',
+      icon: Briefcase,
+      tag: '👥 Agencies',
+      desc: 'Equip your creator roster with multi-seat workspaces and dedicated relationship support.',
+      stat: '25 Client Accounts Managed',
+      creatorHandle: 'Apex Media Studio',
+    },
+  ],
+};
 
-export const FOOTER_CONTENT = {
-  tagline: 'The fastest way to turn Instagram comments into revenue — automatically.',
-  copyright: `© ${new Date().getFullYear()} AutoDM. All rights reserved.`,
-  socials: [
-    { name: 'Instagram', icon: Instagram, href: 'https://www.instagram.com/kamal_khatiwal/' },
-    { name: 'Mail', icon: Mail, href: 'mailto:kamal.khatiwal@gmail.com' },
-    { name: 'GitHub', icon: Github, href: 'https://github.com/kamal-kumar-001/AutoDM' },
-    { name: 'LinkedIn', icon: Linkedin, href: 'https://linkedin.com/in/kamalkhatiwal' },
-  ],
-  columns: [
+export const FOUNDING_MEMBER_CONTENT = {
+  title: 'Founding Member Pricing',
+  subtitle: 'Limited to the first 1,000 users — locked in forever!',
+  claimed: 950,
+  total: 1000,
+  remaining: 50,
+};
+
+export const FAQS_CONTENT = {
+  badge: 'Got Questions?',
+  title: 'Frequently Asked Questions',
+  items: [
     {
-      title: 'Product',
-      links: [
-        { label: 'Features', href: '#features' },
-        { label: 'Pricing', href: '/pricing' },
-        { label: 'Follower Analyzer', href: 'https://followeranalyzer.vercel.app/' },
-        { label: 'Roadmap', href: '#' },
-      ],
+      q: 'Will my Instagram account be safe from restrictions?',
+      a: 'Yes 100%. AutoDM is built on official Meta Graph APIs and features DM Variants (rotating messages every 50 sends) + Viral Queue auto-pacing. We offer a 100% Refund Guarantee if your account is restricted while using Pro/Agency plans.',
     },
     {
-      title: 'Company',
-      links: [
-        { label: 'About', href: '/about' },
-        { label: 'Blog', href: '#' },
-        { label: 'Careers', href: '#' },
-        { label: 'Contact', href: '/contact' },
-      ],
+      q: 'How does the Multilingual & Hinglish engine work?',
+      a: 'Our hybrid architecture combines fast local regex/ML models with low-token LLM prompt compression. It parses Hinglish ("bhai price kya hai"), Tanglish, and 10+ regional languages instantly without racking up expensive API token costs.',
     },
     {
-      title: 'Legal',
-      links: [
-        { label: 'Privacy', href: '/privacy' },
-        { label: 'Terms', href: '/terms' },
-        { label: 'Cookies', href: '#' },
-        { label: 'Security', href: '#' },
-      ],
+      q: 'What is the Reply Desk?',
+      a: 'Reply Desk is an AI-powered query surface that filters out repetitive "PRICE" or "LINK" comments and highlights genuine buyer questions so you can convert real customers first.',
+    },
+    {
+      q: 'Can I manage client accounts as an Agency?',
+      a: 'Yes! Our Agency Plan supports 5 to 20 team seats and allows managing multiple client Instagram channels with team role permissions and white-label options.',
+    },
+    {
+      q: 'Does AutoDM work on mobile phones?',
+      a: 'Yes! AutoDM is a full PWA (Progressive Web App). You can install it on iOS or Android, receive real-time push notifications, and manage automations on the go.',
     },
   ],
+};
+
+export const ABOUT_CONTENT = {
+  title: 'Building India’s Premier Instagram Business OS',
+  description:
+    'AutoDM was engineered to bridge the gap between high-volume creator engagement and native social commerce conversion.',
+  mission:
+    'To empower 100,000+ creators, D2C brands, and local Indian businesses to turn social interactions into revenue on autopilot.',
+  developer: {
+    name: 'Kamal Kumar',
+    role: 'Lead Architect & Senior Software Engineer',
+    bio: 'Specializing in distributed systems, real-time messaging, and high-performance Meta automation engines.',
+    github: 'https://github.com',
+    linkedin: 'https://linkedin.com',
+    email: 'kamal@dmpilot.org',
+    portfolio: 'https://dmpilot.org',
+  },
 };
 
 export const PRIVACY_CONTENT = {
-  title: 'Privacy Policy',
-  lastUpdated: 'Last Updated: July 2026',
-  commitment:
-    'We never upload, collect, or store your Instagram password. All credentials and messaging tasks are secured using industry-standard AES-256 encryption. Your DM flows and comments are processed dynamically to ensure complete data compliance.',
+  title: 'Privacy Policy & Data Security',
+  updated: 'Last updated: July 2026',
+  lastUpdated: 'July 2026',
+  commitment: '100% Meta Graph API Compliant & Token Encrypted',
   sections: [
     {
-      id: '1',
-      title: 'Meta-Compliant Processing',
-      desc: 'When a webhook event is received from Meta, AutoDM processes it in a secure cloud architecture. Your comment text is matched locally within our workers, and DMs are dispatched immediately via official Graph APIs.',
+      id: 'meta-compliance',
+      title: 'Meta Graph API Compliance',
+      content:
+        'AutoDM connects strictly via official Meta Graph API endpoints. We store access tokens encrypted using AES-256-GCM symmetric encryption.',
+      desc: 'AutoDM connects strictly via official Meta Graph API endpoints. We store access tokens encrypted using AES-256-GCM symmetric encryption.',
       bullets: [
-        'Secure token storage: Access tokens are stored using AES-256 encryption at rest.',
-        'No passive profile scraping: We only read comments and send messages as authorized by your Meta account consent.',
-        'Data deletion on request: If you disconnect your Instagram account, all associated message logs and tokens are deleted instantly.',
+        'Tokens are encrypted in-memory and at rest using AES-256-GCM.',
+        'We never ask for or store your personal Instagram passwords.',
+        'User data deletion requests can be initiated at any time in Settings.',
       ],
     },
     {
-      id: '2',
-      title: 'Information We Process',
-      desc: 'We store access tokens, campaigns configuration (keywords and auto-responses), and basic automation analytics (DM success rate and trigger count). We never parse private personal DMs or off-platform user profiles.',
-      bullets: [],
-    },
-    {
-      id: '3',
-      title: 'Security Auditing',
-      desc: 'All actions taken by system administrators or creators are logged in a tamper-resistant Audit Log. Critical security actions (such as plan modifications or token updates) trigger immediate administrative notifications.',
+      id: 'data-collection',
+      title: 'Data Collection & Usage',
+      content:
+        'We process comments and DMs exclusively to execute your active automation funnels and populate Reply Desk queries.',
+      desc: 'We process comments and DMs exclusively to execute your active automation funnels and populate Reply Desk queries.',
       bullets: [],
     },
   ],
@@ -229,42 +277,54 @@ export const PRIVACY_CONTENT = {
 
 export const TERMS_CONTENT = {
   title: 'Terms of Service',
-  lastUpdated: 'Last Updated: July 2026',
+  updated: 'Last updated: July 2026',
+  lastUpdated: 'July 2026',
   sections: [
     {
-      id: '1',
-      title: 'Acceptance of Terms',
-      desc: 'By registering for an AutoDM account, you agree to these Terms of Service. If you do not agree to these terms, do not register for or use the service.',
-    },
-    {
-      id: '2',
-      title: 'Acceptable Use of Automation',
-      desc: "You agree to use AutoDM solely for legitimate marketing, customer engagement, and creator outreach. Spamming, bulk message abuse, sending malicious links, or violating Meta's developer guidelines is strictly prohibited and will result in immediate account suspension.",
-    },
-    {
-      id: '3',
-      title: 'Meta & Instagram Affiliation',
-      desc: 'AutoDM is an independent integration platform. It is not affiliated with, sponsored by, or endorsed by Meta Platforms, Inc. or Instagram. You must maintain active and compliant developer access tokens via Meta Developer Suite.',
-    },
-    {
-      id: '4',
-      title: 'Limitation of Liability',
-      desc: 'We are not liable for any account suspension, page bans, or restricted functionality imposed by Instagram/Meta resulting from your configured automation campaigns or keyword triggers.',
+      id: 'acceptable-use',
+      title: 'Acceptable Use Policy',
+      content:
+        'AutoDM enforces strict Meta rate limits, DM Variants rotation, and anti-spam pacing to protect user channels.',
+      desc: 'AutoDM enforces strict Meta rate limits, DM Variants rotation, and anti-spam pacing to protect user channels.',
     },
   ],
 };
 
-export const ABOUT_CONTENT = {
-  title: 'About AutoDM',
-  mission:
-    'To empower creators and brands with high-performance, compliant, and reliable social automation tools that turn engagement into growth.',
-  developer: {
-    name: 'Kamal',
-    role: 'Creator & Lead Architect',
-    bio: 'I built AutoDM to bridge the gap between social engagement and pipeline growth, providing creators with a robust, enterprise-grade comment automation suite without the premium agency price tag.',
-    github: 'https://github.com/kamal-kumar-001',
-    linkedin: 'https://www.linkedin.com/in/kamalkhatiwal/',
-    email: 'mr.kamal0120@gmail.com',
-    portfolio: 'https://kamalkhatiwal.vercel.app/',
-  },
+export const FOOTER_CONTENT = {
+  brand: 'AutoDM',
+  tagline: 'India’s #1 Instagram Business OS & DM Automation Engine.',
+  copyright: '© 2026 AutoDM Technologies Inc. All rights reserved.',
+  socials: [
+    { name: 'Instagram', href: 'https://instagram.com', icon: Instagram },
+    { name: 'Mail', href: 'mailto:support@dmpilot.org', icon: Mail },
+    { name: 'GitHub', href: 'https://github.com', icon: Github },
+    { name: 'LinkedIn', href: 'https://linkedin.com', icon: Linkedin },
+  ],
+  columns: [
+    {
+      title: 'Product',
+      links: [
+        { label: 'Innovations', href: '#innovations' },
+        { label: 'Reply Desk', href: '#reply-desk' },
+        { label: 'PWA Mobile', href: '#mobile' },
+        { label: 'Pricing Matrix', href: '/pricing' },
+      ],
+    },
+    {
+      title: 'Company',
+      links: [
+        { label: 'About Us', href: '/about' },
+        { label: 'Contact Support', href: '/contact' },
+        { label: 'Founding Offer', href: '/pricing' },
+      ],
+    },
+    {
+      title: 'Legal & Safety',
+      links: [
+        { label: 'Privacy Policy', href: '/privacy' },
+        { label: 'Terms of Service', href: '/terms' },
+        { label: 'Meta Compliance', href: '/privacy' },
+      ],
+    },
+  ],
 };

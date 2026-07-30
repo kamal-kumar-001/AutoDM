@@ -55,9 +55,33 @@
 
 ## 4. Refactoring Audit Log (Phase 21, Phase 22 & Phase 23)
 
-- **SEO & Google Search Console Verification**: Configured `verification: { google: 'HFp8bpyG41psm7hb5aYEgShOZ50wfwEnVCsbBKZEfp8' }` in `apps/web/app/layout.tsx` metadata. Renders `<meta name="google-site-verification" content="HFp8bpyG41psm7hb5aYEgShOZ50wfwEnVCsbBKZEfp8" />` across all pages.
-- **Pricing Data Centralization & Instant Loading**: Created `apps/web/lib/pricing-data.ts` as the single canonical file containing fallback pricing plans (`DEFAULT_PLANS`), launch promotions (`DEFAULT_PROMO`), plan feature flags (`DEFAULT_FEATURE_FLAGS`), and comparison matrix specifications (`COMPARISON_SPECIFICATIONS`). Pricing page (`/pricing`) initializes state immediately with this data, eliminating full-screen loading spinners and guaranteeing **0ms instant rendering** even if backend APIs are offline or unreachable.
-- **API Client Centralization**: Converted all raw `fetch` calls across 18 components to use `@/lib/api-client` utilities (`apiRequest` & `fetchWithAuth`).
-- **Session Type Augmentation**: Extended `next-auth` module definitions (`types/next-auth.d.ts`) to natively include `role`, `isVerified`, and `plan` on `session.user`. Replaced 14 unsafe `(session?.user as any)?.role` casts with standard typed access.
-- **Dead Code Cleanup**: Removed unused `lib/env.ts` utility.
-- **TypeScript & Linter Enforcement**: 0 TypeScript compilation errors, 0 `console.log` statements, 0 `as any` casts.
+## Session Updates (July 2026)
+
+### 1. Webhook Failure Correlation & Audit Log Table
+
+- Created a clean Webhook Audit & Failure Logs table rendering:
+  `Time | Comment ID | User | Send Status | Error Diagnostic | fbtrace_id`
+- Updated `WebhookEvent` model with `commentId`, `username`, `senderId`, and `fbtraceId`.
+- Updated `Message` model with `fbtraceId`.
+- Updated `SendDmProcessor` to capture Meta Graph API trace header (`x-fb-trace-id`) and JSON `fbtrace_id`.
+- Added global **Pause / Resume Webhooks** switch.
+- Added **Select Timeframe Purge** dropdown (`All Logs`, `Older than 24h`, `Older than 7d`, `Older than 30d`) with Purge execution button.
+- Built **Audit Inspector Modal** displaying full error trace, Meta Dev Mode explanation, `fbtrace_id` copy button, and raw JSON webhook payload viewer.
+
+### 2. Meta Development Mode Root Cause Explanation
+
+- **Why DMs work for some accounts and fail for others**:
+  When an app is in **Meta Development Mode** (prior to official App Review approval), Meta Graph API **ONLY** permits webhooks and DM delivery for Instagram accounts registered as **Developers, Admins, or Testers** in the Meta App Dashboard under _App Roles_.
+- When a non-tester user comments, Meta either suppresses the webhook or rejects the `/me/messages` request with error `(#200) Requires instagram_manage_messages permission`.
+- Formatted explicit diagnostic error messages in the backend and audit log UI guiding developers to add non-tester accounts to Meta App Roles.
+
+### 3. Log Noise Cleanup
+
+- Removed verbose console logs (`Received incoming message`, `No active messaging campaigns for account`) from `MessageAutomationService` and `CommentAutomationService`.
+
+* **SEO & Google Search Console Verification**: Configured `verification: { google: 'HFp8bpyG41psm7hb5aYEgShOZ50wfwEnVCsbBKZEfp8' }` in `apps/web/app/layout.tsx` metadata. Renders `<meta name="google-site-verification" content="HFp8bpyG41psm7hb5aYEgShOZ50wfwEnVCsbBKZEfp8" />` across all pages.
+* **Pricing Data Centralization & Instant Loading**: Created `apps/web/lib/pricing-data.ts` as the single canonical file containing fallback pricing plans (`DEFAULT_PLANS`), launch promotions (`DEFAULT_PROMO`), plan feature flags (`DEFAULT_FEATURE_FLAGS`), and comparison matrix specifications (`COMPARISON_SPECIFICATIONS`). Pricing page (`/pricing`) initializes state immediately with this data, eliminating full-screen loading spinners and guaranteeing **0ms instant rendering** even if backend APIs are offline or unreachable.
+* **API Client Centralization**: Converted all raw `fetch` calls across 18 components to use `@/lib/api-client` utilities (`apiRequest` & `fetchWithAuth`).
+* **Session Type Augmentation**: Extended `next-auth` module definitions (`types/next-auth.d.ts`) to natively include `role`, `isVerified`, and `plan` on `session.user`. Replaced 14 unsafe `(session?.user as any)?.role` casts with standard typed access.
+* **Dead Code Cleanup**: Removed unused `lib/env.ts` utility.
+* **TypeScript & Linter Enforcement**: 0 TypeScript compilation errors, 0 `console.log` statements, 0 `as any` casts.

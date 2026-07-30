@@ -5,98 +5,104 @@ export const DEFAULT_PLANS: BillingPlan[] = [
     id: 'plan-free',
     key: 'FREE',
     name: 'Free',
-    description: 'Perfect for creators just starting out with DM automation',
+    description: 'Ideal for individual creators getting started with smart DM automation',
     priceMonthly: 0,
     priceYearly: 0,
-    campaignLimit: 1,
-    keywordLimit: 3,
-    dmLimitMonthly: 100,
+    campaignLimit: 2,
+    keywordLimit: 5,
+    dmLimitMonthly: 200,
   },
   {
     id: 'plan-pro',
     key: 'PRO',
     name: 'Pro',
-    description: 'For growing creators & businesses scaling engagement',
-    priceMonthly: 999,
-    priceYearly: 9588, // ₹799/mo billed annually
-    campaignLimit: 10,
-    keywordLimit: 25,
-    dmLimitMonthly: 5000,
-  },
-  {
-    id: 'plan-enterprise',
-    key: 'ENTERPRISE',
-    name: 'Enterprise',
-    description: 'For agencies & high-volume commerce brands requiring custom scale',
-    priceMonthly: 4999,
-    priceYearly: 47988,
+    description: 'Unlimited everything for serious creators & growing digital brands',
+    priceMonthly: 1990,
+    priceYearly: 11988, // ₹999/mo billed annually
     campaignLimit: 9999,
     keywordLimit: 9999,
-    dmLimitMonthly: 50000,
+    dmLimitMonthly: 999999,
+  },
+  {
+    id: 'plan-agency',
+    key: 'ENTERPRISE', // Map Agency plan to ENTERPRISE key for backward compatibility
+    name: 'Agency',
+    description: 'Built for agencies & managers handling multiple high-tier creator accounts',
+    priceMonthly: 3990,
+    priceYearly: 35880, // ₹2990/mo billed annually
+    campaignLimit: 9999,
+    keywordLimit: 9999,
+    dmLimitMonthly: 999999,
   },
 ];
 
 export const DEFAULT_PROMO: PromoSettings = {
-  text: '🚀 Special Launch Discount — Save 20% on Annual Billing!',
+  text: '🔥 Founding Member Offer: 50 spots left at ₹999/mo locked in forever! (950/1,000 claimed)',
   enabled: true,
-  discountPercent: 20,
+  discountPercent: 50,
+};
+
+export const FOUNDING_MEMBER_STATS = {
+  claimed: 950,
+  total: 1000,
+  remaining: 50,
 };
 
 export const DEFAULT_FEATURE_FLAGS: FeatureFlag[] = [
   {
-    id: 'flag-comment-to-dm',
-    key: 'COMMENT_TO_DM',
-    description: 'Comment to Direct Message Automation Trigger',
+    id: 'flag-reply-desk',
+    key: 'REPLY_DESK',
+    description: 'AI Query Filtering & Real Buyer Question Surface',
     enabledForPlans: 'FREE,PRO,ENTERPRISE',
     isEnabled: true,
   },
   {
-    id: 'flag-keyword-to-dm',
-    key: 'KEYWORD_TO_DM',
-    description: 'Direct Message Keyword Trigger Automation',
+    id: 'flag-multilingual',
+    key: 'MULTILINGUAL_HINGLISH',
+    description: '10+ Regional Languages & Hinglish/Tanglish Processing',
     enabledForPlans: 'FREE,PRO,ENTERPRISE',
     isEnabled: true,
   },
   {
-    id: 'flag-welcome-dm',
-    key: 'WELCOME_DM',
-    description: 'Automated New Follower Welcome Messages',
+    id: 'flag-dm-variants',
+    key: 'DM_VARIANTS',
+    description: 'Anti-Spam DM Variation Rotation Every 50 Sends',
     enabledForPlans: 'PRO,ENTERPRISE',
     isEnabled: true,
   },
   {
-    id: 'flag-story-reply-to-dm',
-    key: 'STORY_REPLY_TO_DM',
-    description: 'Instagram Story Reply Automation Funnel',
+    id: 'flag-viral-queue',
+    key: 'VIRAL_QUEUE',
+    description: 'Automated Surge Pacing & Spam Alarm Protection',
     enabledForPlans: 'PRO,ENTERPRISE',
     isEnabled: true,
   },
   {
-    id: 'flag-comment-reply',
-    key: 'COMMENT_REPLY',
-    description: 'Public Comment Auto-Reply Posting',
+    id: 'flag-spike-alerts',
+    key: 'SPIKE_ALERTS',
+    description: 'Real-time Mobile Push & Dashboard Surge Alerts',
+    enabledForPlans: 'PRO,ENTERPRISE',
+    isEnabled: true,
+  },
+  {
+    id: 'flag-voice-create',
+    key: 'VOICE_CREATE',
+    description: 'Speech-to-Automation AI Campaign Builder',
     enabledForPlans: 'PRO,ENTERPRISE',
     isEnabled: true,
   },
   {
     id: 'flag-follow-gate',
     key: 'FOLLOW_CHECK_GATE',
-    description: 'Follow Gate Verification & Native Quick Reply Prompts',
+    description: 'Follow-to-Unlock Verification & Native Quick Replies',
     enabledForPlans: 'PRO,ENTERPRISE',
     isEnabled: true,
   },
   {
-    id: 'flag-webhook-logs',
-    key: 'WEBHOOK_LOGS',
-    description: 'Live Meta Webhook Ingest Log Inspector & Pause Controls',
+    id: 'flag-team-seats',
+    key: 'TEAM_SEATS',
+    description: 'Agency Team Seats (5–20 Seats) & Multi-Account Hub',
     enabledForPlans: 'ENTERPRISE',
-    isEnabled: true,
-  },
-  {
-    id: 'flag-analytics',
-    key: 'ADVANCED_ANALYTICS',
-    description: 'Real-time Chart Visualizations & Conversion Rate Metrics',
-    enabledForPlans: 'PRO,ENTERPRISE',
     isEnabled: true,
   },
 ];
@@ -109,18 +115,25 @@ export const DEFAULT_PRICING_DATA: PricingPromoResponse = {
 
 export const COMPARISON_SPECIFICATIONS = {
   accounts: {
-    FREE: '1 Account',
-    PRO: '3 Accounts',
-    ENTERPRISE: 'Unlimited Accounts',
+    FREE: '1 IG Account',
+    PRO: '3 IG Accounts',
+    ENTERPRISE: '5–20 Client Accounts',
   },
   campaignOptions: {
     FREE: '2 Funnels (Comment, Keyword)',
-    PRO: 'All 5 Funnels Enabled',
-    ENTERPRISE: 'All 5 Funnels + Custom Flows',
+    PRO: 'All 5 Funnels + Voice Create',
+    ENTERPRISE: 'All Funnels + Agency Workspaces',
   },
   support: {
-    FREE: 'Standard Support',
-    PRO: 'Priority Support',
-    ENTERPRISE: '24/7 Dedicated Support',
+    FREE: 'WhatsApp Support',
+    PRO: 'Priority WhatsApp Support',
+    ENTERPRISE: 'Dedicated Relationship Manager',
   },
 };
+
+export const AGENCY_SEAT_OPTIONS = [
+  { seats: 5, clientAccounts: 5, label: '5 Seats / 5 Accounts' },
+  { seats: 10, clientAccounts: 10, label: '10 Seats / 10 Accounts' },
+  { seats: 15, clientAccounts: 15, label: '15 Seats / 15 Accounts' },
+  { seats: 20, clientAccounts: 20, label: '20 Seats / 20 Accounts' },
+];

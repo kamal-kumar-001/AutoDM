@@ -25,7 +25,21 @@ export class CommentAutomationService {
   }
 
   async handle(event: CommentEvent): Promise<void> {
-    const { instagramId, commentId, mediaId, text, fromId, fromUsername } = event;
+    const { instagramId, commentId, mediaId, text, fromId, fromUsername, webhookEventId } = event;
+
+    // 0. Store metadata on WebhookEvent record for diagnostic correlation
+    if (webhookEventId) {
+      await this.prisma.webhookEvent
+        .update({
+          where: { id: webhookEventId },
+          data: {
+            commentId,
+            username: fromUsername,
+            senderId: fromId,
+          },
+        })
+        .catch(() => null);
+    }
 
     // 1. Resolve the InstagramAccount record (with developer bypass if instagramId is '0')
     const account = await this.prisma.instagramAccount.findFirst({
@@ -43,7 +57,6 @@ export class CommentAutomationService {
     // 2. Dedup — skip if we have already processed this exact comment
     const existing = await this.prisma.comment.findUnique({ where: { commentId } });
     if (existing?.isReplied) {
-      this.logger.log(`Comment ${commentId} already replied — skipping.`);
       return;
     }
 
@@ -73,7 +86,6 @@ export class CommentAutomationService {
     });
 
     if (campaigns.length === 0) {
-      this.logger.log(`No active campaigns for account ${account.id} — no DM enqueued.`);
       return;
     }
 
@@ -107,6 +119,7 @@ export class CommentAutomationService {
         igCommentId: commentId,
         replyMessage: campaign.replyMessage,
         replyMediaUrl: campaign.replyMediaUrl ?? undefined,
+        webhookEventId,
       });
 
       // Only one campaign should respond per comment

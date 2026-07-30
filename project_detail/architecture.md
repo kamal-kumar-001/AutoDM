@@ -1,29 +1,15 @@
 # Technical Architecture Document — AutoDM (Instagram Business OS)
 
-## 1. System Deployment Topology & Infrastructure
-
-AutoDM operates on a high-availability hybrid deployment model combining self-hosted edge infrastructure, cloud tunnels, serverless web hosting, and developer workstations:
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           PRODUCTION DEPLOYMENT                             │
-├──────────────────────────────────────┬──────────────────────────────────────┤
-│  Frontend Layer (Vercel Cloud)       │  Backend Layer (Lab PC - Ubuntu 25)  │
-│  • Domain: https://www.dmpilot.org   │  • Domain: https://api.dmpilot.org   │
-│  • Framework: Next.js 14 (App Router)│  • Tunnel: Cloudflare Tunnel         │
-│  • Edge CDN & Global Distribution     │  • App Engine: NestJS REST API (:4000)│
-│  • Environment: Node.js 18+ runtime  │  • Database: PostgreSQL (Local/Neon) │
-│                                      │  • Queue Broker: Redis 7 (BullMQ)    │
-└──────────────────────────────────────┴──────────────────────────────────────┘
-                                  ▲
                                   │ Direct API Requests & Meta Webhook Events
                                   ▼
+
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         DEVELOPER WORKSTATION (macOS)                       │
-│  • Workspace: PNPM Monorepo (`/apps/api`, `/apps/web`, `/packages/*`)        │
-│  • CLI Tools: Prisma CLI, Nest CLI, Next.js Dev Server                      │
+│ DEVELOPER WORKSTATION (macOS) │
+│ • Workspace: PNPM Monorepo (`/apps/api`, `/apps/web`, `/packages/*`) │
+│ • CLI Tools: Prisma CLI, Nest CLI, Next.js Dev Server │
 └─────────────────────────────────────────────────────────────────────────────┘
-```
+
+````
 
 ### Infrastructure Components:
 
@@ -47,7 +33,7 @@ AutoDM/
     ├── config/          # Shared ESLint, Prettier, and tsconfig presets
     ├── types/           # Shared TypeScript interfaces (ApiResponse, ApiErrorResponse, UserDto)
     └── ui/              # Monorepo UI library (Button, Dialog, Toaster, Tailwind Preset)
-```
+````
 
 ### Technology Matrix:
 

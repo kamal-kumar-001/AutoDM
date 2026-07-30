@@ -193,11 +193,17 @@ model WebhookEvent {
   payload      Json
   status       WebhookStatus @default(PENDING)
   errorMessage String?
+  commentId    String?
+  username     String?
+  senderId     String?
+  fbtraceId    String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
   @@index([status])
   @@index([createdAt])
+  @@index([commentId])
+  @@index([fbtraceId])
 }
 
 model Comment {
@@ -235,6 +241,7 @@ model Message {
   direction          MessageDirection
   status             MessageStatus    @default(SENT)
   errorMessage       String?
+  fbtraceId          String?
   campaignId         String?
   campaign           Campaign?        @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   createdAt          DateTime         @default(now())
@@ -245,6 +252,7 @@ model Message {
   @@index([status])
   @@index([campaignId])
   @@index([createdAt])
+  @@index([fbtraceId])
 }
 
 model QueueJob {
