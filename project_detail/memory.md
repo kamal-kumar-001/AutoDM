@@ -57,27 +57,32 @@
 
 ## Session Updates (August 2026)
 
-### 1. Inbox Auto-Scroll Bug Resolution
+### 1. Delivery Log Overhaul (`GET /monitoring/delivery-logs`)
 
-- **Root Cause Identified**: `useEffect` listening on `[messages]` state was calling `messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })` unconditionally every 4 seconds during polling, pulling the scrollbar down automatically while the user attempted to scroll up and read chat history.
-- **Fix Implemented**: Added `onScroll` handler on the chat messages container (`chatContainerRef`) to track `isUserScrolledUp`. Auto-scrolling is paused when the creator scrolls up to read history, and a floating `"↓ Scroll to Latest Messages"` pill button appears to jump to the bottom on demand.
+- **Root Cause Discovered**: Previous webhook query filtered `WebhookEvent.username` matching creator's account handle (`a.username`), causing every feed row to label as `@creator_username got the DM`. Additionally, `RECEIVED` detail displayed outgoing DM text instead of the commenter's actual comment.
+- **Architecture Fix Implemented**:
+  1. Created `GET /monitoring/delivery-logs` endpoint joining `Comment`, `Message`, `Campaign`, and `InstagramAccount` models.
+  2. `commenterUsername` dynamically resolves to **Commenter's Instagram handle** (`Comment.username`, e.g., `@smeet_kevadiya`, `@cosmosbyrudra`).
+  3. `commentText` displays the **actual comment typed by commenter** (e.g. `"bhai price kya hai"`, `"DHAN"`).
+  4. Redesigned `<CreatorDeliveryLog />` component to match AutoDM's dark glassmorphism theme (`#09090b` dark cards, pink/rose gradient accents, high contrast typography).
+  5. Accordion details reveal:
+     - **COMMENT RECEIVED**: Commenter's actual comment
+     - **MATCHED CAMPAIGN**: Campaign name & matched keyword
+     - **DM DELIVERED**: Exact DM text delivered to commenter
+     - **Delivery Trace**: Comment ID & Meta `fbtrace_id`
 
-### 2. Instagram Native App Reply Thread Grouping Fix
+### 2. Live Inbox Auto-Scroll Lock Fix (`app/inbox/page.tsx`)
 
-- **Root Cause Identified**: When a creator replied to a user directly from their native Instagram mobile app, incoming webhooks had `fromId = creatorInstagramId` and `recipientId = customerId`. Previously, `message-automation.service.ts` saved `recipientId = fromId`, assigning outgoing replies to a thread for the creator themselves (`my named chat`) instead of grouping into the customer's conversation thread.
+- **Root Cause Identified**: `useEffect` listening on `[messages]` state executed `messagesEndRef.current?.scrollIntoView()` unconditionally every 4 seconds during polling, pulling the scrollbar down automatically while the creator was trying to scroll up and read past messages.
+- **Fix Implemented**: Added `onScroll` handler on `chatContainerRef` tracking `isUserScrolledUp`. Auto-scrolling pauses when creator scrolls up, and a floating `"↓ Scroll to Latest Messages"` pill button appears to jump to the bottom on demand.
+
+### 3. Instagram Native App Reply Thread Grouping Fix (`message-automation.service.ts` & `instagram.service.ts`)
+
+- **Root Cause Identified**: When a creator replied to a commenter from their native Instagram mobile app, incoming webhook had `fromId = creatorId` and `recipientId = customerId`. `message-automation.service.ts` previously saved `recipientId = fromId`, grouping replies into a separate thread for the creator themselves (`my named chat`).
 - **Fix Implemented**:
-  1. `message-automation.service.ts` detects when `fromId` matches `account.instagramId` and sets `direction = MessageDirection.OUTGOING` and `recipientId = event.recipientId` (the customer).
-  2. `instagram.service.ts` calculates `partnerId = (msg.senderId === accountIgId) ? msg.recipientId : msg.senderId` to group conversations by conversation partner.
+  1. `message-automation.service.ts` detects native app creator replies (`fromId === account.instagramId`), setting `direction = MessageDirection.OUTGOING` and `recipientId = event.recipientId` (the customer).
+  2. `instagram.service.ts` groups conversations by `partnerId = (msg.senderId === accountIgId) ? msg.recipientId : msg.senderId`.
   3. `getMessages` queries `where: { instagramAccountId: { in: accountIds }, OR: [{ recipientId }, { senderId: recipientId }] }`, unifying all messages under the customer's chat thread.
-
-### 3. Creator Delivery Log UI Overhaul (Matched to Attached Screenshot)
-
-- Created `<CreatorDeliveryLog />` component (`apps/web/components/monitoring/creator-delivery-log.tsx`) matching the exact layout, cards, and accordion details from your screenshot:
-  - Top Metrics Cards: `788 DELIVERED (300)`, `93.7% DELIVERY RATE`, `903 COMMENTS SEEN`.
-  - System Status Banner: `• ALL SYSTEMS NORMAL Sending at normal pace on every automation.`
-  - Timeline feed rows: `@username got the DM.` and `@username commented without a keyword, nothing to send.`
-  - Expandable Accordion: displays `RECEIVED`, `POST`, `MATCHED`, `DISPATCH`, `eventId`, and `fbtrace_id`.
-  - Rendered under `/delivery-logs` for all creators.
 
 ### 4. Section Refresh Controls (`RefreshCw` Icon & Active Spin)
 

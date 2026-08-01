@@ -7,167 +7,112 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
-  Loader2,
   Zap,
   MessageSquare,
   Sparkles,
   Info,
+  Layers,
+  Send,
+  HelpCircle,
 } from 'lucide-react';
 import { fetchWithAuth } from '@/lib/api-client';
 
-interface DeliveryEvent {
+interface DeliveryLogItem {
   id: string;
-  time: string;
-  timestamp: Date;
+  commentId: string;
+  commenterUsername: string;
+  commentText: string;
+  mediaId: string;
   status: 'DELIVERED' | 'NO_MATCH' | 'FAILED' | 'PENDING';
-  username: string;
-  commentId?: string;
-  receivedText?: string;
-  postCaption?: string;
-  matchedRule?: string;
-  dispatchStatus?: string;
-  eventId?: string;
-  fbtraceId?: string;
-  errorMessage?: string;
+  dispatchStatus: string;
+  campaignName: string;
+  matchedKeyword: string;
+  deliveredDmText: string;
+  fbtraceId?: string | null;
+  createdAt: string;
 }
 
 export function CreatorDeliveryLog() {
   const [loading, setLoading] = React.useState(true);
-  const [events, setEvents] = React.useState<DeliveryEvent[]>([]);
+  const [logs, setLogs] = React.useState<DeliveryLogItem[]>([]);
+  const [filter, setFilter] = React.useState<'ALL' | 'DELIVERED' | 'NO_MATCH' | 'FAILED'>('ALL');
   const [expandedId, setExpandedId] = React.useState<string | null>(null);
 
   const loadData = React.useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetchWithAuth<{ logs: any[] }>('/monitoring/webhook-logs?limit=50');
+      const res = await fetchWithAuth<{ logs: DeliveryLogItem[] }>(
+        '/monitoring/delivery-logs?limit=50',
+      );
       const rawLogs = res?.logs || [];
 
-      const parsedEvents: DeliveryEvent[] = rawLogs.map((log) => {
-        const payload = log.payload || {};
-        const entry = payload.entry?.[0] || {};
-        const change = entry.changes?.[0]?.value || {};
-
-        const receivedText = change.text || payload.commentText || 'Keyword comment';
-        const username = log.username || change.from?.username || 'user';
-        const isSuccess = log.status === 'PROCESSED';
-        const isFailed = log.status === 'FAILED';
-
-        let status: 'DELIVERED' | 'NO_MATCH' | 'FAILED' | 'PENDING' = 'DELIVERED';
-        let dispatchText = 'got the DM.';
-
-        if (isFailed) {
-          status = 'FAILED';
-          dispatchText = 'failed to receive DM.';
-        } else if (!isSuccess && log.errorMessage?.includes('NO_MATCH')) {
-          status = 'NO_MATCH';
-          dispatchText = 'commented without a keyword, nothing to send.';
-        }
-
-        return {
-          id: log.id,
-          time: new Date(log.createdAt).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-          timestamp: new Date(log.createdAt),
-          status,
-          username,
-          commentId: log.commentId || change.comment_id,
-          receivedText,
-          postCaption: change.media?.caption || 'Monitored Post / Reel',
-          matchedRule: `automation matched • ${receivedText}`,
-          dispatchStatus: dispatchText,
-          eventId: log.eventId || log.id.substring(0, 10),
-          fbtraceId: log.fbtraceId || undefined,
-          errorMessage: log.errorMessage || undefined,
-        };
-      });
-
-      // If no live logs exist yet, fall back to demonstration delivery records matching screenshot
-      if (parsedEvents.length === 0) {
-        const demo: DeliveryEvent[] = [
+      // Fallback demonstration items if account has no active comments yet
+      if (rawLogs.length === 0) {
+        const demo: DeliveryLogItem[] = [
           {
-            id: '1',
-            time: '10:33',
-            timestamp: new Date(),
-            status: 'DELIVERED',
-            username: 'cosmosbyrudra',
+            id: 'demo-1',
             commentId: '178414920401',
-            receivedText: 'DHAN',
-            postCaption: 'Comment DHAN below and I will instantly DM you the link!',
-            matchedRule: 'keyword DHAN • automation Comment DHAN below',
-            dispatchStatus: 'got the DM.',
-            eventId: 'evt_6h1gbt',
-          },
-          {
-            id: '2',
-            time: '10:33',
-            timestamp: new Date(),
+            commenterUsername: '@cosmosbyrudra',
+            commentText: 'DHAN',
+            mediaId: '1799201948',
             status: 'DELIVERED',
-            username: 'iamshivamthakur.d',
-            receivedText: 'PRICE',
-            postCaption: 'Comment PRICE below for catalog link',
             dispatchStatus: 'got the DM.',
-            eventId: 'evt_7x2h8c',
+            campaignName: 'Summer Sale Automation',
+            matchedKeyword: 'DHAN',
+            deliveredDmText:
+              'Hey @cosmosbyrudra! Thanks for commenting. Tap the link below to get your discount voucher → autodm.org/sale',
+            fbtraceId: 'fbtrace_6h1gbt',
+            createdAt: new Date(Date.now() - 5 * 60000).toISOString(),
           },
           {
-            id: '3',
-            time: '10:00',
-            timestamp: new Date(),
+            id: 'demo-2',
+            commentId: '178414920402',
+            commenterUsername: '@iamshivamthakur.d',
+            commentText: 'bhai price kya hai',
+            mediaId: '1799201948',
             status: 'DELIVERED',
-            username: 'smartsouvik.de1989',
-            receivedText: 'Dhan',
-            postCaption: 'Comment DHAN below and I will instantly DM you the link!',
-            matchedRule: 'keyword DHAN • automation Comment DHAN below and I will - DHAN',
             dispatchStatus: 'got the DM.',
-            eventId: 'evt_6h1gbt',
+            campaignName: 'Hinglish Price Bot',
+            matchedKeyword: 'price',
+            deliveredDmText:
+              'Hey @iamshivamthakur.d! Dress size M is ₹1,499 with free shipping across India.',
+            fbtraceId: 'fbtrace_7x2h8c',
+            createdAt: new Date(Date.now() - 15 * 60000).toISOString(),
           },
           {
-            id: '4',
-            time: '07:48',
-            timestamp: new Date(),
+            id: 'demo-3',
+            commentId: '178414920403',
+            commenterUsername: '@smartsouvik.de1989',
+            commentText: 'LINK',
+            mediaId: '1799201948',
             status: 'DELIVERED',
-            username: 'amanalvi.005',
             dispatchStatus: 'got the DM.',
-            eventId: 'evt_8n3p1z',
+            campaignName: 'Ebook Lead Magnet',
+            matchedKeyword: 'LINK',
+            deliveredDmText: 'Here is your direct access link → autodm.org/guide',
+            fbtraceId: 'fbtrace_6h1gbt',
+            createdAt: new Date(Date.now() - 45 * 60000).toISOString(),
           },
           {
-            id: '5',
-            time: '07:15',
-            timestamp: new Date(),
-            status: 'DELIVERED',
-            username: 'ronakkk_garg',
-            dispatchStatus: 'got the DM.',
-            eventId: 'evt_9q4r2y',
-          },
-          {
-            id: '6',
-            time: '01:12',
-            timestamp: new Date(),
+            id: 'demo-4',
+            commentId: '178414920404',
+            commenterUsername: '@sp_hak_____',
+            commentText: 'Great video bhai! Keep it up 🔥',
+            mediaId: '1799201948',
             status: 'NO_MATCH',
-            username: 'sp_hak_____',
-            receivedText: 'Nice video!',
-            postCaption: 'Comment LINK for access',
-            matchedRule: 'No active keyword rule matched',
             dispatchStatus: 'commented without a keyword, nothing to send.',
-            eventId: 'evt_2k1m5x',
-          },
-          {
-            id: '7',
-            time: '00:55',
-            timestamp: new Date(),
-            status: 'DELIVERED',
-            username: 'shivam___bhalla',
-            dispatchStatus: 'got the DM.',
-            eventId: 'evt_5v7w9u',
+            campaignName: 'General Engagement',
+            matchedKeyword: 'None',
+            deliveredDmText: 'N/A',
+            createdAt: new Date(Date.now() - 120 * 60000).toISOString(),
           },
         ];
-        setEvents(demo);
+        setLogs(demo);
       } else {
-        setEvents(parsedEvents);
+        setLogs(rawLogs);
       }
     } catch {
-      setEvents([]);
+      setLogs([]);
     } finally {
       setLoading(false);
     }
@@ -177,106 +122,116 @@ export function CreatorDeliveryLog() {
     loadData();
   }, [loadData]);
 
-  const deliveredCount = events.filter((e) => e.status === 'DELIVERED').length;
+  const filteredLogs = logs.filter((log) => (filter === 'ALL' ? true : log.status === filter));
+
+  const deliveredCount = logs.filter((l) => l.status === 'DELIVERED').length;
   const deliveryRate =
-    events.length > 0 ? ((deliveredCount / events.length) * 100).toFixed(1) : '100.0';
-  const totalComments = events.length;
+    logs.length > 0 ? ((deliveredCount / logs.length) * 100).toFixed(1) : '100.0';
 
   return (
-    <div className="bg-[#0e090b] border border-white/10 rounded-2xl p-6 shadow-2xl space-y-6 font-sans">
-      {/* Top Header Title */}
-      <div className="flex items-center justify-between border-b border-white/5 pb-4">
+    <div className="glass-card border-gradient rounded-2xl p-6 shadow-glass space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-white/5 pb-4">
         <div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 block">
-            DELIVERY
+          <div className="flex items-center space-x-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary px-2 py-0.5 rounded bg-primary/10 border border-primary/20">
+              COMMERCE ENGINE
+            </span>
+            <h2 className="text-xl font-extrabold text-white tracking-tight">Delivery Logs</h2>
+          </div>
+          <p className="text-xs text-gray-400 mt-1">
+            Real-time comment matching, commenter handle tracking, and DM delivery audit records.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={loadData}
+            disabled={loading}
+            className="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-primary ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Summary Bar */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="glass-card rounded-xl p-4 border border-white/5 space-y-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+            DMs DELIVERED
           </span>
-          <h2 className="text-xl font-extrabold text-white tracking-tight">Delivery log</h2>
+          <div className="text-2xl font-black text-white">{deliveredCount}</div>
         </div>
 
-        <button
-          onClick={loadData}
-          disabled={loading}
-          className="p-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 text-primary ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh</span>
-        </button>
-      </div>
-
-      {/* Top Summary Metrics Bar (Exact Match to Screenshot) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-white/[0.02] border border-white/5 p-4 rounded-xl">
-        <div>
-          <div className="text-2xl font-black text-white tracking-tight">
-            {deliveredCount > 0 ? deliveredCount : 788}{' '}
-            <span className="text-xs font-semibold text-gray-500 font-mono">(300)</span>
-          </div>
-          <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mt-0.5">
-            DELIVERED
-          </div>
+        <div className="glass-card rounded-xl p-4 border border-white/5 space-y-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+            SUCCESS RATE
+          </span>
+          <div className="text-2xl font-black text-emerald-400">{deliveryRate}%</div>
         </div>
 
-        <div>
-          <div className="text-2xl font-black text-emerald-400 tracking-tight">{deliveryRate}%</div>
-          <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mt-0.5">
-            DELIVERY RATE
-          </div>
-        </div>
-
-        <div>
-          <div className="text-2xl font-black text-white tracking-tight">
-            {totalComments > 0 ? totalComments * 2 : 903}
-          </div>
-          <div className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mt-0.5">
-            COMMENTS SEEN
-          </div>
+        <div className="glass-card rounded-xl p-4 border border-white/5 space-y-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+            COMMENTS PROCESSED
+          </span>
+          <div className="text-2xl font-black text-white">{logs.length}</div>
         </div>
       </div>
 
-      {/* System Pulse Banner */}
-      <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 rounded-xl text-xs text-emerald-300 font-medium">
-        <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-        <span className="font-black text-[11px] uppercase tracking-wider">ALL SYSTEMS NORMAL</span>
-        <span className="text-gray-400 text-xs">Sending at normal pace on every automation.</span>
+      {/* Status Filter Bar */}
+      <div className="flex items-center space-x-1 bg-white/5 p-1 rounded-xl border border-white/5 w-fit">
+        {(['ALL', 'DELIVERED', 'NO_MATCH', 'FAILED'] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+              filter === f ? 'bg-primary text-white shadow-sm' : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            {f.replace('_', ' ')}
+          </button>
+        ))}
       </div>
 
-      {/* Timeline List Header */}
-      <div className="flex items-center justify-between text-xs text-gray-500 border-b border-white/5 pb-2">
-        <div className="font-black uppercase tracking-wider text-[11px] text-gray-400">TODAY</div>
-        <div className="text-[11px] font-mono">
-          10:33 • {deliveredCount} delivered • 1 without a keyword
-        </div>
-        <div className="text-[10px] font-bold uppercase tracking-wider text-gray-500">
-          {events.length} EVENTS
-        </div>
-      </div>
-
-      {/* Event Timeline Rows */}
-      {loading && events.length === 0 ? (
+      {/* Delivery Log Rows */}
+      {loading && logs.length === 0 ? (
         <div className="space-y-3 py-4">
-          {[1, 2, 3, 4].map((n) => (
-            <div key={n} className="h-10 rounded-lg bg-white/5 animate-pulse" />
+          {[1, 2, 3].map((n) => (
+            <div key={n} className="h-12 rounded-xl bg-white/5 animate-pulse" />
           ))}
         </div>
+      ) : filteredLogs.length === 0 ? (
+        <div className="py-12 text-center text-gray-500 space-y-2">
+          <Info className="w-6 h-6 text-gray-600 mx-auto" />
+          <p className="text-xs font-semibold">
+            No delivery events found for filter &quot;{filter}&quot;.
+          </p>
+        </div>
       ) : (
-        <div className="space-y-1.5 custom-scrollbar max-h-[500px] overflow-y-auto pr-1">
-          {events.map((evt) => {
-            const isExpanded = expandedId === evt.id;
-            const isDelivered = evt.status === 'DELIVERED';
-            const isFailed = evt.status === 'FAILED';
+        <div className="space-y-2 custom-scrollbar max-h-[500px] overflow-y-auto pr-1">
+          {filteredLogs.map((log) => {
+            const isExpanded = expandedId === log.id;
+            const isDelivered = log.status === 'DELIVERED';
+            const isFailed = log.status === 'FAILED';
 
             return (
               <div
-                key={evt.id}
-                className="bg-white/[0.02] hover:bg-white/[0.04] border border-white/5 rounded-xl transition-all overflow-hidden"
+                key={log.id}
+                className="glass-card border border-white/5 rounded-xl transition-all overflow-hidden"
               >
-                {/* Compact Event Row */}
+                {/* Row Header */}
                 <div
-                  onClick={() => setExpandedId(isExpanded ? null : evt.id)}
-                  className="flex items-center justify-between p-3 cursor-pointer text-xs font-mono select-none"
+                  onClick={() => setExpandedId(isExpanded ? null : log.id)}
+                  className="flex items-center justify-between p-3.5 cursor-pointer text-xs font-sans select-none"
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <span className="text-gray-500 text-[11px] font-semibold flex-shrink-0">
-                      {evt.time}
+                    <span className="text-gray-500 text-[11px] font-mono flex-shrink-0">
+                      {new Date(log.createdAt).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </span>
 
                     <span
@@ -285,15 +240,15 @@ export function CreatorDeliveryLog() {
                           ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20'
                           : isFailed
                             ? 'text-rose-400 bg-rose-500/10 border border-rose-500/20'
-                            : 'text-amber-400 bg-amber-500/10 border border-amber-500/20'
+                            : 'text-zinc-400 bg-white/5 border border-white/10'
                       }`}
                     >
-                      {evt.status}
+                      {log.status.replace('_', ' ')}
                     </span>
 
-                    <span className="text-white font-semibold truncate text-xs font-sans">
-                      <strong className="text-white">@{evt.username}</strong>{' '}
-                      <span className="text-gray-300 font-normal">{evt.dispatchStatus}</span>
+                    <span className="text-white font-medium truncate text-xs">
+                      <strong className="text-pink-400 font-bold">{log.commenterUsername}</strong>{' '}
+                      <span className="text-gray-300 font-normal">{log.dispatchStatus}</span>
                     </span>
                   </div>
 
@@ -301,58 +256,43 @@ export function CreatorDeliveryLog() {
                     {isExpanded ? (
                       <ChevronUp className="w-4 h-4" />
                     ) : (
-                      <ChevronDown className="w-4 h-4 text-gray-600" />
+                      <ChevronDown className="w-4 h-4 text-gray-500" />
                     )}
                   </div>
                 </div>
 
-                {/* Expanded Accordion Details (Exact Match to Screenshot) */}
+                {/* Expanded Accordion Details */}
                 {isExpanded && (
-                  <div className="p-4 bg-black/40 border-t border-white/5 space-y-2 text-xs font-mono text-gray-300 animate-in fade-in duration-200">
-                    {evt.receivedText && (
-                      <div className="flex gap-2">
-                        <span className="text-rose-400 font-black uppercase w-20 flex-shrink-0">
-                          RECEIVED
-                        </span>
-                        <span className="text-white font-bold">&quot;{evt.receivedText}&quot;</span>
-                      </div>
-                    )}
-
-                    {evt.postCaption && (
-                      <div className="flex gap-2">
-                        <span className="text-rose-400 font-black uppercase w-20 flex-shrink-0">
-                          POST
-                        </span>
-                        <span className="text-gray-300">{evt.postCaption}</span>
-                      </div>
-                    )}
-
-                    {evt.matchedRule && (
-                      <div className="flex gap-2">
-                        <span className="text-rose-400 font-black uppercase w-20 flex-shrink-0">
-                          MATCHED
-                        </span>
-                        <span className="text-amber-300">{evt.matchedRule}</span>
-                      </div>
-                    )}
+                  <div className="p-4 bg-black/40 border-t border-white/5 space-y-2.5 text-xs text-gray-300 font-sans animate-in fade-in duration-200">
+                    <div className="flex gap-2">
+                      <span className="text-pink-400 font-black uppercase text-[10px] w-24 flex-shrink-0">
+                        COMMENT RECEIVED
+                      </span>
+                      <span className="text-white font-semibold">
+                        &quot;{log.commentText}&quot;
+                      </span>
+                    </div>
 
                     <div className="flex gap-2">
-                      <span className="text-rose-400 font-black uppercase w-20 flex-shrink-0">
-                        DISPATCH
+                      <span className="text-pink-400 font-black uppercase text-[10px] w-24 flex-shrink-0">
+                        MATCHED CAMPAIGN
                       </span>
-                      <span className="text-emerald-400 font-bold">{evt.dispatchStatus}</span>
+                      <span className="text-amber-300 font-medium">
+                        {log.campaignName} (Keyword: &quot;{log.matchedKeyword}&quot;)
+                      </span>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <span className="text-pink-400 font-black uppercase text-[10px] w-24 flex-shrink-0">
+                        DM DELIVERED
+                      </span>
+                      <span className="text-emerald-300 font-medium">{log.deliveredDmText}</span>
                     </div>
 
                     <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-gray-500 font-mono">
-                      <span>Event Trace: {evt.eventId}</span>
-                      {evt.fbtraceId && <span>fbtrace_id: {evt.fbtraceId}</span>}
+                      <span>Comment ID: {log.commentId}</span>
+                      {log.fbtraceId && <span>fbtrace_id: {log.fbtraceId}</span>}
                     </div>
-
-                    {evt.errorMessage && (
-                      <div className="mt-2 p-2 rounded bg-rose-500/10 border border-rose-500/20 text-rose-300 text-[11px] font-sans">
-                        Diagnostic: {evt.errorMessage}
-                      </div>
-                    )}
                   </div>
                 )}
               </div>

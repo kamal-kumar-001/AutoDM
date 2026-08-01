@@ -274,6 +274,94 @@ export class MonitoringService {
     return { logs, total, page, limit };
   }
 
+  async getDeliveryLogs(userId?: string, isStaff = false, page = 1, limit = 50) {
+    let accountIds: string[] = [];
+
+    if (!isStaff && userId) {
+      const userAccounts = await this.prisma.instagramAccount.findMany({
+        where: { userId, deletedAt: null },
+        select: { id: true },
+      });
+      accountIds = userAccounts.map((a) => a.id);
+      if (accountIds.length === 0) {
+        return { logs: [], total: 0, page, limit };
+      }
+    } else {
+      const allAccounts = await this.prisma.instagramAccount.findMany({
+        where: { deletedAt: null },
+        select: { id: true },
+      });
+      accountIds = allAccounts.map((a) => a.id);
+    }
+
+    const whereClause: any =
+      accountIds.length > 0 ? { instagramAccountId: { in: accountIds } } : {};
+    const skip = (page - 1) * limit;
+
+    const [comments, total] = await Promise.all([
+      this.prisma.comment.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          campaign: {
+            select: {
+              name: true,
+              type: true,
+              replyMessage: true,
+              keywords: { select: { keyword: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.comment.count({ where: whereClause }),
+    ]);
+
+    // Format into rich DeliveryEvent items with commenter's handle & comment text
+    const logs = await Promise.all(
+      comments.map(async (c) => {
+        // Find matching message or webhook event by commenter's userId
+        const matchingMsg = await this.prisma.message.findFirst({
+          where: {
+            instagramAccountId: c.instagramAccountId,
+            recipientId: c.userId,
+          },
+          orderBy: { createdAt: 'desc' },
+          select: { text: true, status: true, fbtraceId: true },
+        });
+
+        let status = 'DELIVERED';
+        let dispatchStatus = 'got the DM.';
+        if (!c.isReplied && (!c.replyText || c.replyText.includes('No campaign matched'))) {
+          status = 'NO_MATCH';
+          dispatchStatus = 'commented without a matching keyword, nothing to send.';
+        } else if (c.replyText && c.replyText.includes('Failed:')) {
+          status = 'FAILED';
+          dispatchStatus = `delivery failed (${c.replyText.replace('Failed:', '').trim()}).`;
+        }
+
+        return {
+          id: c.id,
+          commentId: c.commentId,
+          commenterUsername: `@${c.username.replace(/^@/, '')}`,
+          commentText: c.text,
+          mediaId: c.mediaId,
+          status,
+          dispatchStatus,
+          campaignName: c.campaign?.name || 'Automated Campaign',
+          matchedKeyword: c.campaign?.keywords?.[0]?.keyword || 'Matched',
+          deliveredDmText:
+            matchingMsg?.text || c.campaign?.replyMessage || c.replyText || 'Campaign DM enqueued',
+          fbtraceId: matchingMsg?.fbtraceId || null,
+          createdAt: c.createdAt,
+        };
+      }),
+    );
+
+    return { logs, total, page, limit };
+  }
+
   // ──────────────── System Metrics ────────────────
 
   getSystemMetrics(): SystemMetrics {

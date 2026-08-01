@@ -66,6 +66,22 @@ export class MonitoringController {
     );
   }
 
+  /** GET /monitoring/delivery-logs — rich commenter delivery log for creator dashboard */
+  @Get('delivery-logs')
+  getDeliveryLogs(
+    @GetUser() user: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const isStaff = user?.role === 'ADMIN';
+    return this.monitoringService.getDeliveryLogs(
+      user?.id,
+      isStaff,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 50,
+    );
+  }
+
   /** GET /monitoring/metrics — Node.js process / system metrics */
   @Get('metrics')
   getMetrics() {
