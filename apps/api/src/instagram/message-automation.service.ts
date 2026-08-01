@@ -15,6 +15,7 @@ export interface MessageEvent {
   messageId: string; // mid
   text: string;
   fromId: string; // Recipient/Sender ID
+  recipientId?: string;
   fromUsername?: string;
   isStoryReply?: boolean;
   quickReplyPayload?: string;
@@ -68,15 +69,22 @@ export class MessageAutomationService {
       return;
     }
 
-    // 3. Save incoming message to DB
+    // 3. Check if message was sent by the creator from native Instagram app
+    const isSentByCreator = Boolean(
+      fromId === account.instagramId || fromId === account.instagramPageId || fromId === account.id,
+    );
+    const targetRecipientId = isSentByCreator && event.recipientId ? event.recipientId : fromId;
+    const direction = isSentByCreator ? MessageDirection.OUTGOING : MessageDirection.INCOMING;
+
+    // 4. Save message to DB
     const savedMessage = await this.prisma.message.create({
       data: {
         instagramAccountId: account.id,
-        recipientId: fromId,
-        senderId: instagramId,
+        recipientId: targetRecipientId,
+        senderId: fromId,
         text,
         messageId,
-        direction: MessageDirection.INCOMING,
+        direction,
         status: MessageStatus.SENT,
       },
     });

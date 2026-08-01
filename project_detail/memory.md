@@ -57,18 +57,29 @@
 
 ## Session Updates (August 2026)
 
-### 1. Admin Sidebar Webhooks Audit Tab (`/admin`)
+### 1. Inbox Auto-Scroll Bug Resolution
 
-- **Root Cause Found**: `menuItems` in `AdminLayout` (`apps/web/components/admin/admin-layout.tsx`) was previously missing the `{ id: 'webhooks', name: 'Webhooks Audit', icon: Radio }` navigation item.
-- **Fix Implemented**: Added `webhooks` tab to `AdminLayout` sidebar `menuItems` array so the **Webhooks Audit** tab button is visibly accessible in the Admin Portal sidebar.
+- **Root Cause Identified**: `useEffect` listening on `[messages]` state was calling `messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })` unconditionally every 4 seconds during polling, pulling the scrollbar down automatically while the user attempted to scroll up and read chat history.
+- **Fix Implemented**: Added `onScroll` handler on the chat messages container (`chatContainerRef`) to track `isUserScrolledUp`. Auto-scrolling is paused when the creator scrolls up to read history, and a floating `"↓ Scroll to Latest Messages"` pill button appears to jump to the bottom on demand.
 
-### 2. Dedicated Creator Delivery Logs Page (`/delivery-logs`)
+### 2. Instagram Native App Reply Thread Grouping Fix
 
-- **New Page & Route**: Created `apps/web/app/delivery-logs/page.tsx` and nested `apps/web/app/dashboard/delivery-logs/page.tsx`.
-- **Sidebar Integration**: Added `{ name: 'Delivery Logs', href: '/delivery-logs', icon: Radio, shortcut: '⌥W' }` to `navItems` in `apps/web/components/dashboard/sidebar.tsx`.
-- **User-Scoped Audit Engine**: Renders `<WebhookLogs />` inside `<DashboardLayout>`. Calls `GET /monitoring/webhook-logs` where non-admin creators strictly see **ONLY their own connected account DM delivery logs** with full trace details (Time, Comment ID, User, Send Status, Error Trace Diagnostic, fbtrace_id, pause switch, and audit inspector modal).
+- **Root Cause Identified**: When a creator replied to a user directly from their native Instagram mobile app, incoming webhooks had `fromId = creatorInstagramId` and `recipientId = customerId`. Previously, `message-automation.service.ts` saved `recipientId = fromId`, assigning outgoing replies to a thread for the creator themselves (`my named chat`) instead of grouping into the customer's conversation thread.
+- **Fix Implemented**:
+  1. `message-automation.service.ts` detects when `fromId` matches `account.instagramId` and sets `direction = MessageDirection.OUTGOING` and `recipientId = event.recipientId` (the customer).
+  2. `instagram.service.ts` calculates `partnerId = (msg.senderId === accountIgId) ? msg.recipientId : msg.senderId` to group conversations by conversation partner.
+  3. `getMessages` queries `where: { instagramAccountId: { in: accountIds }, OR: [{ recipientId }, { senderId: recipientId }] }`, unifying all messages under the customer's chat thread.
 
-### 3. Section Refresh Controls (`RefreshCw` Icon & Active Spin)
+### 3. Creator Delivery Log UI Overhaul (Matched to Attached Screenshot)
+
+- Created `<CreatorDeliveryLog />` component (`apps/web/components/monitoring/creator-delivery-log.tsx`) matching the exact layout, cards, and accordion details from your screenshot:
+  - Top Metrics Cards: `788 DELIVERED (300)`, `93.7% DELIVERY RATE`, `903 COMMENTS SEEN`.
+  - System Status Banner: `• ALL SYSTEMS NORMAL Sending at normal pace on every automation.`
+  - Timeline feed rows: `@username got the DM.` and `@username commented without a keyword, nothing to send.`
+  - Expandable Accordion: displays `RECEIVED`, `POST`, `MATCHED`, `DISPATCH`, `eventId`, and `fbtrace_id`.
+  - Rendered under `/delivery-logs` for all creators.
+
+### 4. Section Refresh Controls (`RefreshCw` Icon & Active Spin)
 
 - Updated section headers across `<WebhookLogs>`, `<FailedJobs>`, `<CampaignsList>`, `<StatsGrid>`, and Admin Monitoring to use `RefreshCw` with active `animate-spin` loading feedback.
 - Creators and Admins can refresh data in any section independently without reloading full pages.

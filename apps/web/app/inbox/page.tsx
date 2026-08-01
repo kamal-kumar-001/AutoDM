@@ -124,10 +124,22 @@ export default function InboxPage() {
     };
   }, [selectedRecipientId]);
 
-  // Scroll to bottom when message list updates
+  const chatContainerRef = React.useRef<HTMLDivElement>(null);
+  const [isUserScrolledUp, setIsUserScrolledUp] = React.useState(false);
+
+  const handleChatScroll = () => {
+    const container = chatContainerRef.current;
+    if (!container) return;
+    const isUp = container.scrollHeight - container.scrollTop - container.clientHeight > 120;
+    setIsUserScrolledUp(isUp);
+  };
+
+  // Scroll to bottom when message list updates ONLY if user is not scrolled up reading past history
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (!isUserScrolledUp) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isUserScrolledUp]);
 
   // Filter conversations by search query
   const filteredConversations = conversations.filter(
@@ -266,7 +278,11 @@ export default function InboxPage() {
                 </div>
 
                 {/* Message Log */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-black/20">
+                <div
+                  ref={chatContainerRef}
+                  onScroll={handleChatScroll}
+                  className="flex-1 overflow-y-auto p-4 space-y-3 bg-black/20 relative"
+                >
                   {loadingMessages ? (
                     <div className="flex items-center justify-center h-full text-xs text-gray-500">
                       Loading chat history...
@@ -322,6 +338,19 @@ export default function InboxPage() {
                     })
                   )}
                   <div ref={messagesEndRef} />
+
+                  {/* Floating Scroll to Bottom Button */}
+                  {isUserScrolledUp && (
+                    <button
+                      onClick={() => {
+                        setIsUserScrolledUp(false);
+                        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="sticky bottom-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-primary text-white text-[11px] font-bold shadow-lg hover:scale-105 transition-all flex items-center gap-1.5 z-20 cursor-pointer"
+                    >
+                      <span>↓ Scroll to Latest Messages</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Chat Input Footer */}

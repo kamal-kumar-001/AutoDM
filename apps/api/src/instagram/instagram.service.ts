@@ -299,11 +299,21 @@ export class InstagramService {
   async getConversations(userId: string) {
     const accounts = await this.prisma.instagramAccount.findMany({
       where: { userId, isConnected: true, deletedAt: null },
-      select: { id: true, username: true, accessToken: true },
+      select: {
+        id: true,
+        username: true,
+        accessToken: true,
+        instagramId: true,
+        instagramPageId: true,
+      },
     });
 
     const accountIds = accounts.map((a) => a.id);
     if (accountIds.length === 0) return [];
+
+    const accountIgIds = new Set(
+      accounts.flatMap((a) => [a.instagramId, a.instagramPageId].filter(Boolean) as string[]),
+    );
 
     // Retrieve all messages for these accounts to determine threads
     const messages = await this.prisma.message.findMany({
@@ -311,13 +321,27 @@ export class InstagramService {
       orderBy: { createdAt: 'desc' },
     });
 
+    // Helper to determine partner ID for each message
+    const getPartnerId = (m: any) => {
+      if (m.senderId && accountIgIds.has(m.senderId)) {
+        return m.recipientId;
+      }
+      if (accountIgIds.has(m.recipientId)) {
+        return m.senderId || m.recipientId;
+      }
+      return m.recipientId;
+    };
+
     // Grouping manually in JS for thread representation
     const threadsMap = new Map<string, any>();
-    const uniqueRecipientIds = Array.from(new Set(messages.map((m) => m.recipientId)));
+    const partnerIdsList = messages
+      .map(getPartnerId)
+      .filter((id) => Boolean(id) && !accountIgIds.has(id));
+    const uniquePartnerIds = Array.from(new Set(partnerIdsList));
 
     // Fetch matching comments in bulk to resolve usernames
     const comments = await this.prisma.comment.findMany({
-      where: { userId: { in: uniqueRecipientIds } },
+      where: { userId: { in: uniquePartnerIds } },
       select: { userId: true, username: true },
     });
 
@@ -327,14 +351,14 @@ export class InstagramService {
     }
 
     // Fetch from Meta API for missing usernames
-    const missingRecipientIds = uniqueRecipientIds.filter((id) => !commentUsernameMap.has(id));
+    const missingPartnerIds = uniquePartnerIds.filter((id) => !commentUsernameMap.has(id));
     const metaUsernameMap = new Map<string, string>();
 
-    if (missingRecipientIds.length > 0) {
+    if (missingPartnerIds.length > 0) {
       await Promise.all(
-        missingRecipientIds.slice(0, 8).map(async (id) => {
+        missingPartnerIds.slice(0, 8).map(async (id) => {
           try {
-            const firstMsg = messages.find((m) => m.recipientId === id);
+            const firstMsg = messages.find((m) => getPartnerId(m) === id);
             if (!firstMsg) return;
             const account = accounts.find((a) => a.id === firstMsg.instagramAccountId);
             if (
@@ -365,14 +389,15 @@ export class InstagramService {
     }
 
     for (const msg of messages) {
-      if (!threadsMap.has(msg.recipientId)) {
+      const partnerId = getPartnerId(msg);
+      if (partnerId && !accountIgIds.has(partnerId) && !threadsMap.has(partnerId)) {
         const account = accounts.find((a) => a.id === msg.instagramAccountId);
         const resolvedUsername =
-          commentUsernameMap.get(msg.recipientId) ||
-          metaUsernameMap.get(msg.recipientId) ||
-          `ig_user_${msg.recipientId.substring(msg.recipientId.length - 4)}`;
-        threadsMap.set(msg.recipientId, {
-          recipientId: msg.recipientId,
+          commentUsernameMap.get(partnerId) ||
+          metaUsernameMap.get(partnerId) ||
+          `ig_user_${partnerId.substring(partnerId.length - 4)}`;
+        threadsMap.set(partnerId, {
+          recipientId: partnerId,
           recipientUsername: resolvedUsername,
           lastMessage: msg.text || (msg.mediaUrl ? 'Attachment' : ''),
           updatedAt: msg.createdAt,
@@ -396,7 +421,7 @@ export class InstagramService {
     return this.prisma.message.findMany({
       where: {
         instagramAccountId: { in: accountIds },
-        recipientId,
+        OR: [{ recipientId }, { senderId: recipientId }],
       },
       orderBy: { createdAt: 'asc' },
     });
