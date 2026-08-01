@@ -57,12 +57,18 @@
 
 ## Session Updates (August 2026)
 
-### 1. User-Scoped Webhooks per Creator Account
+### 1. Admin Sidebar Webhooks Audit Tab (`/admin`)
 
-- **Creator Scoping**: Updated `MonitoringController` and `MonitoringService.getWebhookLogs` using `@GetUser()` decorator to resolve `user.id`. Creator users only view webhooks associated with their own connected Instagram accounts (`userId` scope).
-- **Dedicated Admin Webhooks Tab**: Added dedicated `webhooks` ("Webhooks Audit") tab to `apps/web/app/admin/page.tsx` rendering `<WebhookLogs />` with global system-wide view (`isStaff = true`).
+- **Root Cause Found**: `menuItems` in `AdminLayout` (`apps/web/components/admin/admin-layout.tsx`) was previously missing the `{ id: 'webhooks', name: 'Webhooks Audit', icon: Radio }` navigation item.
+- **Fix Implemented**: Added `webhooks` tab to `AdminLayout` sidebar `menuItems` array so the **Webhooks Audit** tab button is visibly accessible in the Admin Portal sidebar.
 
-### 2. Section Refresh Controls (`RefreshCw` Icon & Active Spin)
+### 2. Dedicated Creator Delivery Logs Page (`/delivery-logs`)
+
+- **New Page & Route**: Created `apps/web/app/delivery-logs/page.tsx` and nested `apps/web/app/dashboard/delivery-logs/page.tsx`.
+- **Sidebar Integration**: Added `{ name: 'Delivery Logs', href: '/delivery-logs', icon: Radio, shortcut: '⌥W' }` to `navItems` in `apps/web/components/dashboard/sidebar.tsx`.
+- **User-Scoped Audit Engine**: Renders `<WebhookLogs />` inside `<DashboardLayout>`. Calls `GET /monitoring/webhook-logs` where non-admin creators strictly see **ONLY their own connected account DM delivery logs** with full trace details (Time, Comment ID, User, Send Status, Error Trace Diagnostic, fbtrace_id, pause switch, and audit inspector modal).
+
+### 3. Section Refresh Controls (`RefreshCw` Icon & Active Spin)
 
 - Updated section headers across `<WebhookLogs>`, `<FailedJobs>`, `<CampaignsList>`, `<StatsGrid>`, and Admin Monitoring to use `RefreshCw` with active `animate-spin` loading feedback.
 - Creators and Admins can refresh data in any section independently without reloading full pages.

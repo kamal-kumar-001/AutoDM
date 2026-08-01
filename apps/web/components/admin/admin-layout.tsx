@@ -23,6 +23,7 @@ import {
   BarChart3,
   Megaphone,
   LifeBuoy,
+  Radio,
 } from 'lucide-react';
 import { cn, toast } from '@autodm/ui';
 
@@ -44,6 +45,7 @@ export function AdminLayout({ children, activeTab, setActiveTab }: AdminLayoutPr
     { id: 'dashboard', name: 'Dashboard', icon: BarChart3 },
     { id: 'creators', name: 'Creators', icon: Users },
     { id: 'campaigns', name: 'Campaigns', icon: Layers },
+    { id: 'webhooks', name: 'Webhooks Audit', icon: Radio },
     { id: 'delete-requests', name: 'Delete Requests', icon: Trash2 },
     { id: 'plans', name: 'Billing Plans', icon: CreditCard },
     { id: 'logs', name: 'Audit Logs', icon: FileText },
