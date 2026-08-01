@@ -204,11 +204,10 @@ export class SendDmProcessor extends WorkerHost {
       // 3b. Live Meta Graph API call — Instagram Messaging API
       // Docs: https://developers.facebook.com/docs/instagram-messaging/send-messages
       try {
-        // Facebook Page Access Tokens (starting with EAA) must send DMs via the Facebook Graph API messages endpoint
         const baseUrl = `https://graph.facebook.com/v20.0/me/messages`;
 
-        // Determine recipient payload: Comment-to-DM (Private Reply) uses comment_id, standard DM uses recipient id
-        const recipientPayload = igCommentId
+        // Primary attempt: Private reply via comment_id if present, else direct message via recipient ID
+        const primaryRecipientPayload: any = igCommentId
           ? { comment_id: igCommentId }
           : { id: targetRecipientId };
 
@@ -223,21 +222,41 @@ export class SendDmProcessor extends WorkerHost {
           ];
         }
 
-        this.logger.log(
-          `[Job ${job.id}] Sending DM via: ${baseUrl}. Recipient config: ${JSON.stringify(recipientPayload)}`,
-        );
+        let response: any;
+        try {
+          response = await axios.post<MetaSendMessageResponse>(
+            baseUrl,
+            {
+              recipient: primaryRecipientPayload,
+              message: messagePayload,
+            },
+            {
+              params: { access_token: accessToken },
+              timeout: 10_000,
+            },
+          );
+        } catch (firstErr: any) {
+          // If sending with comment_id failed (e.g. expired or duplicate reply), fallback to user recipient ID
+          if (igCommentId) {
+            this.logger.warn(
+              `[Job ${job.id}] Primary DM send with comment_id failed (${firstErr?.response?.data?.error?.message || firstErr.message}). Retrying with recipient id ${targetRecipientId}...`,
+            );
+            response = await axios.post<MetaSendMessageResponse>(
+              baseUrl,
+              {
+                recipient: { id: targetRecipientId },
+                message: messagePayload,
+              },
+              {
+                params: { access_token: accessToken },
+                timeout: 10_000,
+              },
+            );
+          } else {
+            throw firstErr;
+          }
+        }
 
-        const response = await axios.post<MetaSendMessageResponse>(
-          baseUrl,
-          {
-            recipient: recipientPayload,
-            message: messagePayload,
-          },
-          {
-            params: { access_token: accessToken },
-            timeout: 10_000,
-          },
-        );
         messageId = response.data.message_id;
         const fbtraceId = response.headers?.['x-fb-trace-id'] || null;
 

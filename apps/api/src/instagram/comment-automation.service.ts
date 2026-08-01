@@ -89,13 +89,28 @@ export class CommentAutomationService {
       return;
     }
 
-    // 5. Match campaigns
+    // 5. Check if user previously confirmed follow status for this account
+    const previousConfirmation = await this.prisma.comment.findFirst({
+      where: {
+        instagramAccountId: account.id,
+        userId: fromId,
+        isReplied: true,
+      },
+    });
+    const isUserFollowConfirmed = Boolean(
+      previousConfirmation &&
+      previousConfirmation.replyText &&
+      !previousConfirmation.replyText.includes('First, make sure you follow') &&
+      !previousConfirmation.replyText.includes('Failed:'),
+    );
+
+    // 6. Match campaigns
     for (const campaign of campaigns) {
       const matched = this.matchesCampaign(campaign, mediaId, text);
       if (!matched) continue;
 
       this.logger.log(
-        `Comment ${commentId} matched campaign "${campaign.name}" (${campaign.type}) — enqueuing DM.`,
+        `Comment ${commentId} matched campaign "${campaign.name}" (${campaign.type}) — enqueuing DM. (followBypass=${isUserFollowConfirmed})`,
       );
 
       // Update Comment record to associate it with the matched campaign
@@ -119,6 +134,7 @@ export class CommentAutomationService {
         igCommentId: commentId,
         replyMessage: campaign.replyMessage,
         replyMediaUrl: campaign.replyMediaUrl ?? undefined,
+        isFollowBypass: isUserFollowConfirmed,
         webhookEventId,
       });
 

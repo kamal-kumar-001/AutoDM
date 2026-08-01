@@ -15,6 +15,7 @@ import { AdminFeatureFlags } from '@/components/admin/admin-feature-flags';
 import { AdminMonitoring } from '@/components/admin/admin-monitoring';
 import { AdminPromotions } from '@/components/admin/admin-promotions';
 import { AdminSupport } from '@/components/admin/admin-support';
+import { WebhookLogs } from '@/components/monitoring/webhook-logs';
 import {
   Users,
   Layers,
@@ -27,12 +28,14 @@ import {
   BarChart3,
   Megaphone,
   LifeBuoy,
+  Radio,
 } from 'lucide-react';
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
   { id: 'creators', label: 'Creators', icon: Users },
   { id: 'campaigns', label: 'Campaigns', icon: Layers },
+  { id: 'webhooks', label: 'Webhooks Audit', icon: Radio },
   { id: 'delete-requests', label: 'Delete Requests', icon: Trash2 },
   { id: 'plans', label: 'Billing Plans', icon: CreditCard },
   { id: 'logs', label: 'Audit Logs', icon: FileText },
@@ -87,6 +90,7 @@ export default function AdminPage() {
           {tab === 'dashboard' && <AdminStatsDashboard />}
           {tab === 'creators' && <AdminCreators />}
           {tab === 'campaigns' && <AdminCampaigns />}
+          {tab === 'webhooks' && <WebhookLogs />}
           {tab === 'delete-requests' && <AdminDeleteRequests />}
           {tab === 'plans' && <AdminPlans />}
           {tab === 'logs' && <AdminLogs />}

@@ -133,21 +133,32 @@ export function CampaignsList({
           <h3 className="text-sm font-semibold text-white">Active Automations</h3>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center space-x-1 bg-white/5 p-0.5 rounded-lg border border-white/5">
-          {(['ALL', 'ACTIVE', 'PAUSED'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setStatusFilter(f)}
-              className={`px-2.5 py-1 text-[10px] font-semibold rounded-md transition-all cursor-pointer ${
-                statusFilter === f
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {f}
-            </button>
-          ))}
+        {/* Filters & Refresh */}
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 bg-white/5 p-0.5 rounded-lg border border-white/5">
+            {(['ALL', 'ACTIVE', 'PAUSED'] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setStatusFilter(f)}
+                className={`px-2.5 py-1 text-[10px] font-semibold rounded-md transition-all cursor-pointer ${
+                  statusFilter === f
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => fetchCampaigns()}
+            disabled={loading}
+            className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer"
+            title="Refresh active automations"
+          >
+            <Loader2 className={`h-3.5 w-3.5 text-primary ${loading ? 'animate-spin' : ''}`} />
+          </button>
         </div>
       </div>
 

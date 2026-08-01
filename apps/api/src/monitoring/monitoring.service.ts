@@ -155,6 +155,47 @@ export class MonitoringService {
     return { retried: true };
   }
 
+  async purgeFailedJobs(olderThan?: string): Promise<{ count: number; timeframe: string }> {
+    const queues = [this.mediaFetchQueue, this.sendDmQueue];
+    let purgedCount = 0;
+
+    let cutoffMs = 0;
+    if (olderThan === '24h' || olderThan === '1d') {
+      cutoffMs = 24 * 60 * 60 * 1000;
+    } else if (olderThan === '7d') {
+      cutoffMs = 7 * 24 * 60 * 60 * 1000;
+    } else if (olderThan === '30d') {
+      cutoffMs = 30 * 24 * 60 * 60 * 1000;
+    }
+
+    const now = Date.now();
+
+    for (const queue of queues) {
+      const jobs = await queue.getFailed(0, 1000);
+      for (const job of jobs) {
+        const jobAge = now - job.timestamp;
+        if (cutoffMs === 0 || jobAge > cutoffMs) {
+          await job.remove().catch(() => null);
+          purgedCount++;
+        }
+      }
+    }
+
+    // Also purge failed QueueJob records from database
+    const dbWhereClause: any = { status: 'FAILED' };
+    if (cutoffMs > 0) {
+      const cutoffDate = new Date(now - cutoffMs);
+      dbWhereClause.createdAt = { lt: cutoffDate };
+    }
+
+    const dbResult = await this.prisma.queueJob
+      .deleteMany({ where: dbWhereClause })
+      .catch(() => ({ count: 0 }));
+    purgedCount += dbResult.count;
+
+    return { count: purgedCount, timeframe: olderThan || 'all' };
+  }
+
   // ──────────────── Webhook Logs ────────────────
 
   async getWebhookLogs(page = 1, limit = 50) {

@@ -43,6 +43,12 @@ export class MonitoringController {
     return this.monitoringService.retryFailedJob(queue, jobId);
   }
 
+  /** DELETE /monitoring/failed-jobs — purge failed jobs across all queues with timeframe filter */
+  @Delete('failed-jobs')
+  purgeFailedJobs(@Query('olderThan') olderThan?: string) {
+    return this.monitoringService.purgeFailedJobs(olderThan);
+  }
+
   /** GET /monitoring/webhook-logs — paginated webhook event history */
   @Get('webhook-logs')
   getWebhookLogs(@Query('page') page?: string, @Query('limit') limit?: string) {

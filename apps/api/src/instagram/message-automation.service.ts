@@ -88,11 +88,35 @@ export class MessageAutomationService {
         where: { id: campaignId },
       });
       if (campaign && campaign.status === CampaignStatus.ACTIVE) {
+        // Find triggering comment for this user to pass comment_id for Instagram Private Reply
+        const triggeringComment = await this.prisma.comment.findFirst({
+          where: {
+            userId: fromId,
+            instagramAccountId: account.id,
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        if (triggeringComment) {
+          await this.prisma.comment
+            .update({
+              where: { id: triggeringComment.id },
+              data: {
+                isReplied: true,
+                replyText: 'Follow Confirmed - Enqueued Campaign DM',
+                campaignId: campaign.id,
+              },
+            })
+            .catch(() => null);
+        }
+
         await this.sendDmProducer.enqueueSendDm({
           campaignId: campaign.id,
           instagramAccountId: account.id,
           recipientId: fromId,
           recipientUsername: fromUsername || 'user',
+          commentId: triggeringComment?.id,
+          igCommentId: triggeringComment?.commentId,
           replyMessage: campaign.replyMessage,
           replyMediaUrl: campaign.replyMediaUrl ?? undefined,
           isFollowBypass: true,
