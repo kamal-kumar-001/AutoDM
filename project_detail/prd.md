@@ -6,21 +6,25 @@ AutoDM is India's premier Meta-compliant Instagram DM automation engine and soci
 
 ---
 
-## 2. Meta Development Mode Diagnostics & Permission Model
+## 2. Meta Development Mode & Permission Diagnostic Models
 
-### Developer Root Cause Explanation: Why DMs Fail For Some Accounts
+### A. Meta Error (#200): Dev Mode Tester Restrictions
 
-- **Meta Dev Mode Rule**: Before Meta App Review approval for `instagram_manage_messages`, Meta Graph API **ONLY** allows sending DMs and receiving webhooks for Instagram/Facebook accounts registered as **Developers, Admins, or Testers** in the Meta App Dashboard under _App Roles_.
-- **Non-Tester Behavior**: When an unregistered Instagram account comments on a post while the app is in Development Mode, Meta blocks the outgoing DM and returns error `(#200) Requires instagram_manage_messages permission` or suppresses the webhook.
-- **App Review Resolution**: Once App Review is approved and the Meta App is set to **Live Mode**, DMs deliver universally to all Instagram accounts worldwide.
+- **Behavior**: In Dev Mode (before App Review), Meta Graph API **ONLY** allows sending DMs and receiving webhooks for Instagram accounts registered as **Developers, Admins, or Testers** in the Meta App Dashboard under _App Roles_.
+- **Resolution**: Register commenter handles as **Testers** in Meta Developer Console under App Roles, or submit for App Review to enable Live Mode.
+
+### B. Meta Error (#230): Permission Scope & Access Token Refresh
+
+- **Behavior**: Meta error `(#230) Requires pages_messaging permission to manage the object` indicates that the Facebook Page / Instagram Page Access Token lacks `pages_messaging` or `instagram_manage_messages` scope permissions.
+- **Resolution**: Disconnect and re-connect the Instagram Account in Settings -> Accounts, ensuring all Facebook Page permission checkboxes are checked during Meta OAuth authorization.
 
 ---
 
-## 3. Webhook Audit Logs & Correlation Specs
+## 3. Webhook Audit Logs & Scoping Specs
 
 ### Log Table Specifications
 
-The Webhook Audit Logs interface (`/admin/monitoring` or `<WebhookLogs>`) renders a real-time correlation table:
+The Webhook Audit Logs interface (`/admin` -> Webhooks tab or `<WebhookLogs>`) renders a real-time correlation table:
 
 | Column Header        | Field Source                | Description & Format                                                 |
 | -------------------- | --------------------------- | -------------------------------------------------------------------- |
@@ -28,14 +32,17 @@ The Webhook Audit Logs interface (`/admin/monitoring` or `<WebhookLogs>`) render
 | **Comment ID**       | `WebhookEvent.commentId`    | Native Instagram Comment ID (`1784...`).                             |
 | **User**             | `WebhookEvent.username`     | Instagram commenter handle (`@username`).                            |
 | **Send Status**      | `WebhookEvent.status`       | Status badge (`PROCESSED`, `FAILED`, `PENDING`, `PAUSED`).           |
-| **Error Diagnostic** | `WebhookEvent.errorMessage` | Formatted Meta API error message with Dev Mode guidance.             |
+| **Error Diagnostic** | `WebhookEvent.errorMessage` | Formatted Meta API error message with Dev Mode & Scope guidance.     |
 | **fbtrace_id**       | `WebhookEvent.fbtraceId`    | Unique Meta trace ID returned by Graph API for Meta support tickets. |
 
-### Control Features
+### Access Scoping & Control Features
 
+- **User-Scoped Creator Access**: Creator users only view webhooks matching their connected Instagram accounts (`userId` scope).
+- **Dedicated Admin Audit Tab**: Dedicated "Webhooks Audit" tab in the Admin Panel (`/admin` -> Webhooks tab) for global system inspection.
 - **Global Webhook Pause Switch**: Enables 1-click system-wide webhook processing pause/resume.
 - **Timeframe Purge Selector**: Allows deleting logs by timeframe (`All Logs`, `Older than 24h`, `Older than 7d`, `Older than 30d`).
-- **Audit Inspector Modal**: Clicking any log row opens a modal detailing Comment ID, User, Send Status, Meta Dev Mode explanation, `fbtrace_id`, and raw JSON webhook payload.
+- **Failed Jobs Purge & Refresh**: Supports timeframe purging for failed jobs in BullMQ queues and `QueueJob` database records.
+- **Section Refresh Buttons**: Header refresh buttons added to Active Automations (`<CampaignsList>`), Analytics (`<StatsGrid>`), Webhooks (`<WebhookLogs>`), and Failed Jobs (`<FailedJobs>`).
 
 ---
 

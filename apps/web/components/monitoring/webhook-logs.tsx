@@ -12,6 +12,7 @@ import {
   Copy,
   ExternalLink,
   Info,
+  RefreshCw,
 } from 'lucide-react';
 import { toast } from '@autodm/ui';
 import { fetchWithAuth } from '@/lib/api-client';
@@ -159,7 +160,16 @@ export function WebhookLogs() {
 
         {/* Action Bar */}
         <div className="flex flex-wrap items-center gap-2">
-          {loading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+          {/* Refresh Webhook Logs Button */}
+          <button
+            onClick={() => load(page)}
+            disabled={loading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+            title="Refresh Webhook Audit Logs"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-primary ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
 
           {/* Pause / Resume Button */}
           <button
@@ -423,9 +433,18 @@ export function WebhookLogs() {
                 <p className="text-xs text-red-200 leading-relaxed font-mono">
                   {selectedLog.errorMessage}
                 </p>
+                {selectedLog.errorMessage.includes('(#230)') && (
+                  <div className="pt-2 border-t border-red-500/20 text-[11px] text-amber-300 leading-relaxed font-sans">
+                    <strong>Why Meta Error (#230) Happens:</strong> Meta returned a permission error
+                    because your connected Access Token lacks <code>pages_messaging</code> or{' '}
+                    <code>instagram_manage_messages</code> permission scope. Re-connect your
+                    Instagram Account in Settings and ensure all Page permission checkboxes are
+                    selected during Meta OAuth login.
+                  </div>
+                )}
                 {selectedLog.errorMessage.includes('(#200)') && (
                   <div className="pt-2 border-t border-red-500/20 text-[11px] text-amber-300 leading-relaxed font-sans">
-                    <strong>Why this happens:</strong> Your Meta App is in{' '}
+                    <strong>Why Meta Error (#200) Happens:</strong> Your Meta App is in{' '}
                     <strong>Development Mode</strong>. Meta Graph API blocks outgoing DMs to users
                     who are not registered as Developers, Admins, or Testers in your Meta App
                     Dashboard under <em>App Roles</em>.

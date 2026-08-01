@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { MonitoringService } from './monitoring.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GetUser } from '../auth/decorators/get-user.decorator';
 
 @Controller('monitoring')
 @UseGuards(JwtAuthGuard)
@@ -49,12 +50,19 @@ export class MonitoringController {
     return this.monitoringService.purgeFailedJobs(olderThan);
   }
 
-  /** GET /monitoring/webhook-logs — paginated webhook event history */
+  /** GET /monitoring/webhook-logs — paginated webhook event history scoped to user/creator */
   @Get('webhook-logs')
-  getWebhookLogs(@Query('page') page?: string, @Query('limit') limit?: string) {
+  getWebhookLogs(
+    @GetUser() user: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const isStaff = user?.role === 'ADMIN';
     return this.monitoringService.getWebhookLogs(
+      user?.id,
+      isStaff,
       page ? parseInt(page, 10) : 1,
-      limit ? parseInt(limit, 10) : 30,
+      limit ? parseInt(limit, 10) : 50,
     );
   }
 

@@ -136,6 +136,32 @@ export class MonitoringService {
       }
     }
 
+    // Also fetch failed jobs stored in QueueJob database table
+    const dbFailedJobs = await this.prisma.queueJob
+      .findMany({
+        where: { status: 'FAILED' },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+      })
+      .catch(() => []);
+
+    for (const dbJob of dbFailedJobs) {
+      if (!results.some((r) => r.id === dbJob.id)) {
+        results.push({
+          id: dbJob.id,
+          queue: 'send_dm_queue',
+          name: dbJob.name || 'send_dm',
+          data: dbJob.payload || {},
+          failedReason: dbJob.error || 'Processing failed',
+          attemptsMade: dbJob.attempts || 1,
+          timestamp: new Date(dbJob.createdAt).getTime(),
+          finishedOn: dbJob.finishedAt
+            ? new Date(dbJob.finishedAt).getTime()
+            : new Date(dbJob.updatedAt).getTime(),
+        });
+      }
+    }
+
     return results.sort((a, b) => b.timestamp - a.timestamp).slice(0, limit);
   }
 
@@ -198,10 +224,33 @@ export class MonitoringService {
 
   // ──────────────── Webhook Logs ────────────────
 
-  async getWebhookLogs(page = 1, limit = 50) {
+  async getWebhookLogs(userId?: string, isStaff = false, page = 1, limit = 50) {
+    let whereClause: any = {};
+
+    if (!isStaff && userId) {
+      const userAccounts = await this.prisma.instagramAccount.findMany({
+        where: { userId, deletedAt: null },
+        select: { instagramId: true, instagramPageId: true, username: true },
+      });
+
+      if (userAccounts.length === 0) {
+        return { logs: [], total: 0, page, limit };
+      }
+
+      const allowedIds = userAccounts.flatMap(
+        (a) => [a.instagramId, a.instagramPageId].filter(Boolean) as string[],
+      );
+      const allowedUsernames = userAccounts.map((a) => a.username).filter(Boolean);
+
+      whereClause = {
+        OR: [{ senderId: { in: allowedIds } }, { username: { in: allowedUsernames } }],
+      };
+    }
+
     const skip = (page - 1) * limit;
     const [logs, total] = await Promise.all([
       this.prisma.webhookEvent.findMany({
+        where: whereClause,
         orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
@@ -220,7 +269,7 @@ export class MonitoringService {
           updatedAt: true,
         },
       }),
-      this.prisma.webhookEvent.count(),
+      this.prisma.webhookEvent.count({ where: whereClause }),
     ]);
     return { logs, total, page, limit };
   }

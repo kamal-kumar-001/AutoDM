@@ -280,7 +280,9 @@ export class SendDmProcessor extends WorkerHost {
         let rawMsg = metaError?.message || (error instanceof Error ? error.message : String(error));
 
         // Format actionable Meta Dev Mode diagnostic explanation for developer
-        if (
+        if (metaError && metaError.code === 230) {
+          rawMsg = `(#230) Meta Permission Error: Access token lacks pages_messaging / instagram_manage_messages permissions. Re-connect your Instagram account in Dashboard and ensure all permission checkboxes are selected in Meta OAuth. Trace ID: ${fbtraceId || 'N/A'}`;
+        } else if (
           metaError &&
           (metaError.code === 200 ||
             metaError.code === 10 ||

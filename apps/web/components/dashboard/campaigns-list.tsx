@@ -2,7 +2,17 @@
 
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Layers, Play, Pause, AlertCircle, Loader2, Edit, Trash } from 'lucide-react';
+import {
+  Search,
+  Layers,
+  Play,
+  Pause,
+  AlertCircle,
+  Loader2,
+  Edit,
+  Trash,
+  RefreshCw,
+} from 'lucide-react';
 import { Input, toast } from '@autodm/ui';
 import { apiRequest } from '@/lib/api-client';
 
@@ -157,7 +167,7 @@ export function CampaignsList({
             className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer"
             title="Refresh active automations"
           >
-            <Loader2 className={`h-3.5 w-3.5 text-primary ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3.5 w-3.5 text-primary ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>

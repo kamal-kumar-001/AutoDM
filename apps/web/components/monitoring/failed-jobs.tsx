@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Loader2, RotateCcw, AlertTriangle, Trash2 } from 'lucide-react';
+import { Loader2, RotateCcw, AlertTriangle, Trash2, RefreshCw } from 'lucide-react';
 import { toast } from '@autodm/ui';
 import { fetchWithAuth } from '@/lib/api-client';
 
@@ -102,7 +102,7 @@ export function FailedJobs() {
             className="p-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-gray-300 transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer"
             title="Refresh Failed Jobs List"
           >
-            <RotateCcw className="h-3.5 w-3.5 text-primary" />
+            <RefreshCw className={`h-3.5 w-3.5 text-primary ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
           </button>
 
