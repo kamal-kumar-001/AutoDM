@@ -50,23 +50,11 @@ export default function Navbar() {
               href={
                 link.href.startsWith('#') ? (isHomePage ? link.href : `/${link.href}`) : link.href
               }
-              className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
+              className="text-sm font-semibold text-gray-300 hover:text-primary transition-colors"
             >
               {link.label}
             </a>
           ))}
-          <Link
-            href="/about"
-            className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
-          >
-            About
-          </Link>
-          <Link
-            href="/contact"
-            className="text-sm font-medium text-gray-400 hover:text-white transition-colors"
-          >
-            Contact
-          </Link>
         </nav>
 
         {/* CTA Action Buttons */}

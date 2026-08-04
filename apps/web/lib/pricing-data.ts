@@ -17,19 +17,19 @@ export const DEFAULT_PLANS: BillingPlan[] = [
     key: 'PRO',
     name: 'Pro',
     description: 'Unlimited everything for serious creators & growing digital brands',
-    priceMonthly: 1990,
-    priceYearly: 11988, // ₹999/mo billed annually
+    priceMonthly: 999,
+    priceYearly: 9990,
     campaignLimit: 9999,
     keywordLimit: 9999,
     dmLimitMonthly: 999999,
   },
   {
     id: 'plan-agency',
-    key: 'ENTERPRISE', // Map Agency plan to ENTERPRISE key for backward compatibility
+    key: 'ENTERPRISE',
     name: 'Agency',
     description: 'Built for agencies & managers handling multiple high-tier creator accounts',
     priceMonthly: 3990,
-    priceYearly: 35880, // ₹2990/mo billed annually
+    priceYearly: 29990,
     campaignLimit: 9999,
     keywordLimit: 9999,
     dmLimitMonthly: 999999,
@@ -37,18 +37,27 @@ export const DEFAULT_PLANS: BillingPlan[] = [
 ];
 
 export const DEFAULT_PROMO: PromoSettings = {
-  text: '🔥 Founding Member Offer: 50 spots left at ₹999/mo locked in forever! (950/1,000 claimed)',
+  text: '⚡ Special Launch Offer: 100% OFF for the First 100 Users! (84/100 claimed)',
   enabled: true,
-  discountPercent: 50,
+  discountPercent: 100,
 };
 
-export const FOUNDING_MEMBER_STATS = {
-  claimed: 950,
-  total: 1000,
-  remaining: 50,
+export const LAUNCH_SPECIAL_STATS = {
+  claimed: 84,
+  total: 100,
+  remaining: 16,
 };
+
+export const FOUNDING_MEMBER_STATS = LAUNCH_SPECIAL_STATS;
 
 export const DEFAULT_FEATURE_FLAGS: FeatureFlag[] = [
+  {
+    id: 'flag-no-branding',
+    key: 'NO_BRANDING',
+    description: '✨ No AutoDM Branding (Clean Whitelabel DMs)',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
+    isEnabled: true,
+  },
   {
     id: 'flag-reply-desk',
     key: 'REPLY_DESK',
@@ -98,12 +107,17 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlag[] = [
     enabledForPlans: 'PRO,ENTERPRISE',
     isEnabled: true,
   },
+];
+
+export const AGENCY_SEAT_OPTIONS = [
+  { seats: 5, label: '5 Team Seats', priceMonthly: 3990, priceYearly: 29990, clientAccounts: 5 },
+  { seats: 10, label: '10 Team Seats', priceMonthly: 6990, priceYearly: 59990, clientAccounts: 10 },
   {
-    id: 'flag-team-seats',
-    key: 'TEAM_SEATS',
-    description: 'Agency Team Seats (5–20 Seats) & Multi-Account Hub',
-    enabledForPlans: 'ENTERPRISE',
-    isEnabled: true,
+    seats: 20,
+    label: '20 Team Seats',
+    priceMonthly: 11990,
+    priceYearly: 99990,
+    clientAccounts: 20,
   },
 ];
 
@@ -113,27 +127,49 @@ export const DEFAULT_PRICING_DATA: PricingPromoResponse = {
   featureFlags: DEFAULT_FEATURE_FLAGS,
 };
 
-export const COMPARISON_SPECIFICATIONS = {
-  accounts: {
-    FREE: '1 IG Account',
-    PRO: '3 IG Accounts',
-    ENTERPRISE: '5–20 Client Accounts',
+export const COMPARISON_SPECIFICATIONS = [
+  {
+    category: 'Core Capabilities',
+    features: [
+      {
+        name: '✨ No AutoDM Branding (Whitelabel DMs)',
+        free: 'Included',
+        pro: 'Included',
+        agency: 'Included',
+      },
+      {
+        name: 'Active Automation Campaigns',
+        free: '2 Campaigns',
+        pro: 'Unlimited',
+        agency: 'Unlimited',
+      },
+      { name: 'Monthly DM Volume', free: '200 DMs/mo', pro: 'Unlimited', agency: 'Unlimited' },
+      { name: 'Keywords Per Campaign', free: '5 Keywords', pro: 'Unlimited', agency: 'Unlimited' },
+    ],
   },
-  campaignOptions: {
-    FREE: '2 Funnels (Comment, Keyword)',
-    PRO: 'All 5 Funnels + Voice Create',
-    ENTERPRISE: 'All Funnels + Agency Workspaces',
+  {
+    category: 'Smart Engines',
+    features: [
+      { name: 'Smart Reply Desk (Buyer Filter)', free: true, pro: true, agency: true },
+      { name: 'Hinglish & Regional Language Engine', free: true, pro: true, agency: true },
+      { name: 'Anti-Spam Copy Variation Rotation', free: false, pro: true, agency: true },
+      { name: 'Redis Surge-Paced Viral Queue', free: false, pro: true, agency: true },
+      { name: 'Real-Time Mobile PWA Push Alerts', free: false, pro: true, agency: true },
+      { name: 'Voice Funnel Builder', free: false, pro: true, agency: true },
+      { name: 'Follow-Gate Unlock Quick Replies', free: false, pro: true, agency: true },
+    ],
   },
-  support: {
-    FREE: 'WhatsApp Support',
-    PRO: 'Priority WhatsApp Support',
-    ENTERPRISE: 'Dedicated Relationship Manager',
+  {
+    category: 'Account & Management',
+    features: [
+      {
+        name: 'Connected Instagram Accounts',
+        free: '1 Account',
+        pro: '1 Account',
+        agency: '5 to 20 Accounts',
+      },
+      { name: 'Team Seats', free: '1 Seat', pro: '1 Seat', agency: '5 to 20 Seats' },
+      { name: 'Dedicated Account Manager', free: false, pro: false, agency: true },
+    ],
   },
-};
-
-export const AGENCY_SEAT_OPTIONS = [
-  { seats: 5, clientAccounts: 5, label: '5 Seats / 5 Accounts' },
-  { seats: 10, clientAccounts: 10, label: '10 Seats / 10 Accounts' },
-  { seats: 15, clientAccounts: 15, label: '15 Seats / 15 Accounts' },
-  { seats: 20, clientAccounts: 20, label: '20 Seats / 20 Accounts' },
 ];

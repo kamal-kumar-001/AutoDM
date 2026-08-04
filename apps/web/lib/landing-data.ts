@@ -12,7 +12,6 @@ import {
   Building2,
   ShoppingBag,
   Briefcase,
-  Check,
   Instagram,
   Mail,
   Github,
@@ -22,22 +21,21 @@ import {
 export const LANDING_NAV = {
   logo: 'AutoDM',
   links: [
-    { label: 'Platform Engine', href: '#innovations' },
-    { label: 'Smart Inbox', href: '#reply-desk' },
-    { label: 'Mobile PWA', href: '#mobile' },
-    { label: 'Pricing Matrix', href: '/pricing' },
-    { label: 'FAQ', href: '#faq' },
+    { label: 'Features', href: '#features' },
+    { label: 'Pricing', href: '/pricing' },
+    { label: 'About', href: '/about' },
+    { label: 'Contact', href: '/contact' },
   ],
 };
 
 export const HERO_CONTENT = {
-  badge: '🇮🇳 India’s #1 Autonomous Instagram Growth & Conversion Engine',
+  badge: '⚡ Autonomous Meta-Certified Instagram Growth Engine for Indian Creators',
   title: 'Turn Reels Engagement Into High-Intent Sales, Instantly',
   titleGradient: 'Instantly',
   description:
     'AutoDM monitors your Instagram account 24/7, filters out spam comments to highlight real buyers, and sends safe, multi-variant DMs in Hinglish, Tamil, & 10+ languages — engineered specifically for creator monetization and digital brand scale.',
   ctaPrimary: 'Start Automation Free',
-  ctaSecondary: 'View Platform Architecture',
+  ctaSecondary: 'How It Works',
 };
 
 export const TRUSTED_LOGOS = [
@@ -51,13 +49,6 @@ export const TRUSTED_LOGOS = [
   'Pulse Commerce Tech',
 ];
 
-export const TRUSTED_AGENCIES = [
-  { name: 'Elevate Growth Media', label: 'Managing 25+ Top Indian Creators' },
-  { name: 'Bharat D2C Labs', label: '8M+ Monthly DM Conversions' },
-  { name: 'Pulse Commerce Tech', label: 'Scaling 40+ E-Commerce Brands' },
-  { name: 'NextGen Creator Academy', label: '500+ Active Creator Funnels' },
-];
-
 export const INNOVATIONS_CONTENT = {
   badge: 'Proprietary Technology',
   title: 'Six Engineering Breakthroughs Built for Social Commerce',
@@ -65,6 +56,7 @@ export const INNOVATIONS_CONTENT = {
     'Legacy DM bots rely on rigid keyword matching. AutoDM delivers a modern social commerce operating system built from the ground up for creators, D2C brands, and agencies.',
   items: [
     {
+      id: 'reply-desk',
       number: '01',
       icon: MessageSquare,
       title: 'Smart Reply Desk',
@@ -76,6 +68,7 @@ export const INNOVATIONS_CONTENT = {
       },
     },
     {
+      id: 'multilingual',
       number: '02',
       icon: Languages,
       title: 'Hinglish & Regional Engine',
@@ -92,6 +85,7 @@ export const INNOVATIONS_CONTENT = {
       ],
     },
     {
+      id: 'anti-spam',
       number: '03',
       icon: ShieldCheck,
       title: 'Dynamic Copy Variations',
@@ -104,6 +98,7 @@ export const INNOVATIONS_CONTENT = {
       ],
     },
     {
+      id: 'surge-pacing',
       number: '04',
       icon: Flame,
       title: 'Surge-Paced Viral Queue',
@@ -112,6 +107,7 @@ export const INNOVATIONS_CONTENT = {
       badgeText: 'Surge Detected • Pacing Queue to Human-Safe Intervals',
     },
     {
+      id: 'realtime-alerts',
       number: '05',
       icon: BellRing,
       title: 'Real-Time Surge Alerts',
@@ -120,6 +116,7 @@ export const INNOVATIONS_CONTENT = {
       alertDemo: '⚡ Viral Spike: 2,500 DMs enqueued in the last 60m. Queue auto-paced safely.',
     },
     {
+      id: 'voice-funnel',
       number: '06',
       icon: Mic,
       title: 'Voice Funnel Builder',
@@ -193,14 +190,6 @@ export const PERSONAS_CONTENT = {
   ],
 };
 
-export const FOUNDING_MEMBER_CONTENT = {
-  title: 'Founding Member Pricing',
-  subtitle: 'Exclusive intro offer for the first 1,000 accounts — locked in for life!',
-  claimed: 950,
-  total: 1000,
-  remaining: 50,
-};
-
 export const FAQS_CONTENT = {
   badge: 'Clear Answers',
   title: 'Frequently Asked Questions',
@@ -208,6 +197,10 @@ export const FAQS_CONTENT = {
     {
       q: 'How does AutoDM ensure full compliance with Meta Graph API policies?',
       a: 'AutoDM is engineered exclusively on official Meta Graph API v20.0 endpoints. It utilizes dynamic copy rotation every 50 sends and Redis surge queue pacing to ensure your Instagram account remains 100% compliant and safe.',
+    },
+    {
+      q: 'Is AutoDM branding removed from sent messages?',
+      a: 'Yes! Every plan on AutoDM (Free, Pro, and Agency) includes 100% Whitelabel DMs with ZERO AutoDM branding.',
     },
     {
       q: 'How does the Hinglish and Multilingual Engine work?',
@@ -221,77 +214,12 @@ export const FAQS_CONTENT = {
       q: 'Can agencies manage multiple client Instagram channels?',
       a: 'Yes. The Agency Plan supports 5 to 20 team seats, multi-client workspace separation, role permissions, and dedicated relationship manager support.',
     },
-    {
-      q: 'Does AutoDM require an App Store installation on mobile?',
-      a: 'No. AutoDM is built as a Progressive Web App (PWA). You can tap "Add to Home Screen" on iOS or Android to receive push notifications and manage campaigns directly.',
-    },
-  ],
-};
-
-export const ABOUT_CONTENT = {
-  title: 'Empowering India’s Creator Economy & Social Commerce',
-  description:
-    'AutoDM was founded to bridge the gap between social media engagement and automated revenue generation.',
-  mission:
-    'To provide creators, businesses, and agencies across India with enterprise-grade Meta automation tools.',
-  developer: {
-    name: 'Kamal Kumar',
-    role: 'Lead Architect & Senior Software Engineer',
-    bio: 'Specializing in distributed systems, real-time messaging, and high-performance Meta automation engines.',
-    github: 'https://github.com',
-    linkedin: 'https://linkedin.com',
-    email: 'kamal@dmpilot.org',
-    portfolio: 'https://dmpilot.org',
-  },
-};
-
-export const PRIVACY_CONTENT = {
-  title: 'Privacy Policy & Security Standards',
-  updated: 'Last updated: August 2026',
-  lastUpdated: 'August 2026',
-  commitment: '100% Meta Graph API Compliant & Token Encrypted',
-  sections: [
-    {
-      id: 'meta-compliance',
-      title: 'Meta Graph API Security',
-      content:
-        'AutoDM connects strictly via official Meta Graph API endpoints. We store access tokens encrypted using AES-256-GCM symmetric encryption.',
-      desc: 'AutoDM connects strictly via official Meta Graph API endpoints. We store access tokens encrypted using AES-256-GCM symmetric encryption.',
-      bullets: [
-        'Tokens are encrypted in-memory and at rest using AES-256-GCM.',
-        'We never ask for or store your personal Instagram passwords.',
-        'User data deletion requests can be initiated at any time in Settings.',
-      ],
-    },
-    {
-      id: 'data-collection',
-      title: 'Data Privacy & Usage',
-      content:
-        'We process comments and DMs exclusively to execute your active automation funnels and populate Reply Desk queries.',
-      desc: 'We process comments and DMs exclusively to execute your active automation funnels and populate Reply Desk queries.',
-      bullets: [],
-    },
-  ],
-};
-
-export const TERMS_CONTENT = {
-  title: 'Terms of Service',
-  updated: 'Last updated: August 2026',
-  lastUpdated: 'August 2026',
-  sections: [
-    {
-      id: 'acceptable-use',
-      title: 'Acceptable Use & Compliance Policy',
-      content:
-        'AutoDM enforces strict Meta rate limits, copy rotation, and anti-spam queue pacing to protect user channels.',
-      desc: 'AutoDM enforces strict Meta rate limits, copy rotation, and anti-spam queue pacing to protect user channels.',
-    },
   ],
 };
 
 export const FOOTER_CONTENT = {
   brand: 'AutoDM',
-  tagline: 'India’s #1 Instagram Growth OS & Autonomous DM Engine.',
+  tagline: 'Instagram Business OS & Autonomous DM Growth Engine.',
   copyright: '© 2026 AutoDM Technologies Inc. All rights reserved.',
   socials: [
     { name: 'Instagram', href: 'https://instagram.com', icon: Instagram },
@@ -303,10 +231,10 @@ export const FOOTER_CONTENT = {
     {
       title: 'Product',
       links: [
-        { label: 'Platform Engine', href: '#innovations' },
-        { label: 'Smart Inbox', href: '#reply-desk' },
+        { label: 'Features', href: '#features' },
+        { label: 'Pricing', href: '/pricing' },
+        { label: 'How It Works', href: '#how-it-works' },
         { label: 'Mobile PWA', href: '#mobile' },
-        { label: 'Pricing Matrix', href: '/pricing' },
       ],
     },
     {
@@ -314,7 +242,7 @@ export const FOOTER_CONTENT = {
       links: [
         { label: 'About Us', href: '/about' },
         { label: 'Contact Support', href: '/contact' },
-        { label: 'Founding Offer', href: '/pricing' },
+        { label: 'Launch Offer', href: '/pricing' },
       ],
     },
     {
@@ -323,6 +251,68 @@ export const FOOTER_CONTENT = {
         { label: 'Privacy Policy', href: '/privacy' },
         { label: 'Terms of Service', href: '/terms' },
         { label: 'Meta Compliance', href: '/privacy' },
+      ],
+    },
+  ],
+};
+
+export const ABOUT_CONTENT = {
+  badge: 'About AutoDM',
+  title: 'Built for High-Converting Social Commerce in India',
+  description:
+    'AutoDM is the next-generation Instagram Business OS engineered specifically for creators, D2C brands, and agencies.',
+  contactEmail: 'support@dmpilot.org',
+  companyAddress: 'Bengaluru, Karnataka, India',
+  developer: {
+    name: 'Kamal Kumar',
+    role: 'Lead Architect & Founder',
+    bio: 'Building autonomous social commerce infrastructure and AI automation for Indian creators.',
+    github: 'https://github.com',
+    linkedin: 'https://linkedin.com',
+    twitter: 'https://twitter.com',
+    portfolio: 'https://dmpilot.org',
+    email: 'support@dmpilot.org',
+  },
+};
+
+export const PRIVACY_CONTENT = {
+  title: 'Privacy Policy & Data Security',
+  lastUpdated: 'August 2026',
+  commitment:
+    'We strictly adhere to Meta Graph API guidelines and encrypt all OAuth tokens with AES-256 at rest.',
+  sections: [
+    {
+      id: '1',
+      title: 'Information We Collect',
+      desc: 'We process essential Instagram account information required for automation functionality.',
+      bullets: [
+        'Account Data: Email address, username, and encrypted Meta access tokens.',
+        'Campaign Data: Trigger keywords, DM templates, and message delivery status.',
+      ],
+    },
+    {
+      id: '2',
+      title: 'Meta Graph API Security & Compliance',
+      desc: 'All message automation is executed through official Meta Graph API endpoints.',
+      bullets: [
+        'Token Protection: OAuth tokens are encrypted at rest with AES-256.',
+        'Data Privacy: We never sell or share user conversation logs with third parties.',
+      ],
+    },
+  ],
+};
+
+export const TERMS_CONTENT = {
+  title: 'Terms of Service',
+  lastUpdated: 'August 2026',
+  sections: [
+    {
+      id: '1',
+      title: 'Service Terms & Account Eligibility',
+      desc: 'Guidelines for operating Instagram automation campaigns.',
+      bullets: [
+        'Compliance: You must comply with Meta Platform Terms and Community Guidelines.',
+        'Account Type: Automation requires an Instagram Business or Creator account.',
       ],
     },
   ],

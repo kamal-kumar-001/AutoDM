@@ -131,12 +131,26 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        {/* Footer */}
-        <div className="text-center text-xs text-gray-400 pt-2 border-t border-white/5">
-          Don't have an account?{' '}
-          <Link href="/register" className="text-primary hover:underline font-medium">
-            Create an account
-          </Link>
+        {/* Compliance Footer Note */}
+        <div className="space-y-3 pt-2 border-t border-white/5 text-center text-xs text-gray-400">
+          <p className="text-[11px] text-gray-400">
+            By signing in, you agree to our{' '}
+            <Link href="/terms" className="text-primary hover:underline">
+              Terms of Service
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" className="text-primary hover:underline">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+
+          <div>
+            Don&apos;t have an account?{' '}
+            <Link href="/register" className="text-primary hover:underline font-medium">
+              Create an account
+            </Link>
+          </div>
         </div>
       </div>
     </div>

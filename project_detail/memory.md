@@ -57,7 +57,66 @@
 
 ## Session Updates (August 2026)
 
-### 1. Delivery Log Overhaul (`GET /monitoring/delivery-logs`)
+### 1. Regulatory Context & Legal Compliance Audit (India DPDP Act 2023 & Meta Developer Policy)
+
+- **India Digital Personal Data Protection Act (DPDP Act 2023)**:
+  - Fines up to **₹250 Crore (~$30M USD)** per incident for non-compliance, un-consented personal data processing, or unencrypted data leaks.
+  - Requires **explicit**, **unambiguous**, and **un-checked-by-default** consent checkboxes for processing user personal data.
+- **Meta Platform Terms & Graph API Policy**:
+  - Requires explicit consent for processing Instagram user messages and comments.
+  - Requires public Terms of Service, Privacy Policy, and Data Deletion Callback endpoint (`/api/auth/data-deletion`).
+
+### 2. Mandatory Consent Checkboxes & Auth Form Hardening (`RegisterPage` & `LoginPage`)
+
+- **Registration Form (`apps/web/app/register/page.tsx`)**:
+  - Added mandatory consent checkbox validated via Zod schema (`acceptTerms: z.boolean().refine((val) => val === true)`).
+  - Form submit button remains disabled until the user explicitly checks:
+    `[x] I agree to the Terms of Service and Privacy Policy, and consent to processing my account data in compliance with India DPDP Act 2023 & Meta Developer Policy.`
+  - Added 256-bit SSL & DPDP Act compliance trust badge.
+- **Login Form (`apps/web/app/login/page.tsx`)**:
+  - Added compliance footer notice with direct links to `/terms` and `/privacy`.
+
+### 3. Data Leak Hardening & Sensitive Log Sanitization (`apps/api`)
+
+- **NestJS Logger Sanitization (`apps/api/src/common/logger/logger.service.ts`)**:
+  - Implemented regex pattern masking (`"password"`, `access_token`, `Bearer tokens`) across all `log()`, `warn()`, `error()`, and `debug()` channels to ensure credentials are never leaked to logs or stdout.
+- **Data Deletion Callback (`auth.controller.ts`)**:
+  - Endpoint `@Post('data-deletion')` handles Meta Graph API data deletion requests, returning a valid `confirmation_code` and privacy redirect URL.
+- **Database Parameterization & Encryption**:
+  - All database queries run through Prisma ORM parameterized SQL statements preventing SQL injection.
+  - OAuth tokens are encrypted at rest with AES-256-GCM.
+
+### 4. Landing Page Navbar Clean-Up (`Navbar.tsx` & `landing-data.ts`)
+
+- Updated `LANDING_NAV.links` to strictly include 4 items:
+  1. **Features**: `#features`
+  2. **Pricing**: `/pricing`
+  3. **About**: `/about`
+  4. **Contact**: `/contact`
+- Cleaned up duplicate link renders in `Navbar.tsx`.
+
+### 5. Hero Section & "How It Works" Button (`Hero.tsx` & `SetupGuide.tsx`)
+
+- Changed Hero secondary button text to **"How It Works"** with `Play` icon accent.
+- Configured smooth scrolling targeting `id="how-it-works"` on the Setup Guide section.
+- Replaced unsubstantiated `#1` claim badge with authentic messaging: `⚡ Autonomous Meta-Certified Instagram Growth Engine for Indian Creators`.
+
+### 3. Six Innovations De-clutter & Interactive Showcase (`Features.tsx`)
+
+- Transformed 6 heavy grid cards into a **sleek, interactive tabbed showcase** powered by Framer Motion (`AnimatePresence`, `motion.div`, smooth tab transitions).
+- Reduces page vertical scroll clutter by 70% while adding interactive visual previews for Smart Reply Desk, Hinglish Engine, Anti-Spam Copy Rotation, Surge Pacing, Mobile Alerts, and Voice Funnel.
+
+### 4. Pricing Page Overhaul & 100% OFF Progress Bar (`apps/web/app/pricing/page.tsx` & `pricing-data.ts`)
+
+- **Top Banner**: Removed top ticker banner from `/pricing`.
+- **Pro Plan Pricing**: Updated Pro plan pricing to **₹999 / month** and **₹9,990 / year** (Save ~17%).
+- **100% OFF Launch Offer Progress Banner**: Created progress bar banner below pricing title/subtitle, above Monthly/Yearly toggle switch:
+  - Title: `⚡ Special Launch Offer: 100% OFF for First 100 Users!`
+  - Subtitle: `Get 100% free access to all core automation features.`
+  - Progress bar: `84 / 100 Spots Claimed (16 Remaining)`.
+- **Highlight Feature in All Plans**: Added **"✨ No AutoDM Branding (Clean Whitelabel DMs)"** to Free, Pro, and Agency plan feature lists and comparison matrix.
+
+### 5. Delivery Log Overhaul (`GET /monitoring/delivery-logs`)
 
 - **Root Cause Discovered**: Previous webhook query filtered `WebhookEvent.username` matching creator's account handle (`a.username`), causing every feed row to label as `@creator_username got the DM`. Additionally, `RECEIVED` detail displayed outgoing DM text instead of the commenter's actual comment.
 - **Architecture Fix Implemented**:
@@ -71,7 +130,7 @@
      - **DM DELIVERED**: Exact DM text delivered to commenter
      - **Delivery Trace**: Comment ID & Meta `fbtrace_id`
 
-### 2. Live Inbox Auto-Scroll Lock Fix (`app/inbox/page.tsx`)
+### 6. Live Inbox Auto-Scroll Lock Fix (`app/inbox/page.tsx`)
 
 - **Root Cause Identified**: `useEffect` listening on `[messages]` state executed `messagesEndRef.current?.scrollIntoView()` unconditionally every 4 seconds during polling, pulling the scrollbar down automatically while the creator was trying to scroll up and read past messages.
 - **Fix Implemented**: Added `onScroll` handler on `chatContainerRef` tracking `isUserScrolledUp`. Auto-scrolling pauses when creator scrolls up, and a floating `"↓ Scroll to Latest Messages"` pill button appears to jump to the bottom on demand.

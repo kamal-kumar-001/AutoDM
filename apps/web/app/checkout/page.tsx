@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import {
@@ -89,6 +90,7 @@ export default function CheckoutPage() {
     pincode: '',
     country: 'India',
     gstin: '',
+    acceptConsent: false,
   });
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
@@ -125,6 +127,9 @@ export default function CheckoutPage() {
     if (!formData.address.trim()) newErrors.address = 'Street Address is required';
     if (!formData.city.trim()) newErrors.city = 'City is required';
     if (!formData.pincode.trim()) newErrors.pincode = 'Pincode is required';
+    if (!formData.acceptConsent)
+      newErrors.acceptConsent =
+        'You must accept processing of address data under India DPDP Act 2023';
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -369,12 +374,46 @@ export default function CheckoutPage() {
                     />
                   </div>
                 </div>
+                {/* Mandatory DPDP Act 2023 & Privacy Consent Checkbox */}
+                <div className="space-y-1.5 pt-3 border-t border-white/10">
+                  <div className="flex items-start gap-2.5">
+                    <input
+                      id="checkoutConsent"
+                      type="checkbox"
+                      checked={formData.acceptConsent}
+                      onChange={(e) => {
+                        setFormData({ ...formData, acceptConsent: e.target.checked });
+                        setErrors({ ...errors, acceptConsent: '' });
+                      }}
+                      className="mt-0.5 h-4 w-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+                    />
+                    <label
+                      htmlFor="checkoutConsent"
+                      className="text-[11px] text-gray-300 leading-relaxed cursor-pointer select-none"
+                    >
+                      I consent to the processing of my address, phone, and billing details for
+                      order fulfillment, GST invoicing, and account setup under India DPDP Act 2023
+                      &{' '}
+                      <Link
+                        href="/privacy"
+                        target="_blank"
+                        className="text-primary hover:underline font-bold"
+                      >
+                        Privacy Policy
+                      </Link>
+                      .
+                    </label>
+                  </div>
+                  {errors.acceptConsent && (
+                    <p className="text-[10px] text-red-400 mt-1">{errors.acceptConsent}</p>
+                  )}
+                </div>
               </div>
 
               {/* Submit CTA */}
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !formData.acceptConsent}
                 className="w-full py-4 text-center rounded-2xl text-sm font-extrabold text-white bg-gradient-to-r from-primary via-accent-purple to-accent-cyan shadow-lg hover:shadow-primary/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {loading ? (

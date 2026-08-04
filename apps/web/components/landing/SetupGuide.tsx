@@ -32,7 +32,10 @@ export default function SetupGuide() {
   ];
 
   return (
-    <section id="guide" className="py-24 sm:py-32 relative border-t border-white/5 bg-[#030712]">
+    <section
+      id="how-it-works"
+      className="py-24 sm:py-32 relative border-t border-white/5 bg-[#030712]"
+    >
       <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">

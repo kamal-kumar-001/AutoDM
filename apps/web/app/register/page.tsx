@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Button, Input, Label, toast } from '@autodm/ui';
 import { apiRequest } from '@/lib/api-client';
-import { Zap, Eye, EyeOff } from 'lucide-react';
+import { Zap, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 
 const registerSchema = z
@@ -17,6 +17,9 @@ const registerSchema = z
     email: z.string().email('Invalid email address'),
     password: z.string().min(8, 'Password must be at least 8 characters long'),
     confirmPassword: z.string().min(1, 'Confirm password is required'),
+    acceptTerms: z.boolean().refine((val) => val === true, {
+      message: 'You must accept the Terms of Service & Privacy Policy to proceed',
+    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
@@ -41,11 +44,14 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<RegisterData>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
+    defaultValues: { name: '', email: '', password: '', confirmPassword: '', acceptTerms: false },
   });
+
+  const isAccepted = watch('acceptTerms');
 
   const onSubmit = async (data: RegisterData) => {
     setLoading(true);
@@ -71,7 +77,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative px-4 bg-background">
+    <div className="min-h-screen flex items-center justify-center relative px-4 bg-background py-12">
       {/* Background Mesh/Glow Blobs */}
       <div className="absolute top-1/4 left-1/4 w-[350px] h-[350px] bg-glow-gradient pointer-events-none opacity-40 blur-xl" />
       <div className="absolute bottom-1/4 right-1/4 w-[300px] h-[300px] bg-mesh-gradient pointer-events-none opacity-30 blur-xl" />
@@ -161,10 +167,54 @@ export default function RegisterPage() {
             )}
           </div>
 
-          <Button type="submit" disabled={loading} className="w-full">
+          {/* Mandatory DPDP Act 2023 & Meta Developer Policy Consent Checkbox */}
+          <div className="space-y-1.5 pt-2 border-t border-white/5">
+            <div className="flex items-start gap-2.5">
+              <input
+                id="acceptTerms"
+                type="checkbox"
+                {...register('acceptTerms')}
+                className="mt-1 h-4 w-4 rounded border-white/10 bg-white/5 text-primary focus:ring-primary focus:ring-offset-0 cursor-pointer"
+              />
+              <label
+                htmlFor="acceptTerms"
+                className="text-xs text-gray-300 leading-relaxed cursor-pointer select-none"
+              >
+                I agree to the{' '}
+                <Link
+                  href="/terms"
+                  target="_blank"
+                  className="text-primary hover:underline font-bold"
+                >
+                  Terms of Service
+                </Link>{' '}
+                and{' '}
+                <Link
+                  href="/privacy"
+                  target="_blank"
+                  className="text-primary hover:underline font-bold"
+                >
+                  Privacy Policy
+                </Link>
+                , and consent to processing my account data in compliance with India DPDP Act 2023 &
+                Meta Developer Policy.
+              </label>
+            </div>
+            {errors.acceptTerms && (
+              <p className="text-xs text-red-400 mt-1">{errors.acceptTerms.message}</p>
+            )}
+          </div>
+
+          <Button type="submit" disabled={loading || !isAccepted} className="w-full">
             {loading ? 'Creating account...' : 'Sign Up'}
           </Button>
         </form>
+
+        {/* Security Compliance Badge */}
+        <div className="flex items-center justify-center gap-1.5 text-[11px] text-gray-400 font-medium pt-1">
+          <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <span>256-Bit SSL Encrypted • DPDP Act 2023 Compliant</span>
+        </div>
 
         {/* Footer */}
         <div className="text-center text-xs text-gray-400 pt-2 border-t border-white/5">
