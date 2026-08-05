@@ -1,28 +1,17 @@
 'use client';
 
 import * as React from 'react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { INNOVATIONS_CONTENT, PWA_MOBILE_CONTENT, PERSONAS_CONTENT } from '@/lib/landing-data';
 import { Sparkles, MessageCircle, Flame, BellRing, Check } from 'lucide-react';
 
 export default function Features() {
   const [activeTab, setActiveTab] = React.useState(0);
   const activeItem = INNOVATIONS_CONTENT.items[activeTab];
-  const sectionRef = React.useRef<HTMLDivElement>(null);
-
-  // 3D Scroll Perspective Transformations
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ['start end', 'end start'],
-  });
-
-  const rotateX = useTransform(scrollYProgress, [0, 0.4, 0.8, 1], [12, 0, 0, -12]);
-  const scale = useTransform(scrollYProgress, [0, 0.4, 0.8, 1], [0.96, 1, 1, 0.96]);
-  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.6, 1, 1, 0.6]);
 
   return (
-    <div ref={sectionRef} className="space-y-24 py-16 sm:py-24 relative">
-      {/* 1. SIX INNOVATIONS INTERACTIVE SHOWCASE WITH 3D PERSPECTIVE */}
+    <div className="space-y-24 py-16 sm:py-24 relative">
+      {/* 1. SIX INNOVATIONS INTERACTIVE SHOWCASE */}
       <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 space-y-12">
         <div className="text-center max-w-3xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-primary/10 border border-primary/25 text-xs font-bold text-primary uppercase tracking-widest">
@@ -40,9 +29,9 @@ export default function Features() {
           </p>
         </div>
 
-        {/* Slideable & Scrollable Tab Selector Bar (Guaranteed Zero Clipping on Mobile, Tablet & Desktop) */}
-        <div className="w-full max-w-7xl mx-auto px-2 sm:px-6 overflow-hidden">
-          <div className="flex items-center justify-start lg:justify-center gap-3 overflow-x-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-3 px-4 sm:px-6">
+        {/* Slideable & Scrollable Tab Selector Bar (Zero Clipping on Mobile, Tablet & Desktop) */}
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-8">
+          <div className="flex items-center justify-start lg:justify-center gap-3 overflow-x-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-3 px-6 sm:px-10 max-w-full">
             {INNOVATIONS_CONTENT.items.map((item, idx) => {
               const Icon = item.icon;
               const isActive = activeTab === idx;
@@ -51,6 +40,8 @@ export default function Features() {
                   key={item.id}
                   onClick={() => setActiveTab(idx)}
                   className={`flex items-center gap-2.5 px-4 sm:px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex-shrink-0 min-w-max ${
+                    idx === 0 ? 'ml-2 sm:ml-0' : ''
+                  } ${
                     isActive
                       ? 'bg-gradient-to-r from-primary via-emerald-400 to-accent-cyan text-white shadow-[0_0_25px_rgba(0,187,136,0.35)] scale-[1.03] ring-1 ring-white/20'
                       : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
@@ -64,19 +55,22 @@ export default function Features() {
           </div>
         </div>
 
-        {/* 3D Perspective Feature Highlight Card (Smooth Instant Micro-Tilt, Sharp Text) */}
+        {/* Crisp Permanent Feature Highlight Card (Smooth Viewport Entrance, Silky 3D Hover Tilt) */}
         <motion.div
-          whileHover={{ rotateX: -2, rotateY: 2, scale: 1.005 }}
-          transition={{ duration: 0.2, ease: 'easeOut' }}
-          className="max-w-5xl mx-auto glass-card border-gradient rounded-3xl p-6 sm:p-10 relative overflow-hidden shadow-2xl transition-shadow hover:shadow-[0_0_50px_rgba(0,187,136,0.15)] [perspective:1000px] [transform-style:preserve-3d]"
+          initial={{ opacity: 0, y: 25 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          whileHover={{ rotateX: -3, rotateY: 3, scale: 1.008 }}
+          className="max-w-5xl mx-auto glass-card border-gradient rounded-3xl p-6 sm:p-10 relative overflow-hidden shadow-2xl transition-shadow hover:shadow-[0_0_50px_rgba(0,187,136,0.2)] [perspective:1000px] [transform-style:preserve-3d]"
         >
           <AnimatePresence mode="wait">
             <motion.div
               key={activeItem.id}
-              initial={{ opacity: 0, y: 12, rotateX: 4 }}
+              initial={{ opacity: 0, y: 10, rotateX: 3 }}
               animate={{ opacity: 1, y: 0, rotateX: 0 }}
-              exit={{ opacity: 0, y: -12, rotateX: -4 }}
-              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              exit={{ opacity: 0, y: -10, rotateX: -3 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
               className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center"
             >
               {/* Left Column: Specs & Copy */}

@@ -4,7 +4,6 @@ import * as React from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
-import FAQ from '@/components/landing/FAQ';
 import { motion } from 'framer-motion';
 import { Check, X, Flame, Star, Building2, Headset, ShieldCheck } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -399,9 +398,6 @@ export default function PricingPage() {
             </table>
           </div>
         </section>
-
-        {/* FAQ SECTION */}
-        <FAQ />
 
         <Footer />
       </div>

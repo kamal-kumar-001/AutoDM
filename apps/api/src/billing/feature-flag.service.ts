@@ -123,8 +123,12 @@ export class FeatureFlagService {
   /** Check if a feature is enabled for a given plan. */
   async isEnabled(key: string, plan: Plan): Promise<boolean> {
     const flag = await this.prisma.featureFlag.findUnique({ where: { key } });
-    if (!flag || !flag.isEnabled) return false;
-    return flag.enabledForPlans.split(',').includes(plan);
+    if (!flag) return true;
+    if (!flag.isEnabled) return false;
+    const allowedPlans = flag.enabledForPlans.split(',').map((p) => p.trim());
+    return (
+      allowedPlans.includes(plan) || allowedPlans.includes('FREE') || allowedPlans.includes('ALL')
+    );
   }
 
   /** Toggle global kill-switch for a flag (admin). */
