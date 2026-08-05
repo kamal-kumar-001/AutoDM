@@ -59,7 +59,7 @@ export default function AutomationsPage() {
   const [viewCampaignId, setViewCampaignId] = React.useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = React.useState(false);
   const [planLimits, setPlanLimits] = React.useState<{ max_campaigns: number }>({
-    max_campaigns: 999999,
+    max_campaigns: -1,
   });
 
   const fetchCampaigns = async () => {
@@ -88,9 +88,12 @@ export default function AutomationsPage() {
     const maxCampaigns = planLimits.max_campaigns;
     const activeCount = campaigns.filter((c) => c.status !== 'DELETED').length;
 
-    // Upfront UX Gating Check: If plan limit is exceeded (and not unlimited -1), show UpgradeModal immediately!
+    // Upfront UX Gating Check: If plan limit is reached (and not unlimited -1), show UpgradeModal immediately!
     if (maxCampaigns !== -1 && maxCampaigns > 0 && activeCount >= maxCampaigns) {
       setIsUpgradeModalOpen(true);
+      toast.error(
+        `Campaign limit reached (${activeCount}/${maxCampaigns}). Upgrade to Pro for unlimited campaigns!`,
+      );
       return;
     }
 

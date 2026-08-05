@@ -934,8 +934,16 @@ export function CampaignWizard({
 
                     {/* Simulated IG header */}
                     <div className="flex items-center space-x-1.5 border-b border-white/5 pb-2 mb-2">
-                      <div className="h-5 w-5 rounded-full bg-gradient-to-tr from-pink-500 to-yellow-500 flex items-center justify-center text-white font-bold text-[8px]">
-                        {activeAccount?.profilePicture}
+                      <div className="h-5 w-5 rounded-full bg-gradient-to-tr from-pink-500 to-yellow-500 flex items-center justify-center text-white font-bold text-[8px] overflow-hidden flex-shrink-0">
+                        {activeAccount?.profilePicture ? (
+                          <img
+                            src={activeAccount.profilePicture}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          activeAccount?.username?.[0]?.toUpperCase() || 'A'
+                        )}
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span className="text-[8px] font-bold text-white truncate">
