@@ -186,9 +186,22 @@ export class SendDmProcessor extends WorkerHost {
       campaign?.followCheckEnabled && !job.data.isFollowBypass && !isAlreadyFollowing;
     const followPromptText = `Hey @${recipientUsername}! Thanks for commenting. 🚀 First, make sure you follow @${account.username}, then tap the button below to get the link!`;
 
+    // DM Variants Anti-Spam Auto-Rotation: If reply message contains pipe-separated copy variants, rotate per send
+    let baseMessage = replyMessage;
+    if (replyMessage && replyMessage.includes('|')) {
+      const variants = replyMessage
+        .split('|')
+        .map((v) => v.trim())
+        .filter(Boolean);
+      if (variants.length > 0) {
+        const sendSeed = parseInt((job.id || '').replace(/\D/g, ''), 10) || Date.now();
+        baseMessage = variants[sendSeed % variants.length];
+      }
+    }
+
     const personalizedMessage = isPromptMode
       ? followPromptText
-      : replyMessage.replace(/{username}/g, recipientUsername).replace(/{name}/g, recipientName);
+      : baseMessage.replace(/{username}/g, recipientUsername).replace(/{name}/g, recipientName);
 
     let messageId: string;
     let sendStatus: MessageStatus = MessageStatus.SENT;

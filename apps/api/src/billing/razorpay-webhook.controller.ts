@@ -17,18 +17,30 @@ export class RazorpayWebhookController {
 
   @Post()
   async handleWebhook(@Headers('x-razorpay-signature') signature: string, @Req() req: Request) {
+    if (!this.webhookSecret) {
+      console.error('Razorpay Webhook secret is not configured in environment variables');
+      throw new BadRequestException('Webhook endpoint not properly configured');
+    }
+
     if (!signature) {
       throw new BadRequestException('Missing x-razorpay-signature header');
     }
 
-    const rawBody = (req as any).rawBody || JSON.stringify(req.body);
+    const rawBody =
+      (req as any).rawBody || (typeof req.body === 'string' ? req.body : JSON.stringify(req.body));
 
     const expectedSignature = crypto
       .createHmac('sha256', this.webhookSecret)
       .update(rawBody)
       .digest('hex');
 
-    if (signature !== expectedSignature) {
+    const signatureBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expectedSignature);
+
+    if (
+      signatureBuffer.length !== expectedBuffer.length ||
+      !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)
+    ) {
       console.error('Razorpay Webhook signature verification failed');
       throw new BadRequestException('Invalid signature');
     }

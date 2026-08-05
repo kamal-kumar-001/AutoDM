@@ -1,5 +1,5 @@
 export interface BillingPlan {
-  id: string;
+  id?: string;
   key: 'FREE' | 'PRO' | 'ENTERPRISE';
   name: string;
   description: string | null;
@@ -8,6 +8,7 @@ export interface BillingPlan {
   campaignLimit: number;
   keywordLimit: number;
   dmLimitMonthly: number;
+  highlight?: boolean;
 }
 
 export interface PromoSettings {
@@ -24,8 +25,21 @@ export interface FeatureFlag {
   isEnabled: boolean;
 }
 
+export interface ComparisonFeature {
+  name: string;
+  free: string | boolean;
+  pro: string | boolean;
+  agency: string | boolean;
+}
+
+export interface ComparisonCategory {
+  category: string;
+  features: ComparisonFeature[];
+}
+
 export interface PricingPromoResponse {
   plans: BillingPlan[];
   promo: PromoSettings;
   featureFlags: FeatureFlag[];
+  comparisonMatrix: ComparisonCategory[];
 }

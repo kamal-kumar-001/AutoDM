@@ -12,6 +12,8 @@ import { AuditLogService } from '../auth/audit-log.service';
 import axios from 'axios';
 import { SendDmProducer } from './send-dm.producer';
 
+import { SubscriptionService } from '../billing/subscription.service';
+
 interface MetaTokenResponse {
   access_token: string;
   token_type?: string;
@@ -50,6 +52,7 @@ export class InstagramService {
     private readonly auditLogService: AuditLogService,
     private readonly logger: AppLogger,
     private readonly sendDmProducer: SendDmProducer,
+    private readonly subscriptionService: SubscriptionService,
   ) {
     this.logger.setContext('InstagramService');
   }
@@ -177,6 +180,23 @@ export class InstagramService {
             this.logger.warn(
               `Failed to automatically subscribe Page ${page.name} to app webhooks: ${msg}. Details: ${detail}`,
             );
+          }
+
+          // Verify max_accounts limit for user's plan
+          const existingAccount = await this.prisma.instagramAccount.findUnique({
+            where: { instagramId: igAccount.id },
+          });
+
+          if (!existingAccount || existingAccount.userId !== userId) {
+            const { allowed, used, limit } = await this.subscriptionService.checkLimit(
+              userId,
+              'max_accounts',
+            );
+            if (!allowed) {
+              throw new BadRequestException(
+                `Instagram account limit reached (${used}/${limit}). Upgrade your plan to connect additional accounts.`,
+              );
+            }
           }
 
           // Encrypt the page access token (long-lived / non-expiring)

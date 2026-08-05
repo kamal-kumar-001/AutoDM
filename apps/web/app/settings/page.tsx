@@ -17,7 +17,6 @@ import {
   EyeOff,
   CreditCard,
   CheckCircle2,
-  Star,
 } from 'lucide-react';
 import { Button, Input, Label, toast } from '@autodm/ui';
 import { apiRequest } from '@/lib/api-client';
@@ -954,9 +953,10 @@ function SettingsBilling() {
       {/* Plans selector grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-300">
         {plans.map((plan: any) => {
-          const planKey = plan.key || plan.plan;
+          const planKey = plan.key;
           const isCurrent = planKey === subscription?.plan;
-          const isAgency = planKey === 'ENTERPRISE' || planKey === 'AGENCY' || plan.label === 'Agency';
+          const isAgency =
+            planKey === 'ENTERPRISE' || planKey === 'AGENCY' || plan.label === 'Agency';
 
           return (
             <div
@@ -973,7 +973,7 @@ function SettingsBilling() {
 
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <h4 className="text-sm font-extrabold text-white">{plan.label || plan.name || planKey}</h4>
+                  <h4 className="text-sm font-extrabold text-white">{plan.name || planKey}</h4>
                   <p className="text-[10px] text-gray-500 leading-normal min-h-[30px]">
                     {plan.description}
                   </p>
@@ -994,13 +994,15 @@ function SettingsBilling() {
                   <div className="space-y-0.5">
                     <div className="flex items-baseline space-x-1">
                       <span className="text-2xl font-extrabold text-white">
-                        {isAnnual ? '₹832' : `₹${(plan.priceMonthly || plan.price || 999).toLocaleString('en-IN')}`}
+                        {isAnnual
+                          ? `₹${Math.round((plan.priceYearly || 9990) / 12).toLocaleString('en-IN')}`
+                          : `₹${(plan.priceMonthly || 999).toLocaleString('en-IN')}`}
                       </span>
                       <span className="text-[10px] text-gray-500">/month</span>
                     </div>
                     {isAnnual ? (
                       <p className="text-[10px] text-primary font-mono font-bold">
-                        billed annually (₹9,990/yr • Save 17%)
+                        billed annually (₹{(plan.priceYearly || 9990).toLocaleString('en-IN')}/yr)
                       </p>
                     ) : (
                       <p className="text-[10px] text-gray-500 font-mono">billed monthly</p>
@@ -1008,35 +1010,52 @@ function SettingsBilling() {
                   </div>
                 )}
 
-                {/* Whitelabel DMs feature badge */}
-                <div className="p-2 rounded-lg bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold flex items-center gap-1.5">
-                  <Star className="w-3.5 h-3.5 text-primary fill-current flex-shrink-0" />
-                  <span>✨ No AutoDM Branding (Whitelabel DMs)</span>
-                </div>
-
                 <ul className="space-y-2 text-[10px] text-gray-400 border-t border-white/5 pt-4">
-                  {(plan.features || []).map((f: string, i: number) => (
-                    <li key={i} className="flex items-center space-x-2">
-                      <CheckCircle2 className="h-3 w-3 text-primary flex-shrink-0" />
-                      <span>{f}</span>
-                    </li>
-                  ))}
+                  <li className="flex items-center space-x-2">
+                    <CheckCircle2 className="h-3 w-3 text-primary flex-shrink-0" />
+                    <span>
+                      {plan.campaignLimit === -1 ? 'Unlimited' : plan.campaignLimit} Campaigns
+                    </span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <CheckCircle2 className="h-3 w-3 text-primary flex-shrink-0" />
+                    <span>
+                      {plan.dmLimitMonthly === -1
+                        ? 'Unlimited'
+                        : plan.dmLimitMonthly.toLocaleString()}{' '}
+                      DMs / month
+                    </span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    <CheckCircle2 className="h-3 w-3 text-primary flex-shrink-0" />
+                    <span>
+                      {plan.keywordLimit === -1 ? 'Unlimited' : plan.keywordLimit} Keywords
+                    </span>
+                  </li>
                 </ul>
               </div>
 
               <div className="pt-5 border-t border-white/5 mt-5">
                 <Button
                   onClick={() => handleUpgrade(planKey)}
-                  disabled={isCurrent}
+                  disabled={isCurrent || planKey === 'FREE'}
                   className={`w-full text-xs font-bold ${
                     isCurrent
                       ? 'bg-white/5 text-gray-500 border-white/5 cursor-not-allowed select-none'
-                      : isAgency
-                        ? 'bg-white/10 hover:bg-white/15 border border-white/10 text-white cursor-pointer'
-                        : 'bg-primary hover:bg-primary-hover text-primary-foreground border-0 shadow-[0_0_12px_rgba(0,187,136,0.2)] cursor-pointer'
+                      : planKey === 'FREE'
+                        ? 'bg-white/5 text-gray-500 border-white/5 cursor-not-allowed select-none'
+                        : isAgency
+                          ? 'bg-white/10 hover:bg-white/15 border border-white/10 text-white cursor-pointer'
+                          : 'bg-primary hover:bg-primary-hover text-primary-foreground border-0 shadow-[0_0_12px_rgba(0,187,136,0.2)] cursor-pointer'
                   }`}
                 >
-                  {isCurrent ? 'Active Plan' : isAgency ? 'Contact Agency Sales' : 'Select Plan'}
+                  {isCurrent
+                    ? 'Active Plan'
+                    : planKey === 'FREE'
+                      ? 'Downgrade to Free'
+                      : isAgency
+                        ? 'Contact Agency Sales'
+                        : 'Select Plan'}
                 </Button>
               </div>
             </div>

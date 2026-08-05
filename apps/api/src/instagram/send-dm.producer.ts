@@ -21,12 +21,24 @@ export class SendDmProducer {
   constructor(@InjectQueue(QUEUE_NAMES.SEND_DM) private readonly queue: Queue) {}
 
   async enqueueSendDm(payload: SendDmPayload) {
+    let delayMs = 0;
+    try {
+      const waitingCount = await this.queue.getWaitingCount();
+      if (waitingCount > 20) {
+        // Adaptive surge pacing: add humanized random jitter delay (2s to 6s) during traffic spikes
+        delayMs = Math.floor(Math.random() * 4000) + 2000;
+      }
+    } catch (e) {
+      // ignore queue stat error
+    }
+
     await this.queue.add('send_dm', payload, {
       attempts: 3,
+      delay: delayMs,
       backoff: { type: 'exponential', delay: 10_000 }, // 10s, 20s, 40s
       removeOnComplete: { count: 500 },
       removeOnFail: { count: 1000 },
     });
-    return { queued: true };
+    return { queued: true, paced: delayMs > 0 };
   }
 }

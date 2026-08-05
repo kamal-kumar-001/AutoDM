@@ -15,6 +15,8 @@ import { BullModule } from '@nestjs/bullmq';
 import { QUEUE_NAMES } from '../queue/constants';
 import { BillingModule } from '../billing/billing.module';
 
+import { ReplyDeskService } from './reply-desk.service';
+
 @Module({
   imports: [
     BillingModule,
@@ -35,7 +37,14 @@ import { BillingModule } from '../billing/billing.module';
     MessageAutomationService,
     SendDmProducer,
     SendDmProcessor,
+    ReplyDeskService,
   ],
-  exports: [InstagramService, MediaFetchProducer, InstagramCacheService, SendDmProducer],
+  exports: [
+    InstagramService,
+    MediaFetchProducer,
+    InstagramCacheService,
+    SendDmProducer,
+    ReplyDeskService,
+  ],
 })
 export class InstagramModule {}

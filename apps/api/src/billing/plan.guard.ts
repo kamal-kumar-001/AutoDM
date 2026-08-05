@@ -31,8 +31,11 @@ export class PlanGuard implements CanActivate {
 
     const sub = await this.subscriptionService.getOrCreate(user.id);
 
-    // Unlimited access active: Allow all plans for logged in users
-    return true;
+    if (!requiredPlans.includes(sub.plan)) {
+      throw new ForbiddenException(
+        `This feature requires a ${requiredPlans.join(' or ')} plan. Your current plan is ${sub.plan}. Please upgrade to access this feature.`,
+      );
+    }
 
     return true;
   }

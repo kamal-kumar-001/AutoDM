@@ -269,9 +269,9 @@ export class AdminService {
   async enableAppReviewMode() {
     await this.prisma.billingPlan.updateMany({
       data: {
-        campaignLimit: 999999,
-        keywordLimit: 999999,
-        dmLimitMonthly: 999999,
+        campaignLimit: -1,
+        keywordLimit: -1,
+        dmLimitMonthly: -1,
       },
     });
 

@@ -21,6 +21,8 @@ import { InstagramCacheService } from './instagram-cache.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailVerificationGuard } from '../auth/guards/email-verification.guard';
 
+import { ReplyDeskService } from './reply-desk.service';
+
 @Controller('instagram')
 export class InstagramController {
   constructor(
@@ -29,6 +31,7 @@ export class InstagramController {
     private readonly cacheService: InstagramCacheService,
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly replyDeskService: ReplyDeskService,
   ) {}
 
   @Get()
@@ -157,5 +160,24 @@ export class InstagramController {
       body.instagramAccountId,
       body.text,
     );
+  }
+
+  // ─── Reply Desk AI Query Classifier Endpoints ───────────────────
+
+  @Get('reply-desk')
+  @UseGuards(JwtAuthGuard)
+  async getReplyDeskQueries(@GetUser() user: { id: string }) {
+    return this.replyDeskService.getBuyerQueries(user.id);
+  }
+
+  @Post('reply-desk/:id/reply')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async replyToBuyerQuery(
+    @Param('id') commentDbId: string,
+    @Body('replyText') replyText: string,
+    @GetUser() user: { id: string },
+  ) {
+    return this.replyDeskService.replyToBuyer(user.id, commentDbId, replyText);
   }
 }

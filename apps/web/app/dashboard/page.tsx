@@ -11,6 +11,7 @@ import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { EmptyState } from '@/components/dashboard/empty-state';
 import { CampaignWizard } from '@/components/dashboard/campaign-wizard';
 import { CampaignDetailsModal } from '@/components/dashboard/campaign-details';
+import { SurgeAlertBanner } from '@/components/dashboard/surge-alert-banner';
 import { Button, toast } from '@autodm/ui';
 import { UserPlus, FolderPlus, Loader2 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
@@ -140,6 +141,11 @@ export default function DashboardPage() {
           <EmptyState onConnect={handleConnectAccount} onCreateCampaign={handleCreateCampaign} />
         ) : (
           <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Surge Spike Alert Banner */}
+            <SurgeAlertBanner
+              onRefreshCampaigns={() => setCampaignsRefreshKey((prev) => prev + 1)}
+            />
+
             {/* Stats Row */}
             <StatsGrid />
 

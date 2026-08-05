@@ -1,14 +1,20 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { Providers } from './providers';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
+export const viewport: Viewport = {
+  themeColor: '#00BB88',
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://www.dmpilot.org'),
-  title: 'AutoDM - DM Automation',
-  description: 'Scale your creator presence with high-performance Instagram DM automation.',
+  title: 'AutoDM — Instagram Business OS',
+  description:
+    'Meta-Compliant Instagram DM Automation & Social Commerce Business Operating System.',
+  manifest: '/manifest.json',
   openGraph: {
     title: 'AutoDM - DM Automation',
     description: 'Scale your creator presence with high-performance Instagram DM automation.',

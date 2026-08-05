@@ -13,6 +13,8 @@ import {
   HelpCircle,
   RefreshCw,
   Loader2,
+  Mic,
+  Sparkles,
 } from 'lucide-react';
 import { Button, Input, Label, toast } from '@autodm/ui';
 import { apiRequest, ApiError } from '@/lib/api-client';
@@ -71,6 +73,62 @@ export function CampaignWizard({
   const [commentReplyText, setCommentReplyText] = React.useState('');
   const [followCheckEnabled, setFollowCheckEnabled] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [isListening, setIsListening] = React.useState(false);
+
+  // Voice Create (AI Speech-to-Automation Assistant)
+  const handleVoiceCreate = () => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error('Speech recognition is not supported on this browser. Please use Google Chrome.');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        toast.info('🎙️ Listening... Speak your campaign trigger and message instructions now!');
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setIsListening(false);
+        toast.success(`Voice Captured: "${transcript}"`);
+
+        // Natural Language Parsing
+        const matchKw =
+          transcript.match(/comment[s]?\s+([A-Z0-9_-]+)/i) ||
+          transcript.match(/keyword\s+([A-Z0-9_-]+)/i) ||
+          transcript.match(/word\s+([A-Z0-9_-]+)/i);
+
+        if (matchKw && matchKw[1]) {
+          setKeywords(matchKw[1].toUpperCase());
+        } else {
+          setKeywords('LINK');
+        }
+
+        setName(
+          `Voice Campaign (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`,
+        );
+        setReplyMessage(transcript);
+        toast.success('Voice Create: Auto-filled trigger keyword and message template!');
+      };
+
+      recognition.onerror = (e: any) => {
+        setIsListening(false);
+        toast.error('Voice Assistant: Speech not detected or microphone access denied.');
+      };
+
+      recognition.start();
+    } catch (e) {
+      setIsListening(false);
+      toast.error('Failed to initialize Voice Assistant.');
+    }
+  };
 
   // Live posts state
   const [posts, setPosts] = React.useState<LivePost[]>([]);
@@ -429,11 +487,27 @@ export function CampaignWizard({
                       animate={{ opacity: 1, x: 0 }}
                       className="space-y-4"
                     >
-                      <div>
-                        <h3 className="text-base font-extrabold text-white">Campaign Details</h3>
-                        <p className="text-xs text-gray-400">
-                          Configure name guidelines and automation triggers.
-                        </p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-base font-extrabold text-white">Campaign Details</h3>
+                          <p className="text-xs text-gray-400">
+                            Configure name guidelines and automation triggers.
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          onClick={handleVoiceCreate}
+                          variant="outline"
+                          size="sm"
+                          className={`text-xs font-bold gap-1.5 border-primary/40 ${
+                            isListening
+                              ? 'bg-red-500/20 text-red-400 animate-pulse border-red-500'
+                              : 'bg-primary/10 text-primary hover:bg-primary/20'
+                          }`}
+                        >
+                          <Mic className="w-3.5 h-3.5" />
+                          <span>{isListening ? 'Listening...' : 'Voice Create'}</span>
+                        </Button>
                       </div>
 
                       <div className="space-y-1.5">
@@ -736,6 +810,25 @@ export function CampaignWizard({
                           {errors.replyMessage && (
                             <p className="text-[10px] text-red-400 mt-1">{errors.replyMessage}</p>
                           )}
+                          <div className="p-2.5 rounded-xl bg-primary/10 border border-primary/20 text-[10px] text-primary space-y-1">
+                            <div className="font-bold flex items-center gap-1">
+                              <Sparkles className="w-3 h-3" /> Anti-Spam Copy Variations
+                              (Auto-Rotation)
+                            </div>
+                            <p className="text-gray-300 leading-normal">
+                              Use pipe separators{' '}
+                              <code className="bg-black/30 px-1 py-0.5 rounded text-white font-mono">
+                                |
+                              </code>{' '}
+                              to add multiple copy variations (e.g.,{' '}
+                              <span className="italic">
+                                Hey {'{name}'}! Here is your link: https://dmpilot.org | Hi{' '}
+                                {'{name}'}, tap here to get access: https://dmpilot.org
+                              </span>
+                              ). AutoDM rotates copy automatically to keep account reputation 100%
+                              safe.
+                            </p>
+                          </div>
                         </div>
                       )}
 

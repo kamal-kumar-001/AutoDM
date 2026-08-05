@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCampaignDto, UpdateCampaignDto } from './dto/campaign.dto';
 import { CampaignStatus } from '@prisma/client';
@@ -25,6 +25,16 @@ export class CampaignService {
 
     if (!account) {
       throw new NotFoundException('Connected Instagram account not found');
+    }
+
+    // 2. Verify keyword quota limits
+    if (dto.keywords && dto.keywords.length > 0) {
+      const { limits } = await this.subscriptionService.getLimits(userId);
+      if (limits.max_keywords !== -1 && dto.keywords.length > limits.max_keywords) {
+        throw new ForbiddenException(
+          `Keyword limit exceeded. Your plan allows a maximum of ${limits.max_keywords} keywords per campaign.`,
+        );
+      }
     }
 
     // 2. Perform nested database write to save campaign and trigger configurations
@@ -206,6 +216,14 @@ export class CampaignService {
 
     // Update keywords if provided
     if (dto.keywords) {
+      if (dto.keywords.length > 0) {
+        const { limits } = await this.subscriptionService.getLimits(userId);
+        if (limits.max_keywords !== -1 && dto.keywords.length > limits.max_keywords) {
+          throw new ForbiddenException(
+            `Keyword limit exceeded. Your plan allows a maximum of ${limits.max_keywords} keywords per campaign.`,
+          );
+        }
+      }
       await this.prisma.keyword.deleteMany({
         where: { campaignId: id },
       });
@@ -321,6 +339,8 @@ export class CampaignService {
         posts: true,
       },
     });
+
+    await this.subscriptionService.incrementUsage(userId, 'max_campaigns', 1);
 
     await this.auditLogService.log({
       userId,

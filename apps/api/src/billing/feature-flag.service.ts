@@ -37,27 +37,27 @@ const DEFAULT_FLAGS: Array<{ key: string; description: string; enabledForPlans: 
   {
     key: 'DM_VARIANTS',
     description: 'Anti-Spam Copy Variation Rotation',
-    enabledForPlans: 'PRO,ENTERPRISE',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
   {
     key: 'VIRAL_QUEUE',
     description: 'Redis Surge-Paced Viral Queue Protection',
-    enabledForPlans: 'PRO,ENTERPRISE',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
   {
     key: 'SPIKE_ALERTS',
     description: 'Real-Time Mobile PWA Push Alerts',
-    enabledForPlans: 'PRO,ENTERPRISE',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
   {
     key: 'VOICE_CREATE',
     description: 'Voice Funnel Speech-to-Automation',
-    enabledForPlans: 'PRO,ENTERPRISE',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
   {
     key: 'FOLLOW_CHECK_GATE',
     description: 'Follow-to-Unlock Quick Reply Gate',
-    enabledForPlans: 'PRO,ENTERPRISE',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
   {
     key: 'ANALYTICS_ADVANCED',

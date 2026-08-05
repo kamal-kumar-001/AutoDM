@@ -61,7 +61,8 @@ export class CampaignController {
   }
 
   @Post(':id/duplicate')
-  @UseGuards(EmailVerificationGuard)
+  @UseGuards(UsageLimitGuard, EmailVerificationGuard)
+  @CheckLimit('max_campaigns')
   @HttpCode(HttpStatus.CREATED)
   duplicate(@GetUser() user: { id: string }, @Param('id') id: string) {
     return this.campaignService.duplicate(user.id, id);

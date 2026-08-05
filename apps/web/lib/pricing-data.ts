@@ -1,38 +1,45 @@
-import { BillingPlan, FeatureFlag, PromoSettings, PricingPromoResponse } from '@/types';
+import {
+  BillingPlan,
+  FeatureFlag,
+  PromoSettings,
+  PricingPromoResponse,
+  ComparisonCategory,
+} from '@/types';
+
+// ─── Fallback defaults (used only when API is unreachable) ────────────────────
+// Real data comes from the database via GET /pricing-promo, controlled by Admin Panel.
 
 export const DEFAULT_PLANS: BillingPlan[] = [
   {
-    id: 'plan-free',
     key: 'FREE',
     name: 'Free',
     description: 'Ideal for individual creators getting started with smart DM automation',
     priceMonthly: 0,
     priceYearly: 0,
-    campaignLimit: 2,
-    keywordLimit: 5,
-    dmLimitMonthly: 200,
+    campaignLimit: -1,
+    keywordLimit: -1,
+    dmLimitMonthly: -1,
   },
   {
-    id: 'plan-pro',
     key: 'PRO',
     name: 'Pro',
     description: 'Unlimited everything for serious creators & growing digital brands',
     priceMonthly: 999,
     priceYearly: 9990,
-    campaignLimit: 9999,
-    keywordLimit: 9999,
-    dmLimitMonthly: 999999,
+    campaignLimit: -1,
+    keywordLimit: -1,
+    dmLimitMonthly: -1,
+    highlight: true,
   },
   {
-    id: 'plan-agency',
     key: 'ENTERPRISE',
     name: 'Agency',
     description: 'Custom infrastructure & multi-seat workspace for agencies & big creators',
     priceMonthly: 0,
     priceYearly: 0,
-    campaignLimit: 9999,
-    keywordLimit: 9999,
-    dmLimitMonthly: 999999,
+    campaignLimit: -1,
+    keywordLimit: -1,
+    dmLimitMonthly: -1,
   },
 ];
 
@@ -59,61 +66,56 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlag[] = [
   {
     id: 'flag-reply-desk',
     key: 'REPLY_DESK',
-    description: 'AI Query Filtering & Real Buyer Question Surface',
+    description: 'Smart Reply Desk AI Query Filter',
     enabledForPlans: 'FREE,PRO,ENTERPRISE',
     isEnabled: true,
   },
   {
     id: 'flag-multilingual',
     key: 'MULTILINGUAL_HINGLISH',
-    description: '10+ Regional Languages & Hinglish/Tanglish Processing',
+    description: 'Hinglish & Regional Language Engine',
     enabledForPlans: 'FREE,PRO,ENTERPRISE',
     isEnabled: true,
   },
   {
     id: 'flag-dm-variants',
     key: 'DM_VARIANTS',
-    description: 'Anti-Spam DM Variation Rotation Every 50 Sends',
+    description: 'Anti-Spam Copy Variation Rotation',
     enabledForPlans: 'PRO,ENTERPRISE',
     isEnabled: true,
   },
   {
     id: 'flag-viral-queue',
     key: 'VIRAL_QUEUE',
-    description: 'Automated Surge Pacing & Spam Alarm Protection',
+    description: 'Redis Surge-Paced Viral Queue Protection',
     enabledForPlans: 'PRO,ENTERPRISE',
     isEnabled: true,
   },
   {
     id: 'flag-spike-alerts',
     key: 'SPIKE_ALERTS',
-    description: 'Real-time Mobile Push & Dashboard Surge Alerts',
+    description: 'Real-Time Mobile PWA Push Alerts',
     enabledForPlans: 'PRO,ENTERPRISE',
     isEnabled: true,
   },
   {
     id: 'flag-voice-create',
     key: 'VOICE_CREATE',
-    description: 'Speech-to-Automation AI Campaign Builder',
+    description: 'Voice Funnel Speech-to-Automation',
     enabledForPlans: 'PRO,ENTERPRISE',
     isEnabled: true,
   },
   {
     id: 'flag-follow-gate',
     key: 'FOLLOW_CHECK_GATE',
-    description: 'Follow-to-Unlock Verification & Native Quick Replies',
+    description: 'Follow-to-Unlock Quick Reply Gate',
     enabledForPlans: 'PRO,ENTERPRISE',
     isEnabled: true,
   },
 ];
 
-export const DEFAULT_PRICING_DATA: PricingPromoResponse = {
-  plans: DEFAULT_PLANS,
-  promo: DEFAULT_PROMO,
-  featureFlags: DEFAULT_FEATURE_FLAGS,
-};
-
-export const COMPARISON_SPECIFICATIONS = [
+// Fallback comparison matrix — real data comes from /pricing-promo API
+export const DEFAULT_COMPARISON_MATRIX: ComparisonCategory[] = [
   {
     category: 'Core Capabilities',
     features: [
@@ -125,14 +127,14 @@ export const COMPARISON_SPECIFICATIONS = [
       },
       {
         name: 'Active Automation Campaigns',
-        free: '1 Campaign',
+        free: '∞ Unlimited',
         pro: '∞ Unlimited',
         agency: '∞ Unlimited',
       },
-      { name: 'Monthly DM Volume', free: '500 DMs/mo', pro: '∞ Unlimited', agency: '∞ Unlimited' },
+      { name: 'Monthly DM Volume', free: '∞ Unlimited', pro: '∞ Unlimited', agency: '∞ Unlimited' },
       {
         name: 'Keywords Per Campaign',
-        free: '5 Keywords',
+        free: '∞ Unlimited',
         pro: '∞ Unlimited',
         agency: '∞ Unlimited',
       },
@@ -141,13 +143,13 @@ export const COMPARISON_SPECIFICATIONS = [
   {
     category: 'Smart Engines',
     features: [
-      { name: 'Smart Reply Desk (Buyer Filter)', free: true, pro: true, agency: true },
+      { name: 'Smart Reply Desk AI Query Filter', free: true, pro: true, agency: true },
       { name: 'Hinglish & Regional Language Engine', free: true, pro: true, agency: true },
-      { name: 'Anti-Spam Copy Variation Rotation', free: false, pro: true, agency: true },
-      { name: 'Redis Surge-Paced Viral Queue', free: false, pro: true, agency: true },
-      { name: 'Real-Time Mobile PWA Push Alerts', free: false, pro: true, agency: true },
-      { name: 'Voice Funnel Builder', free: false, pro: true, agency: true },
-      { name: 'Follow-Gate Unlock Quick Replies', free: false, pro: true, agency: true },
+      { name: 'Anti-Spam Copy Variation Rotation', free: true, pro: true, agency: true },
+      { name: 'Redis Surge-Paced Viral Queue Protection', free: true, pro: true, agency: true },
+      { name: 'Real-Time Mobile PWA Push Alerts', free: true, pro: true, agency: true },
+      { name: 'Voice Funnel Speech-to-Automation', free: true, pro: true, agency: true },
+      { name: 'Follow-to-Unlock Quick Reply Gate', free: true, pro: true, agency: true },
     ],
   },
   {
@@ -164,3 +166,10 @@ export const COMPARISON_SPECIFICATIONS = [
     ],
   },
 ];
+
+export const DEFAULT_PRICING_DATA: PricingPromoResponse = {
+  plans: DEFAULT_PLANS,
+  promo: DEFAULT_PROMO,
+  featureFlags: DEFAULT_FEATURE_FLAGS,
+  comparisonMatrix: DEFAULT_COMPARISON_MATRIX,
+};

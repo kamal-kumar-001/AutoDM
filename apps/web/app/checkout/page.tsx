@@ -17,36 +17,6 @@ import {
 import { toast } from '@autodm/ui';
 import { apiRequest, API_BASE_URL } from '@/lib/api-client';
 
-const PLAN_PRICES: Record<
-  string,
-  { name: string; monthly: number; yearly: number; features: string[] }
-> = {
-  PRO: {
-    name: 'Pro Creator',
-    monthly: 999,
-    yearly: 9990,
-    features: [
-      'Unlimited Story & Comment Auto-DMs',
-      'Advanced Personalization ({name}, {username})',
-      'Public Comment Auto-Replies',
-      'Live Activity & Campaign Analytics',
-      'Priority Webhook Dispatch',
-    ],
-  },
-  ENTERPRISE: {
-    name: 'Enterprise Scale',
-    monthly: 4999,
-    yearly: 49990,
-    features: [
-      'Everything in Pro Plan',
-      'Unlimited Campaigns & Multi-Accounts',
-      'Dedicated Account Manager',
-      'Custom Rate-Limit Overrides',
-      'SLA & Priority Support',
-    ],
-  },
-};
-
 export default function CheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -65,6 +35,8 @@ export default function CheckoutPage() {
   const [loading, setLoading] = React.useState(false);
   const [promoDiscount, setPromoDiscount] = React.useState(0);
   const [promoText, setPromoText] = React.useState('');
+  const [plansData, setPlansData] = React.useState<any[]>([]);
+  const currentPlan = plansData.find((p: any) => p.key === planKey);
 
   // Fetch promotions config from public endpoint
   React.useEffect(() => {
@@ -74,6 +46,9 @@ export default function CheckoutPage() {
         if (resJson && resJson.success && resJson.data && resJson.data.promo) {
           setPromoDiscount(resJson.data.promo.discountPercent || 0);
           setPromoText(resJson.data.promo.text || '');
+        }
+        if (resJson && resJson.success && resJson.data) {
+          setPlansData(resJson.data.plans || []);
         }
       })
       .catch((err) => console.error('Failed to load promotions config on checkout page', err));
@@ -105,7 +80,31 @@ export default function CheckoutPage() {
     }
   }, [session]);
 
-  const planInfo = PLAN_PRICES[planKey] || PLAN_PRICES.PRO;
+  const planInfo = currentPlan
+    ? {
+        name: currentPlan.name || planKey,
+        monthly: currentPlan.priceMonthly || 999,
+        yearly: currentPlan.priceYearly || 9990,
+        features: [
+          'Unlimited Story & Comment Auto-DMs',
+          'Advanced Personalization ({name}, {username})',
+          'Public Comment Auto-Replies',
+          'Live Activity & Campaign Analytics',
+          'Priority Webhook Dispatch',
+        ],
+      }
+    : {
+        name: planKey === 'ENTERPRISE' ? 'Agency' : 'Pro Creator',
+        monthly: planKey === 'ENTERPRISE' ? 4999 : 999,
+        yearly: planKey === 'ENTERPRISE' ? 49990 : 9990,
+        features: [
+          'Unlimited Story & Comment Auto-DMs',
+          'Advanced Personalization ({name}, {username})',
+          'Public Comment Auto-Replies',
+          'Live Activity & Campaign Analytics',
+          'Priority Webhook Dispatch',
+        ],
+      };
   const originalPrice = cycle === 'YEARLY' ? planInfo.yearly : planInfo.monthly;
   const basePrice = Math.round(originalPrice * (1 - promoDiscount / 100));
   const tax = Math.round(basePrice * 0.18);

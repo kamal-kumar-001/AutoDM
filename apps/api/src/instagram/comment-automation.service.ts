@@ -143,6 +143,46 @@ export class CommentAutomationService {
     }
   }
 
+  private matchKeyword(
+    normalizedText: string,
+    k: { keyword: string; matchingRule: MatchingRule },
+  ): boolean {
+    const kw = k.keyword.toLowerCase().trim();
+
+    // Direct match
+    if (k.matchingRule === MatchingRule.EXACT && normalizedText === kw) return true;
+    if (k.matchingRule === MatchingRule.CONTAINS && normalizedText.includes(kw)) return true;
+    if (k.matchingRule === MatchingRule.STARTS_WITH && normalizedText.startsWith(kw)) return true;
+
+    // Hinglish & Regional Intent Synonyms
+    const hinglishSynonyms: Record<string, string[]> = {
+      price: [
+        'price',
+        'prc',
+        'rate',
+        'cost',
+        'dam',
+        'kitne ka hai',
+        'kitne ka h',
+        'kya price hai',
+        'price kya h',
+        'how much',
+        'कीमत',
+        'விலை',
+      ],
+      link: ['link', 'lnk', 'link do', 'link bhejo', 'link karo', 'send link', 'url', 'लिंक'],
+      info: ['info', 'details', 'detail', 'jaankari', 'batao', 'जानकारी', 'தகவல்'],
+      buy: ['buy', 'order', 'khareedna', 'purchase', 'खरीदना', 'வாங்க'],
+    };
+
+    const synonyms = hinglishSynonyms[kw];
+    if (synonyms) {
+      return synonyms.some((syn) => normalizedText.includes(syn));
+    }
+
+    return false;
+  }
+
   private matchesCampaign(
     campaign: {
       type: CampaignType;
@@ -163,21 +203,9 @@ export class CommentAutomationService {
         mediaId === '123123123' || campaign.posts.some((p) => p.mediaId === mediaId);
       if (!isMonitoredPost) return false;
 
-      // 2. If keywords are specified, must also match at least one keyword
+      // 2. If keywords are specified, must also match at least one keyword (with Hinglish support)
       if (campaign.keywords.length > 0) {
-        return campaign.keywords.some((k) => {
-          const kw = k.keyword.toLowerCase().trim();
-          if (k.matchingRule === MatchingRule.EXACT) {
-            return normalizedText === kw;
-          }
-          if (k.matchingRule === MatchingRule.CONTAINS) {
-            return normalizedText.includes(kw);
-          }
-          if (k.matchingRule === MatchingRule.STARTS_WITH) {
-            return normalizedText.startsWith(kw);
-          }
-          return false;
-        });
+        return campaign.keywords.some((k) => this.matchKeyword(normalizedText, k));
       }
 
       // Default: match any comment on the monitored post if no keywords are set
@@ -185,19 +213,7 @@ export class CommentAutomationService {
     }
 
     if (campaign.type === CampaignType.KEYWORD_TO_DM) {
-      return campaign.keywords.some((k) => {
-        const kw = k.keyword.toLowerCase().trim();
-        if (k.matchingRule === MatchingRule.EXACT) {
-          return normalizedText === kw;
-        }
-        if (k.matchingRule === MatchingRule.CONTAINS) {
-          return normalizedText.includes(kw);
-        }
-        if (k.matchingRule === MatchingRule.STARTS_WITH) {
-          return normalizedText.startsWith(kw);
-        }
-        return false;
-      });
+      return campaign.keywords.some((k) => this.matchKeyword(normalizedText, k));
     }
 
     // WELCOME_DM — always match (triggered by new messages, not comments)

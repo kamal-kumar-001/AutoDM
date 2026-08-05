@@ -4,9 +4,10 @@ import { Plan, SubscriptionStatus, BillingCycle } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import Razorpay from 'razorpay';
 
-// ─── Plan limits ─────────────────────────────────────────────────────────────
-// Default fallback values set to unlimited for App Review mode safety
-export const PLAN_LIMITS: Record<Plan, Record<string, number>> = {
+// ─── Fallback plan limits (used only if BillingPlan DB table is empty) ────────
+// These are the safety defaults — the real values come from the database
+// which is controlled via the Admin Panel → Billing Plans.
+export const FALLBACK_PLAN_LIMITS: Record<Plan, Record<string, number>> = {
   FREE: {
     max_campaigns: -1,
     max_accounts: -1,
@@ -27,58 +28,6 @@ export const PLAN_LIMITS: Record<Plan, Record<string, number>> = {
   },
 };
 
-// ─── Plan metadata (used for plan picker UI) ──────────────────────────────────
-export const PLAN_METADATA = [
-  {
-    plan: Plan.FREE,
-    label: 'Free',
-    price: 0,
-    currency: 'INR',
-    description: 'Get started with basic automation.',
-    highlight: false,
-    features: [
-      '1 Instagram account',
-      'Unlimited campaigns',
-      'Unlimited DMs / month',
-      'Unlimited keywords',
-      'Basic analytics',
-    ],
-  },
-  {
-    plan: Plan.PRO,
-    label: 'Pro',
-    price: 999,
-    currency: 'INR',
-    description: 'For serious creators scaling their reach.',
-    highlight: true,
-    features: [
-      '3 Instagram accounts',
-      'Unlimited campaigns',
-      'Unlimited DMs / month',
-      'Unlimited keywords',
-      'Advanced analytics',
-      'Priority support',
-    ],
-  },
-  {
-    plan: Plan.ENTERPRISE,
-    label: 'Enterprise',
-    price: -1, // contact sales
-    currency: 'INR',
-    description: 'Unlimited scale for agencies & brands.',
-    highlight: false,
-    features: [
-      'Unlimited accounts',
-      'Unlimited campaigns',
-      'Unlimited DMs',
-      'Unlimited keywords',
-      'Full analytics',
-      'Dedicated support',
-      'SLA guarantee',
-    ],
-  },
-];
-
 @Injectable()
 export class SubscriptionService {
   constructor(
@@ -86,10 +35,30 @@ export class SubscriptionService {
     private readonly configService: ConfigService,
   ) {}
 
-  /** Get or auto-create a FREE subscription for a user. */
+  /** Get or auto-create a FREE subscription for a user, enforcing expiration checks. */
   async getOrCreate(userId: string) {
     const existing = await this.prisma.subscription.findUnique({ where: { userId } });
-    if (existing) return existing;
+    if (existing) {
+      // Check if subscription period has expired
+      if (
+        existing.expiresAt &&
+        existing.expiresAt < new Date() &&
+        existing.plan !== Plan.FREE &&
+        existing.status !== SubscriptionStatus.EXPIRED
+      ) {
+        console.log(
+          `[Subscription Service] Subscription for user ${userId} expired on ${existing.expiresAt.toISOString()}. Reverting to FREE tier.`,
+        );
+        return this.prisma.subscription.update({
+          where: { userId },
+          data: {
+            plan: Plan.FREE,
+            status: SubscriptionStatus.EXPIRED,
+          },
+        });
+      }
+      return existing;
+    }
 
     return this.prisma.subscription.create({
       data: {
@@ -101,20 +70,23 @@ export class SubscriptionService {
     });
   }
 
-  /** Return plan limits for a user's current plan. */
+  /** Return plan limits for a user's current plan — reads from BillingPlan DB (Admin Panel controlled). */
   async getLimits(userId: string) {
     const sub = await this.getOrCreate(userId);
 
-    // Unlimited access active for all plans
-    return {
-      subscription: sub,
-      limits: {
-        max_campaigns: -1,
-        max_keywords: -1,
-        max_dms_per_month: -1,
-        max_accounts: -1,
-      },
-    };
+    // Read limits from the BillingPlan DB table (set via Admin Panel → Billing Plans)
+    const planConfig = await this.prisma.billingPlan.findUnique({ where: { key: sub.plan } });
+
+    const limits = planConfig
+      ? {
+          max_campaigns: planConfig.campaignLimit,
+          max_keywords: planConfig.keywordLimit,
+          max_dms_per_month: planConfig.dmLimitMonthly,
+          max_accounts: -1, // accounts limit is not in BillingPlan schema yet, default unlimited
+        }
+      : FALLBACK_PLAN_LIMITS[sub.plan] || FALLBACK_PLAN_LIMITS.FREE;
+
+    return { subscription: sub, limits };
   }
 
   /** Check whether a user is within a specific usage limit. Only DELIVERED messages count toward DM quota. */
@@ -161,28 +133,61 @@ export class SubscriptionService {
     });
   }
 
-  /** Get all plans with metadata. */
+  /** Get all plans with metadata — returns raw DB values for the frontend to render. */
   async getPlans() {
-    const dbPlans = await this.prisma.billingPlan.findMany();
-    if (dbPlans.length === 0) return PLAN_METADATA;
+    const dbPlans = await this.prisma.billingPlan.findMany({
+      orderBy: { priceMonthly: 'asc' },
+    });
+
+    if (dbPlans.length === 0) {
+      // Fallback if DB is empty (should not happen after seed)
+      return [
+        {
+          key: 'FREE',
+          name: 'Free',
+          description: 'Get started with basic automation.',
+          priceMonthly: 0,
+          priceYearly: 0,
+          campaignLimit: -1,
+          keywordLimit: -1,
+          dmLimitMonthly: -1,
+          highlight: false,
+        },
+        {
+          key: 'PRO',
+          name: 'Pro',
+          description: 'For serious creators scaling their reach.',
+          priceMonthly: 999,
+          priceYearly: 9990,
+          campaignLimit: -1,
+          keywordLimit: -1,
+          dmLimitMonthly: -1,
+          highlight: true,
+        },
+        {
+          key: 'ENTERPRISE',
+          name: 'Agency',
+          description: 'Unlimited scale for agencies & brands.',
+          priceMonthly: 0,
+          priceYearly: 0,
+          campaignLimit: -1,
+          keywordLimit: -1,
+          dmLimitMonthly: -1,
+          highlight: false,
+        },
+      ];
+    }
 
     return dbPlans.map((p) => ({
-      plan: p.key,
-      label: p.name,
-      price: p.priceMonthly,
-      currency: 'INR',
+      key: p.key,
+      name: p.name,
       description: p.description || '',
+      priceMonthly: p.priceMonthly,
+      priceYearly: p.priceYearly,
+      campaignLimit: p.campaignLimit,
+      keywordLimit: p.keywordLimit,
+      dmLimitMonthly: p.dmLimitMonthly,
       highlight: p.key === 'PRO',
-      features: [
-        `${p.campaignLimit === -1 ? 'Unlimited' : p.campaignLimit} campaigns`,
-        `${p.keywordLimit === -1 ? 'Unlimited' : p.keywordLimit} keywords`,
-        `${p.dmLimitMonthly === -1 ? 'Unlimited' : p.dmLimitMonthly.toLocaleString()} DMs / month`,
-        p.key === 'FREE'
-          ? 'Basic analytics'
-          : p.key === 'PRO'
-            ? 'Advanced analytics'
-            : 'Full analytics',
-      ],
     }));
   }
 
@@ -198,6 +203,16 @@ export class SubscriptionService {
     paymentLinkId?: string,
     billingDetails?: any,
   ) {
+    // Prevent duplicate processing if invoice for paymentId already exists
+    if (paymentId) {
+      const existingInvoice = await this.prisma.invoice.findFirst({
+        where: { paymentId },
+      });
+      if (existingInvoice) {
+        return this.prisma.subscription.findUnique({ where: { userId } });
+      }
+    }
+
     const daysToAdd = cycle === BillingCycle.YEARLY ? 365 : 30;
     const expiresAt = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000);
 
@@ -256,12 +271,12 @@ export class SubscriptionService {
         {
           key: Plan.FREE,
           name: 'Free Creator',
-          description: 'Get started with basic automation.',
+          description: 'Get started with smart DM automation.',
           priceMonthly: 0,
           priceYearly: 0,
-          campaignLimit: 1,
-          keywordLimit: 5,
-          dmLimitMonthly: 100,
+          campaignLimit: -1,
+          keywordLimit: -1,
+          dmLimitMonthly: -1,
         },
         {
           key: Plan.PRO,
@@ -269,16 +284,16 @@ export class SubscriptionService {
           description: 'For serious creators scaling their reach.',
           priceMonthly: 999,
           priceYearly: 9990,
-          campaignLimit: 10,
-          keywordLimit: 50,
-          dmLimitMonthly: 5000,
+          campaignLimit: -1,
+          keywordLimit: -1,
+          dmLimitMonthly: -1,
         },
         {
           key: Plan.ENTERPRISE,
-          name: 'Enterprise Scale',
+          name: 'Agency Scale',
           description: 'Unlimited scale for agencies & brands.',
-          priceMonthly: 4999,
-          priceYearly: 49990,
+          priceMonthly: 0,
+          priceYearly: 0,
           campaignLimit: -1,
           keywordLimit: -1,
           dmLimitMonthly: -1,
@@ -355,20 +370,38 @@ export class SubscriptionService {
     cycle: BillingCycle = BillingCycle.MONTHLY,
     billingDetails?: any,
   ) {
-    // Normalize cycle string
+    const rawPlan = String(plan).toUpperCase();
+    if (rawPlan === 'FREE') {
+      throw new BadRequestException('Free plan does not require payment checkout.');
+    }
+
     const normalizedCycle =
       String(cycle).toUpperCase() === 'YEARLY' ? BillingCycle.YEARLY : BillingCycle.MONTHLY;
-    const normalizedPlan = String(plan).toUpperCase() === 'ENTERPRISE' ? Plan.ENTERPRISE : Plan.PRO;
+    const normalizedPlan = rawPlan === 'ENTERPRISE' ? Plan.ENTERPRISE : Plan.PRO;
+
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+
+    const planConfig = await this.prisma.billingPlan.findUnique({
+      where: { key: normalizedPlan },
+    });
+
+    if (normalizedPlan === Plan.ENTERPRISE && (!planConfig || planConfig.priceMonthly <= 0)) {
+      throw new BadRequestException(
+        'Enterprise plan requires custom sales onboarding. Please contact sales.',
+      );
+    }
 
     const razorpayKeyId = this.configService.get<string>('RAZORPAY_KEY_ID');
     const razorpayKeySecret = this.configService.get<string>('RAZORPAY_KEY_SECRET');
+    const allowMockCheckout = this.configService.get<string>('ALLOW_MOCK_CHECKOUT') === 'true';
 
-    // If Razorpay keys are missing or set to mock placeholders, simulate instant successful checkout for dev mode
+    // If Razorpay keys are missing/placeholder AND mock checkout is explicitly allowed
     if (
-      !razorpayKeyId ||
-      !razorpayKeySecret ||
-      razorpayKeyId.includes('mock') ||
-      razorpayKeyId.includes('placeholder')
+      (!razorpayKeyId ||
+        !razorpayKeySecret ||
+        razorpayKeyId.includes('mock') ||
+        razorpayKeyId.includes('placeholder')) &&
+      allowMockCheckout
     ) {
       await this.changePlan(
         userId,
@@ -378,8 +411,11 @@ export class SubscriptionService {
         'plink_mock_' + Date.now(),
         billingDetails,
       );
-      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
       return { url: `${frontendUrl}/settings?payment=success` };
+    }
+
+    if (!razorpayKeyId || !razorpayKeySecret || razorpayKeyId.includes('placeholder')) {
+      throw new BadRequestException('Razorpay payment gateway is not configured on the server.');
     }
 
     try {
@@ -388,22 +424,10 @@ export class SubscriptionService {
         key_secret: razorpayKeySecret,
       });
 
-      const planConfig = await this.prisma.billingPlan.findUnique({
-        where: { key: normalizedPlan },
-      });
-
       const basePrice =
         normalizedCycle === BillingCycle.YEARLY
-          ? planConfig
-            ? planConfig.priceYearly
-            : normalizedPlan === Plan.PRO
-              ? 9990
-              : 49990
-          : planConfig
-            ? planConfig.priceMonthly
-            : normalizedPlan === Plan.PRO
-              ? 999
-              : 4999;
+          ? planConfig?.priceYearly || (normalizedPlan === Plan.PRO ? 9990 : 49990)
+          : planConfig?.priceMonthly || (normalizedPlan === Plan.PRO ? 999 : 4999);
 
       // Fetch promotions discount config
       const promoEnabledSetting = await this.prisma.systemSetting.findUnique({
@@ -414,9 +438,25 @@ export class SubscriptionService {
       });
 
       const isPromoEnabled = promoEnabledSetting?.value === 'true';
-      const promoDiscountPercent = isPromoEnabled
+      let promoDiscountPercent = isPromoEnabled
         ? parseInt(promoDiscountSetting?.value || '0', 10)
         : 0;
+
+      // Clamp discount percentage between 0 and 100
+      promoDiscountPercent = Math.max(0, Math.min(100, promoDiscountPercent));
+
+      // Handle 100% discount promo — bypass Razorpay since ₹0 payment links fail
+      if (promoDiscountPercent === 100) {
+        await this.changePlan(
+          userId,
+          normalizedPlan,
+          normalizedCycle,
+          'pay_promo_100_' + Date.now(),
+          'plink_promo_100_' + Date.now(),
+          billingDetails,
+        );
+        return { url: `${frontendUrl}/settings?payment=success` };
+      }
 
       const discountedBasePrice = Math.round(basePrice * (1 - promoDiscountPercent / 100));
       const totalAmountPaise = Math.round(discountedBasePrice * 1.18 * 100);
@@ -438,7 +478,7 @@ export class SubscriptionService {
         currency: 'INR',
         accept_partial: false,
         first_min_partial_amount: 0,
-        description: `AutoDM ${normalizedPlan} Plan (${normalizedCycle}) - Grow your audience automatically.`,
+        description: `AutoDM ${normalizedPlan} Plan (${normalizedCycle}) - Automated Instagram Growth`,
         customer: {
           name: billingDetails?.name || user?.name || 'Creator',
           email: billingDetails?.email || user?.email || 'creator@autodm.com',
@@ -455,30 +495,17 @@ export class SubscriptionService {
           cycle: normalizedCycle,
           billingDetails: billingDetails ? JSON.stringify(billingDetails) : '',
         },
-        callback_url: `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'}/settings?payment=success`,
+        callback_url: `${frontendUrl}/settings?payment=success`,
         callback_method: 'get',
       });
 
       return { url: paymentLink.short_url };
     } catch (error: any) {
       console.error('Razorpay payment link creation error:', error);
-      // If live keys fail (e.g. invalid credentials or sandbox mode error), fallback gracefully or return clear error
-      const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-      if (process.env.NODE_ENV !== 'production') {
-        await this.changePlan(
-          userId,
-          normalizedPlan,
-          normalizedCycle,
-          'pay_dev_fallback_' + Date.now(),
-          'plink_dev_fallback_' + Date.now(),
-          billingDetails,
-        );
-        return { url: `${frontendUrl}/settings?payment=success` };
-      }
       throw new BadRequestException(
         error?.error?.description ||
           error?.message ||
-          'Failed to initialize Razorpay checkout gateway.',
+          'Failed to initialize Razorpay checkout gateway. Please verify billing details or try again later.',
       );
     }
   }
