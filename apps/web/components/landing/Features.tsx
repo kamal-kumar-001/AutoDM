@@ -10,15 +10,14 @@ export default function Features() {
   const activeItem = INNOVATIONS_CONTENT.items[activeTab];
   const sectionRef = React.useRef<HTMLDivElement>(null);
 
-  // 3D Scroll Perspective Transformations
+  // Smooth 2D Scroll Transformations (No 3D rotateX GPU text blurriness)
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ['start end', 'end start'],
   });
 
-  const rotateX = useTransform(scrollYProgress, [0, 0.4, 0.8, 1], [15, 0, 0, -15]);
-  const scale = useTransform(scrollYProgress, [0, 0.4, 0.8, 1], [0.95, 1, 1, 0.95]);
-  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.4, 1, 1, 0.4]);
+  const scale = useTransform(scrollYProgress, [0, 0.4, 0.8, 1], [0.98, 1, 1, 0.98]);
+  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.85, 1, 1, 0.85]);
 
   return (
     <div ref={sectionRef} className="space-y-24 py-16 sm:py-24 relative overflow-hidden">
@@ -26,7 +25,7 @@ export default function Features() {
       <div className="absolute top-[15%] left-[-10%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute top-[65%] right-[-10%] w-[500px] h-[500px] bg-accent-cyan/5 rounded-full blur-[140px] pointer-events-none" />
 
-      {/* 1. SIX INNOVATIONS INTERACTIVE SHOWCASE WITH 3D PERSPECTIVE */}
+      {/* 1. SIX INNOVATIONS INTERACTIVE SHOWCASE */}
       <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 space-y-12">
         <div className="text-center max-w-3xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-primary/10 border border-primary/25 text-xs font-bold text-primary uppercase tracking-widest">
@@ -68,23 +67,21 @@ export default function Features() {
           </div>
         </div>
 
-        {/* 3D Scroll Perspective Feature Highlight Card */}
+        {/* Razor-Sharp Feature Highlight Card (No 3D Blur, Crisp Typography) */}
         <motion.div
           style={{
-            rotateX,
             scale,
             opacity,
-            perspective: 1000,
           }}
-          className="max-w-5xl mx-auto glass-card border-gradient rounded-3xl p-6 sm:p-10 relative overflow-hidden shadow-2xl transition-shadow hover:shadow-[0_0_50px_rgba(0,187,136,0.15)]"
+          className="max-w-5xl mx-auto glass-card border-gradient rounded-3xl p-6 sm:p-10 relative overflow-hidden shadow-2xl transition-shadow hover:shadow-[0_0_50px_rgba(0,187,136,0.15)] antialiased"
         >
           <AnimatePresence mode="wait">
             <motion.div
               key={activeItem.id}
-              initial={{ opacity: 0, y: 20, rotateX: 10 }}
-              animate={{ opacity: 1, y: 0, rotateX: 0 }}
-              exit={{ opacity: 0, y: -20, rotateX: -10 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
               className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center"
             >
               {/* Left Column: Specs & Copy */}
@@ -114,8 +111,8 @@ export default function Features() {
                 </ul>
               </div>
 
-              {/* Right Column: Visual Preview Graphic (Glassmorphic Theme, No Harsh Black Box) */}
-              <div className="lg:col-span-6 bg-gradient-to-b from-white/[0.04] to-white/[0.01] backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-4 shadow-glass">
+              {/* Right Column: Visual Preview Graphic (Crisp Solid Glass, No Backdrop Blur Text Distortion) */}
+              <div className="lg:col-span-6 bg-gradient-to-b from-[#111827]/90 to-[#0b101d]/90 border border-white/10 rounded-2xl p-5 space-y-4 shadow-2xl">
                 {activeItem.number === '01' && activeItem.example && (
                   <div className="space-y-3 text-xs">
                     <div className="flex items-center justify-between border-b border-white/10 pb-2">
