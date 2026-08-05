@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { Link2, Sparkles, Layers, Play, CheckCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Link2, Sparkles, Layers, CheckCircle } from 'lucide-react';
 
 export default function SetupGuide() {
   const steps = [
@@ -34,11 +35,17 @@ export default function SetupGuide() {
   return (
     <section
       id="how-it-works"
-      className="py-24 sm:py-32 relative border-t border-white/5 bg-[#030712]"
+      className="py-24 sm:py-32 relative border-t border-white/5 bg-[#030712] overflow-hidden"
     >
       <div className="max-w-7xl mx-auto px-6">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="text-center max-w-3xl mx-auto mb-20 space-y-4"
+        >
           <span className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-black text-primary uppercase tracking-widest">
             Step-by-step Setup
           </span>
@@ -49,14 +56,18 @@ export default function SetupGuide() {
             Link your account, configure your automation campaigns, and start driving conversions
             instantly.
           </p>
-        </div>
+        </motion.div>
 
-        {/* Steps Grid */}
+        {/* Steps Grid with 3D Motion */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 relative max-w-6xl mx-auto">
           {steps.map((item, idx) => (
-            <div
+            <motion.div
               key={idx}
-              className="glass-card rounded-2xl p-6 border border-white/5 hover:border-primary/25 transition-all duration-300 relative group flex flex-col justify-between"
+              initial={{ opacity: 0, y: 30, rotateY: 10 }}
+              whileInView={{ opacity: 1, y: 0, rotateY: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: idx * 0.12 }}
+              className="glass-card rounded-2xl p-6 border border-white/5 hover:border-primary/30 transition-all duration-300 relative group flex flex-col justify-between hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(0,187,136,0.15)]"
             >
               <div className="space-y-4">
                 {/* Icon & Number */}
@@ -64,7 +75,7 @@ export default function SetupGuide() {
                   <div className="h-10 w-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
                     <item.icon className="h-5 w-5" />
                   </div>
-                  <span className="text-3xl font-black text-white/10 group-hover:text-primary/20 transition-colors">
+                  <span className="text-3xl font-black text-white/10 group-hover:text-primary/30 transition-colors font-mono">
                     {item.step}
                   </span>
                 </div>
@@ -77,7 +88,7 @@ export default function SetupGuide() {
                   <p className="text-xs text-gray-400 leading-relaxed">{item.desc}</p>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>

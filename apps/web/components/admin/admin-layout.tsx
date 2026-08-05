@@ -3,7 +3,8 @@
 import * as React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { handleLogout } from '@/lib/auth-helpers';
 import {
   Shield,
   Users,
@@ -128,7 +129,7 @@ export function AdminLayout({ children, activeTab, setActiveTab }: AdminLayoutPr
               </div>
             </div>
             <button
-              onClick={() => signOut()}
+              onClick={() => handleLogout()}
               className="p-1 rounded text-gray-500 hover:text-red-400 hover:bg-white/5"
             >
               <LogOut className="h-3.5 w-3.5" />
@@ -273,7 +274,7 @@ export function AdminLayout({ children, activeTab, setActiveTab }: AdminLayoutPr
                   <button
                     onClick={() => {
                       setIsMobileMenuOpen(false);
-                      signOut();
+                      handleLogout();
                     }}
                     className="p-1 rounded text-gray-500 hover:text-red-400 hover:bg-white/5"
                   >

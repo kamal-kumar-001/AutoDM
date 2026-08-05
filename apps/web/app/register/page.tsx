@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { Button, Input, Label, toast } from '@autodm/ui';
 import { apiRequest } from '@/lib/api-client';
@@ -13,10 +13,10 @@ import Link from 'next/link';
 
 const registerSchema = z
   .object({
-    name: z.string().min(2, 'Name must be at least 2 characters long'),
+    name: z.string().min(2, 'Name must be at least 2 characters'),
     email: z.string().email('Invalid email address'),
-    password: z.string().min(8, 'Password must be at least 8 characters long'),
-    confirmPassword: z.string().min(1, 'Confirm password is required'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    confirmPassword: z.string(),
     acceptTerms: z.boolean().refine((val) => val === true, {
       message: 'You must accept the Terms of Service & Privacy Policy to proceed',
     }),
@@ -30,16 +30,18 @@ type RegisterData = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { status } = useSession();
+  const callbackUrl = searchParams.get('callbackUrl') || searchParams.get('redirect') || '/dashboard';
   const [loading, setLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
   React.useEffect(() => {
     if (status === 'authenticated') {
-      router.push('/dashboard');
+      router.push(callbackUrl);
     }
-  }, [status, router]);
+  }, [status, callbackUrl, router]);
 
   const {
     register,
@@ -67,7 +69,7 @@ export default function RegisterPage() {
       toast.success('Account created successfully!', {
         description: 'Please check your inbox to verify your email address before logging in.',
       });
-      router.push('/login');
+      router.push(callbackUrl !== '/dashboard' ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : '/login');
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : 'Registration failed';
       toast.error(errMsg);
@@ -219,7 +221,10 @@ export default function RegisterPage() {
         {/* Footer */}
         <div className="text-center text-xs text-gray-400 pt-2 border-t border-white/5">
           Already have an account?{' '}
-          <Link href="/login" className="text-primary hover:underline font-medium">
+          <Link
+            href={callbackUrl !== '/dashboard' ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}` : '/login'}
+            className="text-primary hover:underline font-medium"
+          >
             Log in
           </Link>
         </div>

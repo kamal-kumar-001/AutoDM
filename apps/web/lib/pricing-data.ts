@@ -27,9 +27,9 @@ export const DEFAULT_PLANS: BillingPlan[] = [
     id: 'plan-agency',
     key: 'ENTERPRISE',
     name: 'Agency',
-    description: 'Built for agencies & managers handling multiple high-tier creator accounts',
-    priceMonthly: 3990,
-    priceYearly: 29990,
+    description: 'Custom infrastructure & multi-seat workspace for agencies & big creators',
+    priceMonthly: 0,
+    priceYearly: 0,
     campaignLimit: 9999,
     keywordLimit: 9999,
     dmLimitMonthly: 999999,
@@ -47,8 +47,6 @@ export const LAUNCH_SPECIAL_STATS = {
   total: 100,
   remaining: 16,
 };
-
-export const FOUNDING_MEMBER_STATS = LAUNCH_SPECIAL_STATS;
 
 export const DEFAULT_FEATURE_FLAGS: FeatureFlag[] = [
   {
@@ -109,18 +107,6 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlag[] = [
   },
 ];
 
-export const AGENCY_SEAT_OPTIONS = [
-  { seats: 5, label: '5 Team Seats', priceMonthly: 3990, priceYearly: 29990, clientAccounts: 5 },
-  { seats: 10, label: '10 Team Seats', priceMonthly: 6990, priceYearly: 59990, clientAccounts: 10 },
-  {
-    seats: 20,
-    label: '20 Team Seats',
-    priceMonthly: 11990,
-    priceYearly: 99990,
-    clientAccounts: 20,
-  },
-];
-
 export const DEFAULT_PRICING_DATA: PricingPromoResponse = {
   plans: DEFAULT_PLANS,
   promo: DEFAULT_PROMO,
@@ -131,18 +117,8 @@ export const COMPARISON_SPECIFICATIONS = [
   {
     category: 'Core Capabilities',
     features: [
-      {
-        name: '✨ No AutoDM Branding (Whitelabel DMs)',
-        free: 'Included',
-        pro: 'Included',
-        agency: 'Included',
-      },
-      {
-        name: 'Active Automation Campaigns',
-        free: '2 Campaigns',
-        pro: 'Unlimited',
-        agency: 'Unlimited',
-      },
+      { name: '✨ No AutoDM Branding (Whitelabel DMs)', free: 'Included', pro: 'Included', agency: 'Included' },
+      { name: 'Active Automation Campaigns', free: '2 Campaigns', pro: 'Unlimited', agency: 'Unlimited' },
       { name: 'Monthly DM Volume', free: '200 DMs/mo', pro: 'Unlimited', agency: 'Unlimited' },
       { name: 'Keywords Per Campaign', free: '5 Keywords', pro: 'Unlimited', agency: 'Unlimited' },
     ],
@@ -162,13 +138,8 @@ export const COMPARISON_SPECIFICATIONS = [
   {
     category: 'Account & Management',
     features: [
-      {
-        name: 'Connected Instagram Accounts',
-        free: '1 Account',
-        pro: '1 Account',
-        agency: '5 to 20 Accounts',
-      },
-      { name: 'Team Seats', free: '1 Seat', pro: '1 Seat', agency: '5 to 20 Seats' },
+      { name: 'Connected Instagram Accounts', free: '1 Account', pro: '1 Account', agency: 'Custom (5-50+)' },
+      { name: 'Team Seats', free: '1 Seat', pro: '1 Seat', agency: 'Custom Team Workspace' },
       { name: 'Dedicated Account Manager', free: false, pro: false, agency: true },
     ],
   },

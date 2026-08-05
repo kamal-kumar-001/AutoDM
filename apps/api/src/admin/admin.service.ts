@@ -266,6 +266,35 @@ export class AdminService {
     return this.monitoringService.getSystemMetrics();
   }
 
+  async enableAppReviewMode() {
+    await this.prisma.billingPlan.updateMany({
+      data: {
+        campaignLimit: 999999,
+        keywordLimit: 999999,
+        dmLimitMonthly: 999999,
+      },
+    });
+
+    await this.prisma.featureFlag.updateMany({
+      data: {
+        isEnabled: true,
+        enabledForPlans: 'FREE,PRO,ENTERPRISE',
+      },
+    });
+
+    await this.auditLogService.log({
+      action: 'ADMIN_ENABLE_APP_REVIEW_MODE',
+      details:
+        'App Review Mode Enabled: All plans set to unlimited quotas and all feature flags enabled for all plans.',
+    });
+
+    return {
+      success: true,
+      message:
+        'App Review Mode Active: All plans set to unlimited quotas and all feature flags enabled for all plans!',
+    };
+  }
+
   // ─── Billing Plans ───────────────────────────────────────────────
   getBillingPlans() {
     return this.prisma.billingPlan.findMany({

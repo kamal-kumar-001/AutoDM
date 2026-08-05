@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardLayout } from '../../components/dashboard/layout';
 import { CampaignWizard } from '../../components/dashboard/campaign-wizard';
 import { CampaignDetailsModal } from '../../components/dashboard/campaign-details';
+import { UpgradeModal } from '../../components/automations/upgrade-modal';
 import { Button, Input, toast } from '@autodm/ui';
 import {
   Play,
@@ -18,15 +19,23 @@ import {
   AlertCircle,
   Loader2,
   Edit,
+  MoreVertical,
+  Zap,
 } from 'lucide-react';
 import { apiRequest } from '@/lib/api-client';
 
 interface Campaign {
   id: string;
   name: string;
-  type: 'COMMENT_TO_DM' | 'KEYWORD_TO_DM' | 'WELCOME_DM' | 'STORY_REPLY_TO_DM';
-  status: 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
+  type?: string;
+  triggerType?: string;
+  status: string;
   createdAt: string;
+  updatedAt: string;
+  keywords?: Array<{ keyword: string; matchType: string }>;
+  dmTemplate?: string;
+  dmVariants?: string[];
+  followCheckGate?: boolean;
   instagramAccount?: {
     username: string;
     displayName: string | null;
@@ -45,14 +54,22 @@ export default function AutomationsPage() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [typeFilter, setTypeFilter] = React.useState<string>('ALL');
   const [isWizardOpen, setIsWizardOpen] = React.useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = React.useState(false);
   const [editingCampaignId, setEditingCampaignId] = React.useState<string | null>(null);
   const [viewCampaignId, setViewCampaignId] = React.useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = React.useState(false);
+  const [planLimits, setPlanLimits] = React.useState<{ max_campaigns: number }>({ max_campaigns: 999999 });
 
   const fetchCampaigns = async () => {
     try {
-      const data = await apiRequest<Campaign[]>('/campaigns');
+      const [data, limitsData] = await Promise.all([
+        apiRequest<Campaign[]>('/campaigns'),
+        apiRequest<{ limits: { max_campaigns: number } }>('/billing/limits').catch(() => null),
+      ]);
       setCampaigns(data || []);
+      if (limitsData?.limits) {
+        setPlanLimits(limitsData.limits);
+      }
     } catch (error) {
       console.error('Failed to load campaigns list', error);
       toast.error('Failed to load campaigns list');
@@ -66,6 +83,15 @@ export default function AutomationsPage() {
   }, []);
 
   const handleCreateCampaign = () => {
+    const maxCampaigns = planLimits.max_campaigns;
+    const activeCount = campaigns.filter((c) => c.status !== 'DELETED').length;
+
+    // Upfront UX Gating Check: If plan limit is exceeded, show UpgradeModal immediately!
+    if (maxCampaigns !== -1 && maxCampaigns < 99999 && activeCount >= maxCampaigns) {
+      setIsUpgradeModalOpen(true);
+      return;
+    }
+
     setEditingCampaignId(null);
     setIsWizardOpen(true);
   };
@@ -148,10 +174,11 @@ export default function AutomationsPage() {
   };
 
   const filteredCampaigns = campaigns.filter((c) => {
+    const campaignType = c.type || c.triggerType || 'COMMENT_TO_DM';
     const matchesSearch =
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.type.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === 'ALL' ? true : c.type === typeFilter;
+      campaignType.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = typeFilter === 'ALL' ? true : campaignType === typeFilter;
     return matchesSearch && matchesType;
   });
 
@@ -291,9 +318,9 @@ export default function AutomationsPage() {
                             {campaign.name}
                           </h3>
                           <span
-                            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[8px] font-bold tracking-wider ${getCampaignBadgeColor(campaign.type)}`}
+                            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[8px] font-bold tracking-wider ${getCampaignBadgeColor(campaign.type || campaign.triggerType || 'COMMENT_TO_DM')}`}
                           >
-                            {campaign.type.replace(/_/g, ' ')}
+                            {(campaign.type || campaign.triggerType || 'COMMENT_TO_DM').replace(/_/g, ' ')}
                           </span>
                           <span
                             className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[8px] font-bold ${
@@ -458,6 +485,16 @@ export default function AutomationsPage() {
         onEdit={handleEditCampaign}
         onStatusToggle={handleToggleStatus}
         onArchive={handleArchive}
+      />
+
+      {/* Upfront Upgrade Plan Gating Modal */}
+      <UpgradeModal
+        isOpen={isUpgradeModalOpen}
+        onClose={() => setIsUpgradeModalOpen(false)}
+        title="Campaign Limit Reached"
+        description={`Your current plan allows up to ${planLimits.max_campaigns} active campaigns. Upgrade to Pro for unlimited campaigns and full scale!`}
+        currentCount={campaigns.filter((c) => c.status !== 'DELETED').length}
+        maxLimit={planLimits.max_campaigns}
       />
     </DashboardLayout>
   );

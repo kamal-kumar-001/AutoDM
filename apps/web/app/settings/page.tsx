@@ -17,6 +17,7 @@ import {
   EyeOff,
   CreditCard,
   CheckCircle2,
+  Star,
 } from 'lucide-react';
 import { Button, Input, Label, toast } from '@autodm/ui';
 import { apiRequest } from '@/lib/api-client';
@@ -736,7 +737,11 @@ function SettingsBilling() {
   }, []);
 
   const handleUpgrade = (planKey: string) => {
-    const cycle = isAnnual ? 'yearly' : 'monthly';
+    if (planKey === 'ENTERPRISE' || planKey === 'AGENCY') {
+      window.location.href = '/contact?subject=Agency';
+      return;
+    }
+    const cycle = isAnnual ? 'YEARLY' : 'MONTHLY';
     window.location.href = `/checkout?plan=${planKey}&cycle=${cycle}`;
   };
 
@@ -949,11 +954,13 @@ function SettingsBilling() {
       {/* Plans selector grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-300">
         {plans.map((plan: any) => {
-          const isCurrent = plan.plan === subscription?.plan;
-          const displayPrice = isAnnual ? Math.round(plan.price * 10) : plan.price;
+          const planKey = plan.key || plan.plan;
+          const isCurrent = planKey === subscription?.plan;
+          const isAgency = planKey === 'ENTERPRISE' || planKey === 'AGENCY' || plan.label === 'Agency';
+
           return (
             <div
-              key={plan.plan}
+              key={planKey}
               className={`glass-card border-gradient relative p-5 rounded-2xl flex flex-col justify-between h-full bg-white/[0.01] ${
                 isCurrent ? 'border-primary/30 ring-1 ring-primary/20' : ''
               }`}
@@ -966,21 +973,49 @@ function SettingsBilling() {
 
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <h4 className="text-sm font-extrabold text-white">{plan.label}</h4>
+                  <h4 className="text-sm font-extrabold text-white">{plan.label || plan.name || planKey}</h4>
                   <p className="text-[10px] text-gray-500 leading-normal min-h-[30px]">
                     {plan.description}
                   </p>
                 </div>
 
-                <div className="flex items-baseline space-x-1">
-                  <span className="text-2xl font-extrabold text-white">
-                    ₹{displayPrice.toLocaleString('en-IN')}
-                  </span>
-                  <span className="text-[10px] text-gray-500">/{isAnnual ? 'year' : 'month'}</span>
+                {/* Pricing Display */}
+                {isAgency ? (
+                  <div className="space-y-0.5">
+                    <div className="text-2xl font-extrabold text-white">Contact Us</div>
+                    <p className="text-[10px] text-gray-500 font-mono">Custom enterprise pricing</p>
+                  </div>
+                ) : planKey === 'FREE' ? (
+                  <div className="flex items-baseline space-x-1">
+                    <span className="text-2xl font-extrabold text-white">₹0</span>
+                    <span className="text-[10px] text-gray-500">/month</span>
+                  </div>
+                ) : (
+                  <div className="space-y-0.5">
+                    <div className="flex items-baseline space-x-1">
+                      <span className="text-2xl font-extrabold text-white">
+                        {isAnnual ? '₹832' : `₹${(plan.priceMonthly || plan.price || 999).toLocaleString('en-IN')}`}
+                      </span>
+                      <span className="text-[10px] text-gray-500">/month</span>
+                    </div>
+                    {isAnnual ? (
+                      <p className="text-[10px] text-primary font-mono font-bold">
+                        billed annually (₹9,990/yr • Save 17%)
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-gray-500 font-mono">billed monthly</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Whitelabel DMs feature badge */}
+                <div className="p-2 rounded-lg bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold flex items-center gap-1.5">
+                  <Star className="w-3.5 h-3.5 text-primary fill-current flex-shrink-0" />
+                  <span>✨ No AutoDM Branding (Whitelabel DMs)</span>
                 </div>
 
                 <ul className="space-y-2 text-[10px] text-gray-400 border-t border-white/5 pt-4">
-                  {plan.features.map((f: string, i: number) => (
+                  {(plan.features || []).map((f: string, i: number) => (
                     <li key={i} className="flex items-center space-x-2">
                       <CheckCircle2 className="h-3 w-3 text-primary flex-shrink-0" />
                       <span>{f}</span>
@@ -991,17 +1026,17 @@ function SettingsBilling() {
 
               <div className="pt-5 border-t border-white/5 mt-5">
                 <Button
-                  onClick={() => handleUpgrade(plan.plan)}
+                  onClick={() => handleUpgrade(planKey)}
                   disabled={isCurrent}
                   className={`w-full text-xs font-bold ${
                     isCurrent
                       ? 'bg-white/5 text-gray-500 border-white/5 cursor-not-allowed select-none'
-                      : plan.plan === 'FREE'
-                        ? 'bg-transparent border border-white/10 hover:bg-white/5 text-white'
+                      : isAgency
+                        ? 'bg-white/10 hover:bg-white/15 border border-white/10 text-white cursor-pointer'
                         : 'bg-primary hover:bg-primary-hover text-primary-foreground border-0 shadow-[0_0_12px_rgba(0,187,136,0.2)] cursor-pointer'
                   }`}
                 >
-                  {isCurrent ? 'Active Plan' : 'Select Plan'}
+                  {isCurrent ? 'Active Plan' : isAgency ? 'Contact Agency Sales' : 'Select Plan'}
                 </Button>
               </div>
             </div>

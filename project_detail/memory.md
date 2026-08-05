@@ -57,7 +57,86 @@
 
 ## Session Updates (August 2026)
 
-### 1. Regulatory Context & Legal Compliance Audit (India DPDP Act 2023 & Meta Developer Policy)
+### 1. Complete Dynamic Pricing & Plan Settings Synchronization
+* **Database & Admin Control (`apps/api`)**:
+  - `GET /pricing-promo` and `GET /billing/plans` fetch plan data directly from the `BillingPlan` database table.
+  - When the Admin updates plan details (`PATCH /admin/plans/:key`), prices, limits, or names via Admin Panel, the database updates in real time and automatically reflects across all frontend pages.
+* **Pricing Page Sync (`apps/web/app/pricing/page.tsx`)**:
+  - Displays dynamic plan details from `GET /pricing-promo`.
+  - Monthly vs Annual toggle renders the monthly discounted price for Pro (`₹832/mo billed annually ₹9,990/yr`).
+  - Agency plan renders **"Contact Us"** with direct CTA to `/contact?subject=Agency`.
+* **Settings & Upgrade Plan Tab Sync (`apps/web/app/settings/page.tsx`)**:
+  - Fetches `/billing/plans` dynamically from database.
+  - Updated card rendering in `/settings` to match `/pricing` layout:
+    - Agency plan renders **"Contact Us"** and **"Contact Agency Sales"** CTA routing to `/contact?subject=Agency`.
+    - Pro plan renders monthly rate (`₹999/mo`) or annual rate (`₹832/mo billed annually ₹9,990/yr`).
+    - Added `✨ No AutoDM Branding (Whitelabel DMs)` feature badge to all plan cards in Settings.
+
+### 2. Delivered DM Counting Rule (`subscription.service.ts`)
+* **Strict Delivered DM Counting**:
+  - `SubscriptionService.checkLimit('max_dms_per_month')` counts ONLY messages with status `DELIVERED` or `SENT` in the current month billing period (`instagramAccount: { userId }`).
+  - Failed, pending, or skipped messages never consume the user's monthly DM quota.
+
+### 3. Upfront UX Plan Gating & Upgrade Modal (`apps/web`)
+* **Upfront Gating Check**:
+  - On the Automations page (`apps/web/app/automations/page.tsx`), clicking "+ Create Campaign" checks the user's plan limit upfront.
+  - If the campaign limit is reached, it prevents opening the multi-step creation wizard and pops open `<UpgradeModal />` immediately:
+    *"Campaign Limit Reached (X / Y Active Campaigns). Upgrade to Pro for unlimited campaigns!"* with a direct CTA to `/pricing`.
+  - Users are never allowed to spend time filling out a multi-step form only to be rejected at the final submit step.
+
+### 4. 1-Click "Enable App Review Mode" in Admin Panel (`apps/api` & `apps/web`)
+* Added backend endpoint `POST /admin/enable-app-review-mode` and 1-click button in the Admin Panel header (`apps/web/app/admin/page.tsx`):
+  `🚀 Enable App Review Mode (Unlock All Plans & Flags)`
+* With 1 click, the admin can ensure all plan limits are set to 999,999 and all feature flags are enabled across all plans for Meta App Review.
+
+### 5. Pricing Plan Selection & Callback Checkout Flow (`pricing/page.tsx`, `login/page.tsx`, `register/page.tsx`, `checkout/page.tsx`)
+* **Logged-In Users**:
+  - Clicking "Get Started Pro" (or any plan CTA on `/pricing`) detects `session.user` and navigates directly to `/checkout?plan=PRO&cycle=YEARLY` (or `MONTHLY`).
+  - On `/checkout`, name and email are automatically pre-filled from `session.user`.
+* **Non-Logged-In Users**:
+  - Clicking a plan CTA redirects to `/login?callbackUrl=%2Fcheckout%3Fplan%3DPRO%26cycle%3DYEARLY`.
+  - Logging in or completing registration seamlessly forwards the user to `/checkout?plan=PRO&cycle=YEARLY` with their details auto-filled.
+  - Switches between Login and Register preserve the `callbackUrl`.
+
+### 6. Single-Click Logout Bug Resolution (`auth-helpers.ts` & `login/page.tsx`)
+* **Root Cause Identified**:
+  When users clicked "Log Out", `signOut({ callbackUrl: '/login' })` immediately triggered a page navigation to `/login`. On initial mount of `LoginPage`, NextAuth's client React context (`useSession()`) held in-memory session data for a brief moment before the HTTP request to `/api/auth/session` returned null. `LoginPage`'s `useEffect` saw `status === 'authenticated'` during that race window and executed `router.push('/dashboard')`, bouncing the user back to the dashboard and requiring a second click to log out!
+* **Fix Implemented**:
+  1. Created `handleLogout` helper in `apps/web/lib/auth-helpers.ts`:
+     - Clears client session/storage caches (`sessionStorage.clear()`, `localStorage.removeItem('nextauth.message')`).
+     - Executes `signOut({ redirect: true, callbackUrl: '/login?logged_out=1' })`.
+  2. Updated `LoginPage` (`apps/web/app/login/page.tsx`):
+     - Detects `searchParams.get('logged_out') === '1'`.
+     - Explicitly suppresses any `authenticated` auto-redirect to `/dashboard` when `logged_out=1` is present.
+     - Displays a clean green success toast (`"Logged out successfully"`).
+  3. Updated all Logout buttons across `sidebar.tsx`, `layout.tsx`, `admin-layout.tsx`, and `providers.tsx` to use `handleLogout()`.
+  4. Now logging out works in **one single click**, with zero double-redirects or bounce-back!
+
+### 3. Pricing Page Logic Restoration & Contact Us Agency Card (`apps/web/app/pricing/page.tsx` & `pricing-data.ts`)
+* **Pro Plan Pricing Logic**:
+  - Monthly mode: `₹999 / mo`
+  - Yearly mode: Displays the **monthly discounted rate as the primary hero price** (`₹832 / mo`) with subtext `billed annually (₹9,990/year • Save 17%)`.
+* **Agency Plan Card**:
+  - Removed all numerical prices and seat sliders.
+  - Price label: **"Contact Us"**
+  - Subtext: *"Tailored for agencies, talent rosters & big creator networks"*
+  - CTA Button: **"Contact Us"** linking directly to `/contact?subject=Agency`.
+* **100% OFF Progress Bar Banner**: Preserved intact below the header title/subtitle.
+* **Feature Comparison Matrix**: Restored clean, high-contrast feature specs matrix comparing Free, Pro, and Agency plans.
+
+### 2. Six Innovations Section Layout & Scrollbar Fix (`Features.tsx`)
+* **Slideable Tab Bar**: Made the 6 option tabs smoothly slideable/scrollable across desktop and mobile.
+* **Cutting-Off Fix**: Applied `px-4 sm:px-6 max-w-7xl mx-auto px-2` container alignment so the first option is never cut off at the left border.
+* **Hidden Scrollbar**: Applied `scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden` to hide raw scrollbars.
+
+### 3. 3D Scroll Perspective Animations & Modern Motion (`Framer Motion`)
+* Added Framer Motion `useScroll`, `useTransform`, and 3D perspective transformations (`perspective: 1000`, `rotateX`, `scale`, `y`, `opacity`) across:
+  - **`Hero.tsx`**: 3D tilted dashboard mockup preview card that responds as the user scrolls.
+  - **`Features.tsx`**: 3D perspective interactive feature card that rotates into view.
+  - **`SetupGuide.tsx`**: 3D perspective step cards with hover lift & glowing border effects.
+  - **`Personas` & `Mobile PWA`**: Smooth 3D entrance and floating phone preview.
+
+### 4. Regulatory Context & Legal Compliance Audit (India DPDP Act 2023 & Meta Developer Policy)
 
 - **India Digital Personal Data Protection Act (DPDP Act 2023)**:
   - Fines up to **₹250 Crore (~$30M USD)** per incident for non-compliance, un-consented personal data processing, or unencrypted data leaks.

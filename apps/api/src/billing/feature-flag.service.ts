@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Plan } from '@prisma/client';
 
-// Default feature flags seeded at startup
+// Default feature flags seeded at startup (all enabled for all plans in Meta App Review mode)
 const DEFAULT_FLAGS: Array<{ key: string; description: string; enabledForPlans: string }> = [
   {
     key: 'COMMENT_TO_DM',
@@ -14,28 +14,36 @@ const DEFAULT_FLAGS: Array<{ key: string; description: string; enabledForPlans: 
     description: 'Keyword-triggered DM automation',
     enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
-  { key: 'WELCOME_DM', description: 'New follower welcome DM', enabledForPlans: 'PRO,ENTERPRISE' },
+  {
+    key: 'WELCOME_DM',
+    description: 'New follower welcome DM',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
+  },
   {
     key: 'ANALYTICS_ADVANCED',
     description: 'Advanced analytics dashboard',
-    enabledForPlans: 'PRO,ENTERPRISE',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
   {
     key: 'MULTI_ACCOUNT',
     description: 'Connect multiple Instagram accounts',
-    enabledForPlans: 'PRO,ENTERPRISE',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
   {
     key: 'WEBHOOK_LOGS',
     description: 'Access webhook event logs',
-    enabledForPlans: 'PRO,ENTERPRISE',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
   {
     key: 'EXPORT_DATA',
     description: 'Export analytics and message history',
-    enabledForPlans: 'ENTERPRISE',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
-  { key: 'API_ACCESS', description: 'Direct REST API access', enabledForPlans: 'ENTERPRISE' },
+  {
+    key: 'API_ACCESS',
+    description: 'Direct REST API access',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
+  },
   {
     key: 'audit_logging',
     description: 'System-wide audit logging tracker',
@@ -44,6 +52,16 @@ const DEFAULT_FLAGS: Array<{ key: string; description: string; enabledForPlans: 
   {
     key: 'EMAIL_VERIFICATION_REQUIRED',
     description: 'Enforce email verification for campaign automation and account link actions',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
+  },
+  {
+    key: 'FOLLOW_CHECK_GATE',
+    description: 'Follow-to-Unlock verification gate & native quick replies',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
+  },
+  {
+    key: 'DM_VARIANTS',
+    description: 'Anti-Spam copy variation rotation',
     enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
 ];

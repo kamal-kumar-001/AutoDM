@@ -1,35 +1,39 @@
 'use client';
 
 import * as React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { INNOVATIONS_CONTENT, PWA_MOBILE_CONTENT, PERSONAS_CONTENT } from '@/lib/landing-data';
 import {
-  CheckCircle2,
-  ShieldCheck,
-  Flame,
-  BellRing,
   Sparkles,
   MessageCircle,
-  ArrowRight,
-  MessageSquare,
-  Languages,
-  Mic,
-  Smartphone,
+  Flame,
+  BellRing,
   Check,
 } from 'lucide-react';
 
 export default function Features() {
   const [activeTab, setActiveTab] = React.useState(0);
   const activeItem = INNOVATIONS_CONTENT.items[activeTab];
+  const sectionRef = React.useRef<HTMLDivElement>(null);
+
+  // 3D Scroll Perspective Transformations
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start end', 'end start'],
+  });
+
+  const rotateX = useTransform(scrollYProgress, [0, 0.4, 0.8, 1], [15, 0, 0, -15]);
+  const scale = useTransform(scrollYProgress, [0, 0.4, 0.8, 1], [0.95, 1, 1, 0.95]);
+  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.4, 1, 1, 0.4]);
 
   return (
-    <div className="space-y-24 py-16 sm:py-24 relative overflow-hidden">
+    <div ref={sectionRef} className="space-y-24 py-16 sm:py-24 relative overflow-hidden">
       {/* Background ambient glows */}
       <div className="absolute top-[15%] left-[-10%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute top-[65%] right-[-10%] w-[500px] h-[500px] bg-accent-cyan/5 rounded-full blur-[140px] pointer-events-none" />
 
-      {/* 1. SIX INNOVATIONS INTERACTIVE SHOWCASE */}
-      <section id="features" className="max-w-7xl mx-auto px-6 relative z-10 space-y-12">
+      {/* 1. SIX INNOVATIONS INTERACTIVE SHOWCASE WITH 3D PERSPECTIVE */}
+      <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 space-y-12">
         <div className="text-center max-w-3xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-primary/10 border border-primary/25 text-xs font-bold text-primary uppercase tracking-widest">
             <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
@@ -46,37 +50,47 @@ export default function Features() {
           </p>
         </div>
 
-        {/* Tab Selector Bar */}
-        <div className="flex items-center justify-start md:justify-center gap-2 overflow-x-auto custom-scrollbar pb-3 pt-2 max-w-5xl mx-auto">
-          {INNOVATIONS_CONTENT.items.map((item, idx) => {
-            const Icon = item.icon;
-            const isActive = activeTab === idx;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(idx)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex-shrink-0 ${
-                  isActive
-                    ? 'bg-gradient-to-r from-primary to-accent-cyan text-white shadow-[0_0_20px_rgba(0,187,136,0.3)] scale-[1.02]'
-                    : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-primary'}`} />
-                <span>{item.title}</span>
-              </button>
-            );
-          })}
+        {/* Slideable & Scrollable Tab Selector Bar (Hidden Scrollbar + Container Padding Alignment) */}
+        <div className="w-full max-w-7xl mx-auto px-2">
+          <div className="flex items-center justify-start md:justify-center gap-2.5 overflow-x-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-2 px-1">
+            {INNOVATIONS_CONTENT.items.map((item, idx) => {
+              const Icon = item.icon;
+              const isActive = activeTab === idx;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(idx)}
+                  className={`flex items-center gap-2.5 px-4 sm:px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex-shrink-0 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-primary to-accent-cyan text-white shadow-[0_0_25px_rgba(0,187,136,0.35)] scale-[1.03] ring-1 ring-white/20'
+                      : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-primary'}`} />
+                  <span>{item.title}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Interactive Feature Highlight Card */}
-        <div className="max-w-5xl mx-auto glass-card border-gradient rounded-3xl p-6 sm:p-10 relative overflow-hidden shadow-2xl">
+        {/* 3D Scroll Perspective Feature Highlight Card */}
+        <motion.div
+          style={{
+            rotateX,
+            scale,
+            opacity,
+            perspective: 1000,
+          }}
+          className="max-w-5xl mx-auto glass-card border-gradient rounded-3xl p-6 sm:p-10 relative overflow-hidden shadow-2xl transition-shadow hover:shadow-[0_0_50px_rgba(0,187,136,0.15)]"
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={activeItem.id}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.35, ease: 'easeOut' }}
+              initial={{ opacity: 0, y: 20, rotateX: 10 }}
+              animate={{ opacity: 1, y: 0, rotateX: 0 }}
+              exit={{ opacity: 0, y: -20, rotateX: -10 }}
+              transition={{ duration: 0.4, ease: 'easeOut' }}
               className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center"
             >
               {/* Left Column: Specs & Copy */}
@@ -121,10 +135,7 @@ export default function Features() {
 
                     <div className="flex flex-wrap gap-1.5 font-mono text-[10px] opacity-40">
                       {activeItem.example.noise.map((n, i) => (
-                        <span
-                          key={i}
-                          className="bg-white/10 px-2 py-0.5 rounded line-through text-gray-300"
-                        >
+                        <span key={i} className="bg-white/10 px-2 py-0.5 rounded line-through text-gray-300">
                           {n}
                         </span>
                       ))}
@@ -153,8 +164,7 @@ export default function Features() {
                       ))}
                     </div>
                     <div className="p-3 rounded-xl bg-black/40 border border-white/10 font-mono text-[11px] text-gray-300">
-                      Comment: &quot;bhai price kitna hai Bangalore shipping ke saath?&quot; →
-                      Matched Trigger &quot;price&quot;
+                      Comment: &quot;bhai price kitna hai Bangalore shipping ke saath?&quot; → Matched Trigger &quot;price&quot;
                     </div>
                   </div>
                 )}
@@ -165,10 +175,7 @@ export default function Features() {
                       Anti-Spam Dynamic Copy Rotation
                     </span>
                     {activeItem.variantDemo.map((v, i) => (
-                      <div
-                        key={i}
-                        className="p-2.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 font-mono text-[11px]"
-                      >
+                      <div key={i} className="p-2.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 font-mono text-[11px]">
                         Variant {i + 1}: &quot;{v}&quot;
                       </div>
                     ))}
@@ -181,9 +188,7 @@ export default function Features() {
                       <Flame className="w-6 h-6" />
                     </div>
                     <p className="font-bold text-amber-300 text-xs">{activeItem.badgeText}</p>
-                    <p className="text-[11px] text-gray-400 font-mono">
-                      Redis BullMQ Queue pacing at 40 DMs/min during viral spikes.
-                    </p>
+                    <p className="text-[11px] text-gray-400 font-mono">Redis BullMQ Queue pacing at 40 DMs/min during viral spikes.</p>
                   </div>
                 )}
 
@@ -210,12 +215,18 @@ export default function Features() {
               </div>
             </motion.div>
           </AnimatePresence>
-        </div>
+        </motion.div>
       </section>
 
       {/* 2. PWA MOBILE SECTION */}
       <section id="mobile" className="max-w-7xl mx-auto px-6 relative z-10">
-        <div className="glass-card border-gradient rounded-3xl p-8 sm:p-12 relative overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-50px' }}
+          transition={{ duration: 0.6 }}
+          className="glass-card border-gradient rounded-3xl p-8 sm:p-12 relative overflow-hidden"
+        >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-7 space-y-6">
               <span className="px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-xs font-black tracking-widest text-primary uppercase inline-block">
@@ -232,10 +243,7 @@ export default function Features() {
                 {PWA_MOBILE_CONTENT.features.map((feat, idx) => {
                   const Icon = feat.icon;
                   return (
-                    <div
-                      key={idx}
-                      className="space-y-2 p-4 rounded-xl bg-white/5 border border-white/5"
-                    >
+                    <div key={idx} className="space-y-2 p-4 rounded-xl bg-white/5 border border-white/5">
                       <Icon className="w-5 h-5 text-primary" />
                       <h4 className="text-xs font-bold text-white">{feat.title}</h4>
                       <p className="text-[11px] text-gray-400 leading-relaxed">{feat.desc}</p>
@@ -246,7 +254,7 @@ export default function Features() {
             </div>
 
             <div className="lg:col-span-5 flex justify-center">
-              <div className="relative w-64 h-[420px] rounded-[36px] border-4 border-white/10 bg-black shadow-2xl p-4 flex flex-col justify-between overflow-hidden">
+              <div className="relative w-64 h-[420px] rounded-[36px] border-4 border-white/10 bg-black shadow-2xl p-4 flex flex-col justify-between overflow-hidden transform rotate-2 hover:rotate-0 transition-transform duration-500">
                 <div className="w-24 h-4 bg-white/10 rounded-full mx-auto mb-4" />
                 <div className="space-y-3 flex-1">
                   <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 text-[11px] text-white font-bold flex items-center justify-between">
@@ -262,7 +270,7 @@ export default function Features() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </section>
 
       {/* 3. PERSONAS SECTION */}
@@ -280,9 +288,13 @@ export default function Features() {
           {PERSONAS_CONTENT.items.map((item, idx) => {
             const Icon = item.icon;
             return (
-              <div
+              <motion.div
                 key={idx}
-                className="glass-card p-6 rounded-2xl border-gradient flex flex-col justify-between space-y-4 hover:translate-y-[-4px] transition-transform"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: idx * 0.1 }}
+                className="glass-card p-6 rounded-2xl border-gradient flex flex-col justify-between space-y-4 hover:translate-y-[-6px] transition-all hover:shadow-[0_10px_30px_rgba(0,187,136,0.15)]"
               >
                 <div className="space-y-3">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
@@ -296,7 +308,7 @@ export default function Features() {
                   <span>{item.creatorHandle}</span>
                   <span className="text-emerald-400 font-bold">{item.stat}</span>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>

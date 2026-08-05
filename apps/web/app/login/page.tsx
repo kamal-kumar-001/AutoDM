@@ -22,13 +22,19 @@ export default function LoginPage() {
   const { status } = useSession();
   const searchParams = useSearchParams();
   const errorParam = searchParams.get('error');
+  const loggedOutParam = searchParams.get('logged_out') === '1' || searchParams.get('signOut') === 'true';
+  const callbackUrl = searchParams.get('callbackUrl') || searchParams.get('redirect') || '/dashboard';
   const [loading, setLoading] = React.useState(false);
 
   React.useEffect(() => {
-    if (status === 'authenticated') {
-      router.push('/dashboard');
+    // If the user explicitly performed a log out, do NOT auto-redirect
+    if (loggedOutParam) {
+      return;
     }
-  }, [status, router]);
+    if (status === 'authenticated') {
+      router.push(callbackUrl);
+    }
+  }, [status, loggedOutParam, callbackUrl, router]);
 
   const [showPassword, setShowPassword] = React.useState(false);
 
@@ -45,7 +51,10 @@ export default function LoginPage() {
     if (errorParam === 'CredentialsSignIn') {
       toast.error('Invalid email or password credentials');
     }
-  }, [errorParam]);
+    if (loggedOutParam) {
+      toast.success('Logged out successfully');
+    }
+  }, [errorParam, loggedOutParam]);
 
   const onSubmit = async (data: LoginData) => {
     setLoading(true);
@@ -60,7 +69,7 @@ export default function LoginPage() {
       toast.error('Authentication failed. Invalid email or password.');
     } else {
       toast.success('Successfully logged in!');
-      router.push('/dashboard');
+      router.push(callbackUrl);
       router.refresh();
     }
   };
@@ -147,7 +156,10 @@ export default function LoginPage() {
 
           <div>
             Don&apos;t have an account?{' '}
-            <Link href="/register" className="text-primary hover:underline font-medium">
+            <Link
+              href={callbackUrl !== '/dashboard' ? `/register?callbackUrl=${encodeURIComponent(callbackUrl)}` : '/register'}
+              className="text-primary hover:underline font-medium"
+            >
               Create an account
             </Link>
           </div>

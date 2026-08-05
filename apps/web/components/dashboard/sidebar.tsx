@@ -19,7 +19,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@autodm/ui';
 import { usePathname, useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { handleLogout } from '@/lib/auth-helpers';
 
 interface SidebarItem {
   name: string;
@@ -201,7 +202,7 @@ export function Sidebar({ onOpenHelp, onOpenContact }: SidebarProps) {
         </div>
         {(!mounted || !collapsed) && (
           <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={() => handleLogout()}
             className="p-1.5 rounded-md text-gray-500 hover:text-red-400 hover:bg-white/5 transition-colors cursor-pointer"
             title="Log Out"
           >

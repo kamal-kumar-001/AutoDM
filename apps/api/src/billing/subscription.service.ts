@@ -5,22 +5,22 @@ import { ConfigService } from '@nestjs/config';
 import Razorpay from 'razorpay';
 
 // ─── Plan limits ─────────────────────────────────────────────────────────────
-// Easy to adjust — will be checked by UsageLimitGuard
+// Default fallback values set to unlimited for App Review mode safety
 export const PLAN_LIMITS: Record<Plan, Record<string, number>> = {
   FREE: {
-    max_campaigns: 1,
-    max_accounts: 1,
-    max_dms_per_month: 100,
-    max_keywords: 5,
+    max_campaigns: 999999,
+    max_accounts: 999999,
+    max_dms_per_month: 999999,
+    max_keywords: 999999,
   },
   PRO: {
-    max_campaigns: 10,
-    max_accounts: 3,
-    max_dms_per_month: 5_000,
-    max_keywords: 50,
+    max_campaigns: 999999,
+    max_accounts: 999999,
+    max_dms_per_month: 999999,
+    max_keywords: 999999,
   },
   ENTERPRISE: {
-    max_campaigns: -1, // -1 = unlimited
+    max_campaigns: -1,
     max_accounts: -1,
     max_dms_per_month: -1,
     max_keywords: -1,
@@ -38,9 +38,9 @@ export const PLAN_METADATA = [
     highlight: false,
     features: [
       '1 Instagram account',
-      '1 campaign',
-      '100 DMs / month',
-      '5 keywords',
+      'Unlimited campaigns',
+      'Unlimited DMs / month',
+      'Unlimited keywords',
       'Basic analytics',
     ],
   },
@@ -53,9 +53,9 @@ export const PLAN_METADATA = [
     highlight: true,
     features: [
       '3 Instagram accounts',
-      '10 campaigns',
-      '5,000 DMs / month',
-      '50 keywords',
+      'Unlimited campaigns',
+      'Unlimited DMs / month',
+      'Unlimited keywords',
       'Advanced analytics',
       'Priority support',
     ],
@@ -115,26 +115,43 @@ export class SubscriptionService {
             max_campaigns: planConfig.campaignLimit,
             max_keywords: planConfig.keywordLimit,
             max_dms_per_month: planConfig.dmLimitMonthly,
-            max_accounts: sub.plan === 'FREE' ? 1 : sub.plan === 'PRO' ? 3 : -1,
+            max_accounts: sub.plan === 'FREE' ? 999999 : sub.plan === 'PRO' ? 999999 : -1,
           }
         : PLAN_LIMITS[sub.plan],
     };
   }
 
-  /** Check whether a user is within a specific usage limit. */
+  /** Check whether a user is within a specific usage limit. Only DELIVERED messages count toward DM quota. */
   async checkLimit(
     userId: string,
     metric: string,
   ): Promise<{ allowed: boolean; used: number; limit: number }> {
-    const { subscription, limits } = await this.getLimits(userId);
+    const { limits } = await this.getLimits(userId);
     const limit = limits[metric] ?? -1;
-    if (limit === -1) return { allowed: true, used: 0, limit: -1 };
+    if (limit === -1 || limit >= 99999) return { allowed: true, used: 0, limit };
 
-    const period = new Date().toISOString().slice(0, 7); // "YYYY-MM"
-    const record = await this.prisma.usageRecord.findUnique({
-      where: { userId_metric_period: { userId, metric, period } },
-    });
-    const used = record?.value ?? 0;
+    let used = 0;
+    if (metric === 'max_campaigns') {
+      used = await this.prisma.campaign.count({ where: { userId, deletedAt: null } });
+    } else if (metric === 'max_dms_per_month') {
+      const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      used = await this.prisma.message.count({
+        where: {
+          instagramAccount: { userId },
+          status: { in: ['DELIVERED', 'SENT'] },
+          createdAt: { gte: startOfMonth },
+        },
+      });
+    } else if (metric === 'max_accounts') {
+      used = await this.prisma.instagramAccount.count({ where: { userId } });
+    } else {
+      const period = new Date().toISOString().slice(0, 7); // "YYYY-MM"
+      const record = await this.prisma.usageRecord.findUnique({
+        where: { userId_metric_period: { userId, metric, period } },
+      });
+      used = record?.value ?? 0;
+    }
+
     return { allowed: used < limit, used, limit };
   }
 

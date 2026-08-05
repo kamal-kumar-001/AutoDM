@@ -191,6 +191,12 @@ export class AdminController {
     return this.adminService.getSaaSStats();
   }
 
+  @Post('enable-app-review-mode')
+  @HttpCode(HttpStatus.OK)
+  enableAppReviewMode() {
+    return this.adminService.enableAppReviewMode();
+  }
+
   // ─── Billing Plans ───────────────────────────────────────────────
 
   @Get('plans')

@@ -11,7 +11,7 @@ function SessionWatcher({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     if (session?.error === 'RefreshAccessTokenError') {
-      signOut({ callbackUrl: '/login' });
+      signOut({ callbackUrl: '/login?logged_out=1' });
     }
   }, [session]);
 

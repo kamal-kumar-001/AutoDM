@@ -125,8 +125,9 @@ export function CreatorDeliveryLog() {
   const filteredLogs = logs.filter((log) => (filter === 'ALL' ? true : log.status === filter));
 
   const deliveredCount = logs.filter((l) => l.status === 'DELIVERED').length;
+  const matchedDmAttempts = logs.filter((l) => l.status === 'DELIVERED' || l.status === 'FAILED' || l.status === 'PENDING').length;
   const deliveryRate =
-    logs.length > 0 ? ((deliveredCount / logs.length) * 100).toFixed(1) : '100.0';
+    matchedDmAttempts > 0 ? ((deliveredCount / matchedDmAttempts) * 100).toFixed(1) : '100.0';
 
   return (
     <div className="glass-card border-gradient rounded-2xl p-6 shadow-glass space-y-6">
@@ -163,20 +164,23 @@ export function CreatorDeliveryLog() {
             DMs DELIVERED
           </span>
           <div className="text-2xl font-black text-white">{deliveredCount}</div>
+          <p className="text-[10px] text-gray-500 font-mono">out of {matchedDmAttempts} matched DM attempts</p>
         </div>
 
         <div className="glass-card rounded-xl p-4 border border-white/5 space-y-1">
           <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            SUCCESS RATE
+            DELIVERY SUCCESS RATE
           </span>
           <div className="text-2xl font-black text-emerald-400">{deliveryRate}%</div>
+          <p className="text-[10px] text-emerald-500/80 font-mono">excludes non-matching comments</p>
         </div>
 
         <div className="glass-card rounded-xl p-4 border border-white/5 space-y-1">
           <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
-            COMMENTS PROCESSED
+            TOTAL COMMENTS PROCESSED
           </span>
           <div className="text-2xl font-black text-white">{logs.length}</div>
+          <p className="text-[10px] text-gray-500 font-mono">includes general & non-keyword comments</p>
         </div>
       </div>
 

@@ -112,7 +112,7 @@ export class CampaignService {
     return Promise.all(
       campaigns.map(async (c) => {
         const sentCount = await this.prisma.message.count({
-          where: { campaignId: c.id, status: 'SENT' },
+          where: { campaignId: c.id, status: { in: ['DELIVERED', 'SENT'] } },
         });
         const failedCount = await this.prisma.message.count({
           where: { campaignId: c.id, status: 'FAILED' },
@@ -158,7 +158,7 @@ export class CampaignService {
     }
 
     const sentCount = await this.prisma.message.count({
-      where: { campaignId: campaign.id, status: 'SENT' },
+      where: { campaignId: campaign.id, status: { in: ['DELIVERED', 'SENT'] } },
     });
     const failedCount = await this.prisma.message.count({
       where: { campaignId: campaign.id, status: 'FAILED' },

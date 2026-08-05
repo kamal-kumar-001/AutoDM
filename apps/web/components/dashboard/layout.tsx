@@ -22,7 +22,8 @@ import {
   HelpCircle,
   Mail,
 } from 'lucide-react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { handleLogout } from '@/lib/auth-helpers';
 import { apiRequest } from '@/lib/api-client';
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -297,7 +298,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <button
                   onClick={() => {
                     setIsMobileMenuOpen(false);
-                    signOut();
+                    handleLogout();
                   }}
                   className="p-1.5 rounded-md text-gray-500 hover:text-red-400 hover:bg-white/5 transition-all cursor-pointer"
                   title="Sign Out"
