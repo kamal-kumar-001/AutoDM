@@ -21,11 +21,7 @@ export default function Features() {
   const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.6, 1, 1, 0.6]);
 
   return (
-    <div ref={sectionRef} className="space-y-24 py-16 sm:py-24 relative overflow-hidden">
-      {/* Background ambient glows */}
-      <div className="absolute top-[15%] left-[-10%] w-[500px] h-[500px] bg-primary/5 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute top-[65%] right-[-10%] w-[500px] h-[500px] bg-accent-cyan/5 rounded-full blur-[140px] pointer-events-none" />
-
+    <div ref={sectionRef} className="space-y-24 py-16 sm:py-24 relative">
       {/* 1. SIX INNOVATIONS INTERACTIVE SHOWCASE WITH 3D PERSPECTIVE */}
       <section id="features" className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10 space-y-12">
         <div className="text-center max-w-3xl mx-auto space-y-4">
@@ -44,9 +40,9 @@ export default function Features() {
           </p>
         </div>
 
-        {/* Slideable & Scrollable Tab Selector Bar (Hidden Scrollbar + Generous Container Left Padding Alignment) */}
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-8">
-          <div className="flex items-center justify-start md:justify-center gap-3 overflow-x-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-3 px-4 sm:px-6">
+        {/* Slideable & Scrollable Tab Selector Bar (Guaranteed Zero Clipping on Mobile, Tablet & Desktop) */}
+        <div className="w-full max-w-7xl mx-auto px-2 sm:px-6 overflow-hidden">
+          <div className="flex items-center justify-start lg:justify-center gap-3 overflow-x-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-3 px-4 sm:px-6">
             {INNOVATIONS_CONTENT.items.map((item, idx) => {
               const Icon = item.icon;
               const isActive = activeTab === idx;
@@ -54,7 +50,7 @@ export default function Features() {
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(idx)}
-                  className={`flex items-center gap-2.5 px-4 sm:px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex-shrink-0 ${
+                  className={`flex items-center gap-2.5 px-4 sm:px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex-shrink-0 min-w-max ${
                     isActive
                       ? 'bg-gradient-to-r from-primary via-emerald-400 to-accent-cyan text-white shadow-[0_0_25px_rgba(0,187,136,0.35)] scale-[1.03] ring-1 ring-white/20'
                       : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
@@ -68,23 +64,19 @@ export default function Features() {
           </div>
         </div>
 
-        {/* 3D Scroll Perspective Feature Highlight Card */}
+        {/* 3D Perspective Feature Highlight Card (Smooth Instant Micro-Tilt, Sharp Text) */}
         <motion.div
-          style={{
-            rotateX,
-            scale,
-            opacity,
-            perspective: 1000,
-          }}
-          className="max-w-5xl mx-auto glass-card border-gradient rounded-3xl p-6 sm:p-10 relative overflow-hidden shadow-2xl transition-shadow hover:shadow-[0_0_50px_rgba(0,187,136,0.15)] antialiased"
+          whileHover={{ rotateX: -2, rotateY: 2, scale: 1.005 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+          className="max-w-5xl mx-auto glass-card border-gradient rounded-3xl p-6 sm:p-10 relative overflow-hidden shadow-2xl transition-shadow hover:shadow-[0_0_50px_rgba(0,187,136,0.15)] [perspective:1000px] [transform-style:preserve-3d]"
         >
           <AnimatePresence mode="wait">
             <motion.div
               key={activeItem.id}
-              initial={{ opacity: 0, y: 15, rotateX: 6 }}
+              initial={{ opacity: 0, y: 12, rotateX: 4 }}
               animate={{ opacity: 1, y: 0, rotateX: 0 }}
-              exit={{ opacity: 0, y: -15, rotateX: -6 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
+              exit={{ opacity: 0, y: -12, rotateX: -4 }}
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
               className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center"
             >
               {/* Left Column: Specs & Copy */}

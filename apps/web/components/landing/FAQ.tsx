@@ -31,24 +31,31 @@ export default function FAQ() {
           {FAQS_CONTENT.items.map((faq, idx) => {
             const isOpen = openIndex === idx;
             return (
-              <div
+              <motion.div
                 key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.35, delay: idx * 0.08 }}
                 onClick={() => toggle(idx)}
                 className={`glass-card rounded-2xl cursor-pointer overflow-hidden border transition-all duration-300 ${
                   isOpen
-                    ? 'border-primary/30 bg-[#0a0f1e]/40'
-                    : 'border-white/5 hover:border-white/10'
+                    ? 'border-primary/40 bg-gradient-to-r from-primary/10 via-[#0a0f1e]/60 to-transparent shadow-[0_0_20px_rgba(0,187,136,0.15)]'
+                    : 'border-white/10 hover:border-white/20 bg-white/[0.02] hover:bg-white/[0.04]'
                 }`}
               >
                 <div className="flex justify-between items-center p-5 sm:p-6 gap-4 select-none">
-                  <span className="text-sm sm:text-base font-bold text-white leading-tight">
+                  <span className="text-sm sm:text-base font-extrabold text-white leading-tight">
                     {faq.q}
                   </span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${
-                      isOpen ? 'rotate-180 text-primary' : 'rotate-0'
-                    }`}
-                  />
+                  <motion.div
+                    animate={{ rotate: isOpen ? 180 : 0 }}
+                    transition={{ duration: 0.25 }}
+                  >
+                    <ChevronDown
+                      className={`w-5 h-5 ${isOpen ? 'text-primary' : 'text-gray-500'}`}
+                    />
+                  </motion.div>
                 </div>
 
                 <AnimatePresence initial={false}>
@@ -57,15 +64,17 @@ export default function FAQ() {
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: 'easeInOut' }}
+                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                     >
-                      <div className="px-5 pb-5 sm:px-6 sm:pb-6 pt-0 border-t border-white/[0.02]">
-                        <p className="text-xs sm:text-sm text-gray-400 leading-relaxed">{faq.a}</p>
+                      <div className="px-5 pb-5 sm:px-6 sm:pb-6 pt-0 border-t border-white/5">
+                        <p className="text-xs sm:text-sm text-gray-300 leading-relaxed pt-3 font-medium">
+                          {faq.a}
+                        </p>
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </div>
+              </motion.div>
             );
           })}
         </div>

@@ -8,16 +8,16 @@ import Razorpay from 'razorpay';
 // Default fallback values set to unlimited for App Review mode safety
 export const PLAN_LIMITS: Record<Plan, Record<string, number>> = {
   FREE: {
-    max_campaigns: 999999,
-    max_accounts: 999999,
-    max_dms_per_month: 999999,
-    max_keywords: 999999,
+    max_campaigns: 1,
+    max_accounts: 1,
+    max_dms_per_month: 500,
+    max_keywords: 5,
   },
   PRO: {
-    max_campaigns: 999999,
-    max_accounts: 999999,
-    max_dms_per_month: 999999,
-    max_keywords: 999999,
+    max_campaigns: -1,
+    max_accounts: 3,
+    max_dms_per_month: -1,
+    max_keywords: -1,
   },
   ENTERPRISE: {
     max_campaigns: -1,
@@ -128,7 +128,7 @@ export class SubscriptionService {
   ): Promise<{ allowed: boolean; used: number; limit: number }> {
     const { limits } = await this.getLimits(userId);
     const limit = limits[metric] ?? -1;
-    if (limit === -1 || limit >= 99999) return { allowed: true, used: 0, limit };
+    if (limit === -1 || limit < 0) return { allowed: true, used: 0, limit: -1 };
 
     let used = 0;
     if (metric === 'max_campaigns') {

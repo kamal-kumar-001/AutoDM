@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
+import FAQ from '@/components/landing/FAQ';
 import { motion } from 'framer-motion';
 import { Check, X, Flame, Star, Building2, Headset, ShieldCheck } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -69,7 +70,8 @@ export default function PricingPage() {
             </span>
           </h1>
           <p className="text-sm text-gray-400 max-w-xl mx-auto">
-            No hidden setup fees. Upgrade or cancel anytime. Backed by our Meta Compliance Guarantee.
+            No hidden setup fees. Upgrade or cancel anytime. Backed by our Meta Compliance
+            Guarantee.
           </p>
 
           {/* 100% OFF Launch Special Progress Bar Banner */}
@@ -86,12 +88,17 @@ export default function PricingPage() {
               </h3>
             </div>
             <p className="text-xs text-gray-300">
-              Get 100% free access to all core automation features. Claim your zero-cost account before all 100 launch spots fill up!
+              Get 100% free access to all core automation features. Claim your zero-cost account
+              before all 100 launch spots fill up!
             </p>
             <div className="space-y-1.5 pt-1">
               <div className="flex items-center justify-between text-xs font-mono font-bold">
-                <span className="text-primary">{LAUNCH_SPECIAL_STATS.claimed} / {LAUNCH_SPECIAL_STATS.total} Spots Claimed</span>
-                <span className="text-amber-300">{LAUNCH_SPECIAL_STATS.remaining} Spots Remaining</span>
+                <span className="text-primary">
+                  {LAUNCH_SPECIAL_STATS.claimed} / {LAUNCH_SPECIAL_STATS.total} Spots Claimed
+                </span>
+                <span className="text-amber-300">
+                  {LAUNCH_SPECIAL_STATS.remaining} Spots Remaining
+                </span>
               </div>
               <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden border border-white/10">
                 <div className="bg-gradient-to-r from-primary via-emerald-400 to-accent-cyan h-full w-[84%] rounded-full shadow-[0_0_10px_rgba(0,187,136,0.5)] transition-all duration-1000" />
@@ -145,7 +152,9 @@ export default function PricingPage() {
               <div className="space-y-5">
                 <div>
                   <h3 className="text-xl font-black text-white">Free</h3>
-                  <p className="text-xs text-gray-400 mt-1">Ideal for individual creators getting started</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Ideal for individual creators getting started
+                  </p>
                 </div>
 
                 <div className="flex items-baseline space-x-1">
@@ -161,7 +170,9 @@ export default function PricingPage() {
                 <div className="border-t border-white/5 pt-5 space-y-3 text-xs text-gray-300">
                   <div className="flex items-center space-x-2.5">
                     <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span><strong>200 DMs</strong> / month</span>
+                    <span>
+                      <strong>200 DMs</strong> / month
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2.5">
                     <Check className="w-4 h-4 text-primary flex-shrink-0" />
@@ -195,7 +206,9 @@ export default function PricingPage() {
               <div className="space-y-5 pt-2">
                 <div>
                   <h3 className="text-xl font-black text-white">Pro</h3>
-                  <p className="text-xs text-gray-400 mt-1">Unlimited everything for serious creators & digital brands</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Unlimited everything for serious creators & digital brands
+                  </p>
                 </div>
 
                 {/* Pricing logic: Monthly discounted rate shown on yearly toggle */}
@@ -204,9 +217,7 @@ export default function PricingPage() {
                     <span className="text-4xl font-black text-white">
                       {isAnnual ? '₹832' : '₹999'}
                     </span>
-                    <span className="text-xs text-gray-400 font-bold">
-                      / month
-                    </span>
+                    <span className="text-xs text-gray-400 font-bold">/ month</span>
                   </div>
                   {isAnnual ? (
                     <p className="text-[11px] font-bold text-primary font-mono">
@@ -225,7 +236,9 @@ export default function PricingPage() {
                 <div className="border-t border-white/5 pt-5 space-y-3 text-xs text-gray-200 font-medium">
                   <div className="flex items-center space-x-2.5">
                     <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span><strong>Unlimited DMs</strong> & Campaigns</span>
+                    <span>
+                      <strong>Unlimited DMs</strong> & Campaigns
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2.5">
                     <Check className="w-4 h-4 text-primary flex-shrink-0" />
@@ -263,7 +276,9 @@ export default function PricingPage() {
               <div className="space-y-5">
                 <div>
                   <h3 className="text-xl font-black text-white">Agency</h3>
-                  <p className="text-xs text-gray-400 mt-1">Multi-client workspace for agencies & big creator networks</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Multi-client workspace for agencies & big creator networks
+                  </p>
                 </div>
 
                 <div className="space-y-1">
@@ -279,7 +294,9 @@ export default function PricingPage() {
                 <div className="border-t border-white/5 pt-4 space-y-3 text-xs text-gray-300">
                   <div className="flex items-center space-x-2.5">
                     <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                    <span><strong>5 to 50+ Client Accounts</strong> Managed</span>
+                    <span>
+                      <strong>5 to 50+ Client Accounts</strong> Managed
+                    </span>
                   </div>
                   <div className="flex items-center space-x-2.5">
                     <Check className="w-4 h-4 text-primary flex-shrink-0" />
@@ -332,7 +349,10 @@ export default function PricingPage() {
               <tbody className="divide-y divide-white/5 text-gray-300">
                 {COMPARISON_SPECIFICATIONS.flatMap((cat) => [
                   <tr key={cat.category} className="bg-white/[0.02]">
-                    <td colSpan={4} className="p-3 text-[10px] font-black uppercase text-primary tracking-widest pl-4">
+                    <td
+                      colSpan={4}
+                      className="p-3 text-[10px] font-black uppercase text-primary tracking-widest pl-4"
+                    >
                       {cat.category}
                     </td>
                   </tr>,
@@ -341,21 +361,33 @@ export default function PricingPage() {
                       <td className="p-4 font-semibold text-white">{feat.name}</td>
                       <td className="p-4 text-center font-mono">
                         {typeof feat.free === 'boolean' ? (
-                          feat.free ? <Check className="w-4 h-4 text-primary mx-auto" /> : <X className="w-4 h-4 text-gray-600 mx-auto" />
+                          feat.free ? (
+                            <Check className="w-4 h-4 text-primary mx-auto" />
+                          ) : (
+                            <X className="w-4 h-4 text-gray-600 mx-auto" />
+                          )
                         ) : (
                           feat.free
                         )}
                       </td>
                       <td className="p-4 text-center font-mono font-bold text-primary">
                         {typeof feat.pro === 'boolean' ? (
-                          feat.pro ? <Check className="w-4 h-4 text-primary mx-auto" /> : <X className="w-4 h-4 text-gray-600 mx-auto" />
+                          feat.pro ? (
+                            <Check className="w-4 h-4 text-primary mx-auto" />
+                          ) : (
+                            <X className="w-4 h-4 text-gray-600 mx-auto" />
+                          )
                         ) : (
                           feat.pro
                         )}
                       </td>
                       <td className="p-4 text-center font-mono">
                         {typeof feat.agency === 'boolean' ? (
-                          feat.agency ? <Check className="w-4 h-4 text-primary mx-auto" /> : <X className="w-4 h-4 text-gray-600 mx-auto" />
+                          feat.agency ? (
+                            <Check className="w-4 h-4 text-primary mx-auto" />
+                          ) : (
+                            <X className="w-4 h-4 text-gray-600 mx-auto" />
+                          )
                         ) : (
                           feat.agency
                         )}
@@ -367,6 +399,9 @@ export default function PricingPage() {
             </table>
           </div>
         </section>
+
+        {/* FAQ SECTION */}
+        <FAQ />
 
         <Footer />
       </div>

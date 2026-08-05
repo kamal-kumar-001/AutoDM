@@ -58,7 +58,9 @@ export default function AutomationsPage() {
   const [editingCampaignId, setEditingCampaignId] = React.useState<string | null>(null);
   const [viewCampaignId, setViewCampaignId] = React.useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = React.useState(false);
-  const [planLimits, setPlanLimits] = React.useState<{ max_campaigns: number }>({ max_campaigns: 999999 });
+  const [planLimits, setPlanLimits] = React.useState<{ max_campaigns: number }>({
+    max_campaigns: 999999,
+  });
 
   const fetchCampaigns = async () => {
     try {
@@ -86,8 +88,8 @@ export default function AutomationsPage() {
     const maxCampaigns = planLimits.max_campaigns;
     const activeCount = campaigns.filter((c) => c.status !== 'DELETED').length;
 
-    // Upfront UX Gating Check: If plan limit is exceeded, show UpgradeModal immediately!
-    if (maxCampaigns !== -1 && maxCampaigns < 99999 && activeCount >= maxCampaigns) {
+    // Upfront UX Gating Check: If plan limit is exceeded (and not unlimited -1), show UpgradeModal immediately!
+    if (maxCampaigns !== -1 && maxCampaigns > 0 && activeCount >= maxCampaigns) {
       setIsUpgradeModalOpen(true);
       return;
     }
@@ -320,7 +322,10 @@ export default function AutomationsPage() {
                           <span
                             className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[8px] font-bold tracking-wider ${getCampaignBadgeColor(campaign.type || campaign.triggerType || 'COMMENT_TO_DM')}`}
                           >
-                            {(campaign.type || campaign.triggerType || 'COMMENT_TO_DM').replace(/_/g, ' ')}
+                            {(campaign.type || campaign.triggerType || 'COMMENT_TO_DM').replace(
+                              /_/g,
+                              ' ',
+                            )}
                           </span>
                           <span
                             className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[8px] font-bold ${

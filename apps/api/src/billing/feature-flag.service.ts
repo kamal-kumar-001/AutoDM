@@ -5,6 +5,21 @@ import { Plan } from '@prisma/client';
 // Default feature flags seeded at startup (all enabled for all plans in Meta App Review mode)
 const DEFAULT_FLAGS: Array<{ key: string; description: string; enabledForPlans: string }> = [
   {
+    key: 'NO_BRANDING',
+    description: '✨ No AutoDM Branding (Clean Whitelabel DMs)',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
+  },
+  {
+    key: 'REPLY_DESK',
+    description: 'Smart Reply Desk AI Query Filter',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
+  },
+  {
+    key: 'MULTILINGUAL_HINGLISH',
+    description: 'Hinglish & Regional Language Engine',
+    enabledForPlans: 'FREE,PRO,ENTERPRISE',
+  },
+  {
     key: 'COMMENT_TO_DM',
     description: 'Comment-triggered DM automation',
     enabledForPlans: 'FREE,PRO,ENTERPRISE',
@@ -18,6 +33,31 @@ const DEFAULT_FLAGS: Array<{ key: string; description: string; enabledForPlans: 
     key: 'WELCOME_DM',
     description: 'New follower welcome DM',
     enabledForPlans: 'FREE,PRO,ENTERPRISE',
+  },
+  {
+    key: 'DM_VARIANTS',
+    description: 'Anti-Spam Copy Variation Rotation',
+    enabledForPlans: 'PRO,ENTERPRISE',
+  },
+  {
+    key: 'VIRAL_QUEUE',
+    description: 'Redis Surge-Paced Viral Queue Protection',
+    enabledForPlans: 'PRO,ENTERPRISE',
+  },
+  {
+    key: 'SPIKE_ALERTS',
+    description: 'Real-Time Mobile PWA Push Alerts',
+    enabledForPlans: 'PRO,ENTERPRISE',
+  },
+  {
+    key: 'VOICE_CREATE',
+    description: 'Voice Funnel Speech-to-Automation',
+    enabledForPlans: 'PRO,ENTERPRISE',
+  },
+  {
+    key: 'FOLLOW_CHECK_GATE',
+    description: 'Follow-to-Unlock Quick Reply Gate',
+    enabledForPlans: 'PRO,ENTERPRISE',
   },
   {
     key: 'ANALYTICS_ADVANCED',
@@ -52,16 +92,6 @@ const DEFAULT_FLAGS: Array<{ key: string; description: string; enabledForPlans: 
   {
     key: 'EMAIL_VERIFICATION_REQUIRED',
     description: 'Enforce email verification for campaign automation and account link actions',
-    enabledForPlans: 'FREE,PRO,ENTERPRISE',
-  },
-  {
-    key: 'FOLLOW_CHECK_GATE',
-    description: 'Follow-to-Unlock verification gate & native quick replies',
-    enabledForPlans: 'FREE,PRO,ENTERPRISE',
-  },
-  {
-    key: 'DM_VARIANTS',
-    description: 'Anti-Spam copy variation rotation',
     enabledForPlans: 'FREE,PRO,ENTERPRISE',
   },
 ];

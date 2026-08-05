@@ -117,10 +117,25 @@ export const COMPARISON_SPECIFICATIONS = [
   {
     category: 'Core Capabilities',
     features: [
-      { name: '✨ No AutoDM Branding (Whitelabel DMs)', free: 'Included', pro: 'Included', agency: 'Included' },
-      { name: 'Active Automation Campaigns', free: '2 Campaigns', pro: 'Unlimited', agency: 'Unlimited' },
-      { name: 'Monthly DM Volume', free: '200 DMs/mo', pro: 'Unlimited', agency: 'Unlimited' },
-      { name: 'Keywords Per Campaign', free: '5 Keywords', pro: 'Unlimited', agency: 'Unlimited' },
+      {
+        name: '✨ No AutoDM Branding (Whitelabel DMs)',
+        free: 'Included',
+        pro: 'Included',
+        agency: 'Included',
+      },
+      {
+        name: 'Active Automation Campaigns',
+        free: '1 Campaign',
+        pro: '∞ Unlimited',
+        agency: '∞ Unlimited',
+      },
+      { name: 'Monthly DM Volume', free: '500 DMs/mo', pro: '∞ Unlimited', agency: '∞ Unlimited' },
+      {
+        name: 'Keywords Per Campaign',
+        free: '5 Keywords',
+        pro: '∞ Unlimited',
+        agency: '∞ Unlimited',
+      },
     ],
   },
   {
@@ -138,7 +153,12 @@ export const COMPARISON_SPECIFICATIONS = [
   {
     category: 'Account & Management',
     features: [
-      { name: 'Connected Instagram Accounts', free: '1 Account', pro: '1 Account', agency: 'Custom (5-50+)' },
+      {
+        name: 'Connected Instagram Accounts',
+        free: '1 Account',
+        pro: '3 Accounts',
+        agency: 'Custom (5-50+)',
+      },
       { name: 'Team Seats', free: '1 Seat', pro: '1 Seat', agency: 'Custom Team Workspace' },
       { name: 'Dedicated Account Manager', free: false, pro: false, agency: true },
     ],

@@ -76,7 +76,7 @@ export default function AdminPage() {
     <AdminLayout activeTab={tab} setActiveTab={setTab}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">
+        <div className="flex justify-between items-center pb-4 border-b border-white/5">
           <div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight capitalize">
               {tab.replace('-', ' ')}
@@ -85,23 +85,6 @@ export default function AdminPage() {
               Manage system-wide {tab.replace('-', ' ')} and parameters.
             </p>
           </div>
-
-          {/* 1-Click App Review Mode Trigger */}
-          <button
-            onClick={async () => {
-              try {
-                await apiRequest('/admin/enable-app-review-mode', { method: 'POST' });
-                toast.success('App Review Mode Active: All plans set to unlimited quotas & all feature flags enabled!');
-                setTimeout(() => window.location.reload(), 1500);
-              } catch (e) {
-                toast.error('Failed to enable App Review Mode');
-              }
-            }}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-primary to-accent-cyan text-white text-xs font-black shadow-lg hover:shadow-emerald-500/25 transition-all flex items-center gap-2 cursor-pointer border-0"
-            title="Sets all plan quotas to unlimited and enables all feature flags across all plans for Meta App Review"
-          >
-            <span>🚀 Enable App Review Mode (Unlock All Plans & Flags)</span>
-          </button>
         </div>
 
         {/* Tab Content */}
