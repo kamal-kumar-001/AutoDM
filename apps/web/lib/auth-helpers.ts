@@ -9,7 +9,9 @@ export const handleLogout = async () => {
     try {
       sessionStorage.clear();
       localStorage.removeItem('nextauth.message');
-    } catch {}
+    } catch (error) {
+      // Ignore browser storage access errors in restricted contexts
+    }
   }
   await signOut({ redirect: true, callbackUrl: '/login?logged_out=1' });
 };
