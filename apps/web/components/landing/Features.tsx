@@ -3,13 +3,7 @@
 import * as React from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { INNOVATIONS_CONTENT, PWA_MOBILE_CONTENT, PERSONAS_CONTENT } from '@/lib/landing-data';
-import {
-  Sparkles,
-  MessageCircle,
-  Flame,
-  BellRing,
-  Check,
-} from 'lucide-react';
+import { Sparkles, MessageCircle, Flame, BellRing, Check } from 'lucide-react';
 
 export default function Features() {
   const [activeTab, setActiveTab] = React.useState(0);
@@ -50,9 +44,9 @@ export default function Features() {
           </p>
         </div>
 
-        {/* Slideable & Scrollable Tab Selector Bar (Hidden Scrollbar + Container Padding Alignment) */}
-        <div className="w-full max-w-7xl mx-auto px-2">
-          <div className="flex items-center justify-start md:justify-center gap-2.5 overflow-x-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-2 px-1">
+        {/* Slideable & Scrollable Tab Selector Bar (Hidden Scrollbar + Generous Container Left Padding Alignment) */}
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-8">
+          <div className="flex items-center justify-start md:justify-center gap-3 overflow-x-auto scrollbar-none [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden py-3 px-4 sm:px-6">
             {INNOVATIONS_CONTENT.items.map((item, idx) => {
               const Icon = item.icon;
               const isActive = activeTab === idx;
@@ -62,7 +56,7 @@ export default function Features() {
                   onClick={() => setActiveTab(idx)}
                   className={`flex items-center gap-2.5 px-4 sm:px-5 py-3 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer flex-shrink-0 ${
                     isActive
-                      ? 'bg-gradient-to-r from-primary to-accent-cyan text-white shadow-[0_0_25px_rgba(0,187,136,0.35)] scale-[1.03] ring-1 ring-white/20'
+                      ? 'bg-gradient-to-r from-primary via-emerald-400 to-accent-cyan text-white shadow-[0_0_25px_rgba(0,187,136,0.35)] scale-[1.03] ring-1 ring-white/20'
                       : 'bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10'
                   }`}
                 >
@@ -120,8 +114,8 @@ export default function Features() {
                 </ul>
               </div>
 
-              {/* Right Column: Visual Preview Graphic */}
-              <div className="lg:col-span-6 bg-black/60 border border-white/10 rounded-2xl p-5 space-y-4 shadow-inner">
+              {/* Right Column: Visual Preview Graphic (Glassmorphic Theme, No Harsh Black Box) */}
+              <div className="lg:col-span-6 bg-gradient-to-b from-white/[0.04] to-white/[0.01] backdrop-blur-xl border border-white/10 rounded-2xl p-5 space-y-4 shadow-glass">
                 {activeItem.number === '01' && activeItem.example && (
                   <div className="space-y-3 text-xs">
                     <div className="flex items-center justify-between border-b border-white/10 pb-2">
@@ -135,7 +129,10 @@ export default function Features() {
 
                     <div className="flex flex-wrap gap-1.5 font-mono text-[10px] opacity-40">
                       {activeItem.example.noise.map((n, i) => (
-                        <span key={i} className="bg-white/10 px-2 py-0.5 rounded line-through text-gray-300">
+                        <span
+                          key={i}
+                          className="bg-white/10 px-2 py-0.5 rounded line-through text-gray-300"
+                        >
                           {n}
                         </span>
                       ))}
@@ -163,8 +160,9 @@ export default function Features() {
                         </span>
                       ))}
                     </div>
-                    <div className="p-3 rounded-xl bg-black/40 border border-white/10 font-mono text-[11px] text-gray-300">
-                      Comment: &quot;bhai price kitna hai Bangalore shipping ke saath?&quot; → Matched Trigger &quot;price&quot;
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 font-mono text-[11px] text-gray-300">
+                      Comment: &quot;bhai price kitna hai Bangalore shipping ke saath?&quot; →
+                      Matched Trigger &quot;price&quot;
                     </div>
                   </div>
                 )}
@@ -175,7 +173,10 @@ export default function Features() {
                       Anti-Spam Dynamic Copy Rotation
                     </span>
                     {activeItem.variantDemo.map((v, i) => (
-                      <div key={i} className="p-2.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 font-mono text-[11px]">
+                      <div
+                        key={i}
+                        className="p-2.5 rounded-lg bg-white/5 border border-white/10 text-gray-300 font-mono text-[11px]"
+                      >
                         Variant {i + 1}: &quot;{v}&quot;
                       </div>
                     ))}
@@ -188,7 +189,9 @@ export default function Features() {
                       <Flame className="w-6 h-6" />
                     </div>
                     <p className="font-bold text-amber-300 text-xs">{activeItem.badgeText}</p>
-                    <p className="text-[11px] text-gray-400 font-mono">Redis BullMQ Queue pacing at 40 DMs/min during viral spikes.</p>
+                    <p className="text-[11px] text-gray-400 font-mono">
+                      Redis BullMQ Queue pacing at 40 DMs/min during viral spikes.
+                    </p>
                   </div>
                 )}
 
@@ -243,7 +246,10 @@ export default function Features() {
                 {PWA_MOBILE_CONTENT.features.map((feat, idx) => {
                   const Icon = feat.icon;
                   return (
-                    <div key={idx} className="space-y-2 p-4 rounded-xl bg-white/5 border border-white/5">
+                    <div
+                      key={idx}
+                      className="space-y-2 p-4 rounded-xl bg-white/5 border border-white/5"
+                    >
                       <Icon className="w-5 h-5 text-primary" />
                       <h4 className="text-xs font-bold text-white">{feat.title}</h4>
                       <p className="text-[11px] text-gray-400 leading-relaxed">{feat.desc}</p>
@@ -253,15 +259,16 @@ export default function Features() {
               </div>
             </div>
 
+            {/* Mobile PWA Device Preview (Premium Glass Frame, No Harsh Black Box) */}
             <div className="lg:col-span-5 flex justify-center">
-              <div className="relative w-64 h-[420px] rounded-[36px] border-4 border-white/10 bg-black shadow-2xl p-4 flex flex-col justify-between overflow-hidden transform rotate-2 hover:rotate-0 transition-transform duration-500">
+              <div className="relative w-64 h-[420px] rounded-[36px] border-2 border-primary/30 bg-gradient-to-b from-[#0e1726] via-[#090d16] to-[#04070d] shadow-[0_0_50px_rgba(0,187,136,0.2)] p-4 flex flex-col justify-between overflow-hidden transform rotate-2 hover:rotate-0 transition-all duration-500">
                 <div className="w-24 h-4 bg-white/10 rounded-full mx-auto mb-4" />
                 <div className="space-y-3 flex-1">
-                  <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 text-[11px] text-white font-bold flex items-center justify-between">
+                  <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 text-[11px] text-white font-bold flex items-center justify-between shadow-sm">
                     <span>AutoDM Mobile PWA</span>
                     <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                   </div>
-                  <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-[10px] text-gray-300 font-mono space-y-1">
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[10px] text-gray-300 font-mono space-y-1">
                     <p className="text-emerald-400 font-bold">⚡ 2,500 DMs enqueued</p>
                     <p>Viral Spike Paced Safely</p>
                   </div>
