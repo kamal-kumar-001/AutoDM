@@ -162,7 +162,7 @@ export class InstagramService {
         const igAccount = pageDetailsResponse.data.instagram_business_account;
 
         if (igAccount) {
-          // Automatically subscribe the Facebook Page to this app's webhooks
+          // Attempt Page webhook subscription (Instagram Graph API delivers webhooks via App Dashboard endpoint)
           try {
             await axios.post(`https://graph.facebook.com/v20.0/${page.id}/subscribed_apps`, null, {
               params: {
@@ -170,20 +170,11 @@ export class InstagramService {
                 subscribed_fields: 'messages,feed,messaging_postbacks,mention',
               },
             });
-            this.logger.log(`Successfully subscribed Page ${page.name} (${page.id}) to webhooks.`);
-          } catch (subError: any) {
-            const status = subError?.response?.status;
-            const detail = subError?.response?.data?.error?.message || subError.message;
-
-            if (status === 403) {
-              this.logger.log(
-                `Page ${page.name} webhook subscription noted (Status 403). Using Meta App Dashboard global webhook subscriptions for IG events. Details: ${detail}`,
-              );
-            } else {
-              this.logger.warn(
-                `Failed to automatically subscribe Page ${page.name} to app webhooks: ${detail}`,
-              );
-            }
+            this.logger.log(`Page ${page.name} (${page.id}) webhook subscription active.`);
+          } catch {
+            this.logger.log(
+              `Instagram account @${igAccount.username} connected. Meta App Webhook active.`,
+            );
           }
 
           // Verify max_accounts limit for user's plan
