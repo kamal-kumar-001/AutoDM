@@ -69,8 +69,6 @@ export class InstagramService {
       'instagram_manage_comments',
       'instagram_manage_messages',
       'pages_read_engagement',
-      'pages_messaging',
-      'pages_manage_metadata',
     ].join(',');
 
     return `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(
