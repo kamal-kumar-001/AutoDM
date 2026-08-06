@@ -42,11 +42,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
       code = exception.name;
     }
 
-    // Format error log message
-    this.logger.error(
-      `[${request.method}] ${request.url} - Status: ${status} - Error: ${message}`,
-      exception instanceof Error ? exception.stack : undefined,
-    );
+    // Format error log message cleanly: 4xx client errors logged at WARN level, 5xx server errors at ERROR level
+    const logMsg = `[${request.method}] ${request.url} - Status: ${status} - Error: ${message}`;
+    if (status >= 500) {
+      this.logger.error(logMsg, exception instanceof Error ? exception.stack : undefined);
+    } else {
+      this.logger.warn(logMsg);
+    }
 
     const errorResponse: ApiErrorResponse = {
       success: false,

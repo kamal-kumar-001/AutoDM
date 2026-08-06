@@ -109,17 +109,24 @@ export default function InboxPage() {
     return () => clearInterval(interval);
   }, []);
 
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const prevMsgCountRef = useRef<number>(0);
+  const [isUserScrolledUp, setIsUserScrolledUp] = useState<boolean>(false);
+
   // Poll messages every 4 seconds when a conversation is active
   useEffect(() => {
     if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
 
     if (selectedRecipientId) {
+      setIsUserScrolledUp(false);
+      prevMsgCountRef.current = 0;
       fetchMessages(selectedRecipientId, true);
       pollIntervalRef.current = setInterval(() => {
         fetchMessages(selectedRecipientId, false);
       }, 4000);
     } else {
       setMessages([]);
+      prevMsgCountRef.current = 0;
     }
 
     return () => {
@@ -127,20 +134,24 @@ export default function InboxPage() {
     };
   }, [selectedRecipientId]);
 
-  const chatContainerRef = React.useRef<HTMLDivElement>(null);
-  const [isUserScrolledUp, setIsUserScrolledUp] = React.useState(false);
-
   const handleChatScroll = () => {
     const container = chatContainerRef.current;
     if (!container) return;
-    const isUp = container.scrollHeight - container.scrollTop - container.clientHeight > 120;
-    setIsUserScrolledUp(isUp);
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    setIsUserScrolledUp(distanceFromBottom > 80);
   };
 
-  // Scroll to bottom when message list updates ONLY if user is not scrolled up reading past history
+  // Scroll to bottom when selecting a thread or when NEW messages arrive (only if user is not reading past history)
   useEffect(() => {
-    if (!isUserScrolledUp) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > 0) {
+      const isFirstLoad = prevMsgCountRef.current === 0;
+      const isNewMessageAdded = messages.length > prevMsgCountRef.current;
+      prevMsgCountRef.current = messages.length;
+
+      if (isFirstLoad || (!isUserScrolledUp && isNewMessageAdded)) {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   }, [messages, isUserScrolledUp]);
 
@@ -156,8 +167,8 @@ export default function InboxPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col space-y-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-white/5">
+      <div className="flex flex-col h-[calc(100vh-140px)] space-y-4 overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-white/5 shrink-0">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-white to-primary bg-clip-text text-transparent">
               Creator Inbox & Reply Desk
@@ -169,7 +180,7 @@ export default function InboxPage() {
           </div>
 
           {/* Mode Switcher Tabs */}
-          <div className="flex items-center bg-white/5 border border-white/10 p-1 rounded-xl">
+          <div className="flex items-center bg-white/5 border border-white/10 p-1 rounded-xl shrink-0">
             <button
               onClick={() => setViewMode('reply-desk')}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
@@ -196,12 +207,14 @@ export default function InboxPage() {
         </div>
 
         {viewMode === 'reply-desk' ? (
-          <ReplyDesk />
+          <div className="flex-1 overflow-y-auto min-h-0 pr-1">
+            <ReplyDesk />
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-[calc(100vh-210px)] flex-1 min-h-0">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 flex-1 min-h-0 overflow-hidden">
             {/* Left Column: Conversations List */}
-            <div className="md:col-span-4 flex flex-col glass-card rounded-xl border border-white/5 overflow-hidden">
-              <div className="p-3 border-b border-white/5">
+            <div className="md:col-span-4 flex flex-col glass-card rounded-xl border border-white/5 overflow-hidden h-full min-h-0">
+              <div className="p-3 border-b border-white/5 shrink-0">
                 <div className="relative">
                   <input
                     type="text"
@@ -228,7 +241,7 @@ export default function InboxPage() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto divide-y divide-white/5">
+              <div className="flex-1 overflow-y-auto divide-y divide-white/5 min-h-0">
                 {loadingConversations ? (
                   <div className="p-4 text-center text-xs text-gray-500">Loading threads...</div>
                 ) : filteredConversations.length === 0 ? (
@@ -281,13 +294,13 @@ export default function InboxPage() {
             </div>
 
             {/* Middle Column: Chat Window */}
-            <div className="md:col-span-8 flex flex-col glass-card rounded-xl border border-white/5 overflow-hidden">
+            <div className="md:col-span-8 flex flex-col glass-card rounded-xl border border-white/5 overflow-hidden h-full min-h-0">
               {selectedRecipientId ? (
                 <>
-                  {/* Chat Header */}
-                  <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+                  {/* Chat Header - Fixed at Top */}
+                  <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02] shrink-0">
                     <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center font-bold text-white text-xs border border-white/10">
+                      <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center font-bold text-white text-xs border border-white/10 shrink-0">
                         {(activeConversation?.recipientUsername || selectedRecipientId)
                           .substring(0, 2)
                           .toUpperCase()}
@@ -306,7 +319,7 @@ export default function InboxPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                    <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full shrink-0">
                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       <span className="text-[9px] font-semibold text-emerald-400 uppercase tracking-wider">
                         Automation Active
@@ -314,11 +327,11 @@ export default function InboxPage() {
                     </div>
                   </div>
 
-                  {/* Message Log */}
+                  {/* Message Log - Scrollable Center Area */}
                   <div
                     ref={chatContainerRef}
                     onScroll={handleChatScroll}
-                    className="flex-1 overflow-y-auto p-4 space-y-3 bg-black/20 relative"
+                    className="flex-1 overflow-y-auto p-4 space-y-3 bg-black/20 relative min-h-0"
                   >
                     {loadingMessages ? (
                       <div className="flex items-center justify-center h-full text-xs text-gray-500">
@@ -390,10 +403,10 @@ export default function InboxPage() {
                     )}
                   </div>
 
-                  {/* Chat Input Footer */}
+                  {/* Chat Input Footer - Always Fixed at Bottom */}
                   <form
                     onSubmit={handleSendMessage}
-                    className="p-3 border-t border-white/5 bg-white/[0.01] flex gap-2"
+                    className="p-3 border-t border-white/5 bg-white/[0.01] flex gap-2 shrink-0"
                   >
                     <Input
                       placeholder="Type a message..."

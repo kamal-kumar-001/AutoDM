@@ -47,7 +47,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   React.useEffect(() => {
-    if (session) {
+    const hasToken = Boolean((session as any)?.accessToken);
+    if (hasToken) {
       fetchNotifications();
       const interval = setInterval(fetchNotifications, 30000);
       return () => clearInterval(interval);
