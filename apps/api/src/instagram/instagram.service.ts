@@ -167,7 +167,7 @@ export class InstagramService {
             await axios.post(`https://graph.facebook.com/v20.0/${page.id}/subscribed_apps`, null, {
               params: {
                 access_token: page.access_token,
-                subscribed_fields: 'messages,comments',
+                subscribed_fields: 'messages,feed,messaging_postbacks,mention',
               },
             });
             this.logger.log(`Successfully subscribed Page ${page.name} (${page.id}) to webhooks.`);
