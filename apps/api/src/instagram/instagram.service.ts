@@ -69,6 +69,8 @@ export class InstagramService {
       'instagram_manage_comments',
       'instagram_manage_messages',
       'pages_read_engagement',
+      'pages_messaging',
+      'pages_manage_metadata',
     ].join(',');
 
     return `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(
@@ -171,14 +173,19 @@ export class InstagramService {
               },
             });
             this.logger.log(`Successfully subscribed Page ${page.name} (${page.id}) to webhooks.`);
-          } catch (subError) {
-            const msg = subError instanceof Error ? subError.message : String(subError);
-            const detail = axios.isAxiosError(subError)
-              ? JSON.stringify(subError.response?.data)
-              : '';
-            this.logger.warn(
-              `Failed to automatically subscribe Page ${page.name} to app webhooks: ${msg}. Details: ${detail}`,
-            );
+          } catch (subError: any) {
+            const status = subError?.response?.status;
+            const detail = subError?.response?.data?.error?.message || subError.message;
+
+            if (status === 403) {
+              this.logger.log(
+                `Page ${page.name} webhook subscription noted (Status 403). Using Meta App Dashboard global webhook subscriptions for IG events. Details: ${detail}`,
+              );
+            } else {
+              this.logger.warn(
+                `Failed to automatically subscribe Page ${page.name} to app webhooks: ${detail}`,
+              );
+            }
           }
 
           // Verify max_accounts limit for user's plan
