@@ -15,28 +15,28 @@ export function SurgeAlertBanner({ onRefreshCampaigns }: SurgeAlertBannerProps) 
     campaignName: string;
     hourlyVolume: number;
   } | null>(null);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    // Check campaign activity metrics for traffic spikes
+    // Check campaign activity metrics for genuine high viral volume (>500 DMs)
     apiRequest<any[]>('/campaigns')
       .then((campaigns) => {
         if (!campaigns || campaigns.length === 0) return;
-        // Find campaign with high hourly volume
         const surging = campaigns.find(
-          (c) => c.status === 'ACTIVE' && c.metrics?.totalDmsSent > 30,
+          (c) => c.status === 'ACTIVE' && c.metrics?.totalDmsSent > 500,
         );
         if (surging) {
           setActiveSurge({
             campaignId: surging.id,
             campaignName: surging.name,
-            hourlyVolume: surging.metrics?.totalDmsSent || 120,
+            hourlyVolume: surging.metrics?.totalDmsSent || 500,
           });
         }
       })
       .catch(() => null);
   }, []);
 
-  if (!activeSurge) return null;
+  if (!activeSurge || dismissed) return null;
 
   const handlePauseSurge = async () => {
     try {
@@ -76,6 +76,14 @@ export function SurgeAlertBanner({ onRefreshCampaigns }: SurgeAlertBannerProps) 
       </div>
 
       <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
+        <Button
+          onClick={() => setDismissed(true)}
+          size="sm"
+          variant="ghost"
+          className="text-xs text-gray-400 hover:text-white"
+        >
+          Dismiss
+        </Button>
         <Button
           onClick={handlePauseSurge}
           size="sm"

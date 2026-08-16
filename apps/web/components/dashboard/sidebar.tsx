@@ -16,6 +16,7 @@ import {
   Mail,
   Link2,
   Radio,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@autodm/ui';
 import { usePathname, useRouter } from 'next/navigation';
@@ -32,6 +33,7 @@ interface SidebarItem {
 const navItems: SidebarItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, shortcut: '⌥D' },
   { name: 'Automations', href: '/automations', icon: MessageSquareCode, shortcut: '⌥A' },
+  { name: 'Reply Desk', href: '/reply-desk', icon: Sparkles, shortcut: '⌥R' },
   { name: 'Delivery Logs', href: '/delivery-logs', icon: Radio, shortcut: '⌥W' },
   { name: 'Inbox', href: '/inbox', icon: Inbox, shortcut: '⌥I' },
   { name: 'Analytics', href: '/analytics', icon: BarChart3, shortcut: '⌥L' },

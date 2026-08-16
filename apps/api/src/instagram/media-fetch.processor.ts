@@ -110,7 +110,7 @@ export class MediaFetchProcessor extends WorkerHost {
           params: {
             fields:
               'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count',
-            limit: 20,
+            limit: 50,
             access_token: accessToken,
           },
         },

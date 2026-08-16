@@ -176,8 +176,9 @@ export class InstagramController {
   async replyToBuyerQuery(
     @Param('id') commentDbId: string,
     @Body('replyText') replyText: string,
+    @Body('replyMode') replyMode: 'PUBLIC_COMMENT' | 'PRIVATE_DM',
     @GetUser() user: { id: string },
   ) {
-    return this.replyDeskService.replyToBuyer(user.id, commentDbId, replyText);
+    return this.replyDeskService.replyToBuyer(user.id, commentDbId, replyText, replyMode);
   }
 }

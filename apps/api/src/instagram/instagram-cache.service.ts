@@ -16,14 +16,22 @@ export interface CachedPost {
  */
 @Injectable()
 export class InstagramCacheService {
-  private readonly cache = new Map<string, CachedPost[]>();
+  private readonly cache = new Map<string, { posts: CachedPost[]; timestamp: number }>();
+  private readonly TTL_MS = 5 * 60 * 1000; // 5 minutes TTL
 
   set(instagramId: string, posts: CachedPost[]) {
-    this.cache.set(instagramId, posts);
+    this.cache.set(instagramId, { posts, timestamp: Date.now() });
   }
 
   get(instagramId: string): CachedPost[] | undefined {
-    return this.cache.get(instagramId);
+    const entry = this.cache.get(instagramId);
+    if (!entry) return undefined;
+    // Check TTL expiration
+    if (Date.now() - entry.timestamp > this.TTL_MS) {
+      this.cache.delete(instagramId);
+      return undefined;
+    }
+    return entry.posts;
   }
 
   clear(instagramId: string) {

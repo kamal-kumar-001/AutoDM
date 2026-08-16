@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import axios from 'axios';
 import { PrismaService } from '../prisma/prisma.service';
 import { SendDmProducer } from './send-dm.producer';
+import { EncryptionService } from '../common/encryption/encryption.service';
 import { AuditLogService } from '../auth/audit-log.service';
 
 export interface BuyerQueryItem {
@@ -26,6 +28,7 @@ export class ReplyDeskService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sendDmProducer: SendDmProducer,
+    private readonly encryptionService: EncryptionService,
     private readonly auditLogService: AuditLogService,
   ) {}
 
@@ -49,8 +52,7 @@ export class ReplyDeskService {
       return {
         category: 'PRICE',
         intentScore: 95,
-        suggestedReply:
-          'Hey! Thanks for asking. Sending you the complete pricing details in DM now! 📩',
+        suggestedReply: 'Hey! Thanks for asking. Sending you the complete details now! 📩',
       };
     }
 
@@ -66,7 +68,7 @@ export class ReplyDeskService {
         category: 'SHIPPING',
         intentScore: 88,
         suggestedReply:
-          'Hi! We ship pan-India with cash-on-delivery. Check your DM for shipping timelines! 🚀',
+          'Hi! We ship pan-India with fast delivery options. Check your DMs for details! 🚀',
       };
     }
 
@@ -81,14 +83,14 @@ export class ReplyDeskService {
         category: 'AVAILABILITY',
         intentScore: 90,
         suggestedReply:
-          'Hey! Yes, this item is currently in stock. Check your DM for size options! ✨',
+          'Hey! Yes, this item is currently available. Check your DMs for options! ✨',
       };
     }
 
     return {
       category: 'GENERAL',
       intentScore: 80,
-      suggestedReply: 'Hey! Thanks for reaching out. Sent you all the details in DM! 🌟',
+      suggestedReply: 'Hey! Thanks for reaching out. Sent you all the details! 🌟',
     };
   }
 
@@ -103,6 +105,7 @@ export class ReplyDeskService {
 
     const accountIds = accounts.map((a) => a.id);
     const accountMap = Object.fromEntries(accounts.map((a) => [a.id, a]));
+    const creatorHandlesSet = new Set(accounts.map((a) => a.username.toLowerCase().trim()));
 
     // Fetch user's active campaign trigger keywords to separate simple automated triggers
     const activeKeywords = await this.prisma.keyword.findMany({
@@ -120,25 +123,33 @@ export class ReplyDeskService {
         instagramAccountId: { in: accountIds },
       },
       orderBy: { createdAt: 'desc' },
-      take: 60,
+      take: 80,
     });
 
-    // Intelligently separate simple campaign triggers ("ebook", "ticket") from genuine buyer queries
+    // Filter out creator's own replies & simple single-word triggers
     return comments
       .filter((c) => {
         const textClean = c.text.toLowerCase().trim();
+        const commentAuthor = c.username.toLowerCase().trim();
+
+        // 1. EXCLUDE creator's own comments & automated bot replies
+        if (
+          creatorHandlesSet.has(commentAuthor) ||
+          textClean.startsWith('sent!') ||
+          textClean.startsWith('public reply:') ||
+          textClean.startsWith('check your dms')
+        ) {
+          return false;
+        }
+
         const words = textClean.split(/\s+/);
 
-        // 1. Exclude simple single-word or two-word exact campaign keyword triggers (e.g. "ebook", "ticket", "link")
-        // which are already handled automatically by automated DM campaigns.
+        // 2. Exclude simple single-word or two-word exact campaign keyword triggers (e.g. "ebook", "ticket", "link")
         if (words.length <= 2 && activeKeywordsSet.has(textClean) && !c.text.includes('?')) {
           return false;
         }
 
-        // 2. Include genuine buyer inquiries:
-        // - Comments containing question marks (?)
-        // - Comments containing high-intent buyer words (price, shipping, availability, cost, etc.)
-        // - Conversational inquiries that extend beyond simple keyword triggers
+        // 3. Include genuine prospective buyer comments & inquiries
         const hasQuestionMark = c.text.includes('?');
         const hasBuyerKeyword =
           textClean.includes('price') ||
@@ -159,7 +170,7 @@ export class ReplyDeskService {
         return (
           hasQuestionMark ||
           hasBuyerKeyword ||
-          (words.length > 3 && !activeKeywordsSet.has(textClean))
+          (words.length >= 2 && !activeKeywordsSet.has(textClean))
         );
       })
       .map((c) => {
@@ -184,11 +195,12 @@ export class ReplyDeskService {
       });
   }
 
-  /** Dispatch 1-click buyer reply from Reply Desk UI */
+  /** Dispatch 1-click reply from Reply Desk UI (Supports Public Comment Reply vs Private DM Reply) */
   async replyToBuyer(
     userId: string,
     commentDbId: string,
     replyText: string,
+    replyMode: 'PUBLIC_COMMENT' | 'PRIVATE_DM' = 'PUBLIC_COMMENT',
   ): Promise<{ success: boolean }> {
     const comment = await this.prisma.comment.findUnique({
       where: { id: commentDbId },
@@ -199,16 +211,41 @@ export class ReplyDeskService {
       throw new NotFoundException('Comment not found or access denied');
     }
 
-    // Enqueue direct DM reply via SendDmProducer
-    await this.sendDmProducer.enqueueSendDm({
-      campaignId: 'manual',
-      instagramAccountId: comment.instagramAccountId,
-      recipientId: comment.userId,
-      recipientUsername: comment.username,
-      commentId: comment.id,
-      igCommentId: comment.commentId,
-      replyMessage: replyText,
-    });
+    if (replyMode === 'PUBLIC_COMMENT') {
+      // Post public comment reply under the comment on Instagram
+      const accessToken = this.encryptionService.decrypt(comment.instagramAccount.accessToken);
+      if (!accessToken.startsWith('mock_')) {
+        try {
+          await axios.post(
+            `https://graph.facebook.com/v20.0/${comment.commentId}/replies`,
+            { message: replyText },
+            { params: { access_token: accessToken }, timeout: 10000 },
+          );
+        } catch (e: any) {
+          // Fallback to DM if public reply fails
+          await this.sendDmProducer.enqueueSendDm({
+            campaignId: 'manual',
+            instagramAccountId: comment.instagramAccountId,
+            recipientId: comment.userId,
+            recipientUsername: comment.username,
+            commentId: comment.id,
+            igCommentId: comment.commentId,
+            replyMessage: replyText,
+          });
+        }
+      }
+    } else {
+      // Enqueue direct DM reply via SendDmProducer
+      await this.sendDmProducer.enqueueSendDm({
+        campaignId: 'manual',
+        instagramAccountId: comment.instagramAccountId,
+        recipientId: comment.userId,
+        recipientUsername: comment.username,
+        commentId: comment.id,
+        igCommentId: comment.commentId,
+        replyMessage: replyText,
+      });
+    }
 
     // Mark comment as replied in DB
     await this.prisma.comment.update({
@@ -219,7 +256,11 @@ export class ReplyDeskService {
     await this.auditLogService.log({
       userId,
       action: 'REPLY_DESK_DISPATCH',
-      details: JSON.stringify({ commentId: comment.id, username: comment.username }),
+      details: JSON.stringify({
+        commentId: comment.id,
+        username: comment.username,
+        mode: replyMode,
+      }),
     });
 
     return { success: true };
